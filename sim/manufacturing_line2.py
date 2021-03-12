@@ -1,12 +1,12 @@
 import simpy
 import numpy as np 
 
-# this is an example consists of 5 machines 
-
+# this is an example consists of 5 machine 
+# this version
 
 
 class general:
-    number_of_machines = 3
+    number_of_machines = 3   # number of general machines 
     machine_infeed_buffer = 100
     machine_discharge_buffer = 100 # 
     conveyor_capacity = 1000  # in cans 
@@ -15,18 +15,19 @@ class general:
 
     conveyor_min_speed = 10
     conveyor_max_speed = 100
-
-
     warmup_time = 100 # in seconds 
-
     downtime_generation_m4 = 100 # every 100 seconds machine 1 goes down
     downtime_m4 = 10 # in seconds 
     control_frequency = 1  # in seconds 
 
  
-class Machine():
+class Machine(general):
+    '''
+    This class represents a general machine, i.e. its states and function   
 
+    '''
     def __init__(self):
+        super.__init__()
         self.min_speed = general.min_speed
         self.max_speed = general.max_speed
         self._speed = 0
@@ -62,14 +63,22 @@ class Machine():
         return (f'Machine with id of {self.id} 
                 runs at speed of {self.speed} and is in {self.state} mode')
     
-class Conveyor():
+class Conveyor(general):
 
-    def __init__(self):
+    def __init__(self, id, speed, number_of_bins):
+        super.__init__()
         self.min_speed = general.conveyor_min_speed
         self.max_speed = general.conveyor_max_speed
-        self._speed = 0
+        self._speed = speed 
+        self.id = id 
         self._state = 'idle'
         self.capcity = general.capacity
+        self.number_of_bins = 10 
+        self.bins_capacity = self.capcity/self.number_of_bins # self.number_of_bins*[bin_capacity]
+        
+        # each bin is a container and has a capacity and initial value  
+        for i in range(0, self.number_of_bins):
+            setattr(self, "bin" + str(i), simpy.Container(self.env, init = self.bins_capacity/2,  capacity = self.bins_capacity))
 
     @property
     def speed(self):
@@ -102,53 +111,26 @@ class Conveyor():
                 runs at speed of {self.speed} and is in {self.state} mode')
 
 
-class DES():
+class DES(general):
     def __init__(self):
+        super.__init__()
         #input->m1->c1->m2->c2->m3->c3->m4->c4->m5 output 
         self.env = simpy.Environment()
 
-        self._initialize_buffers(self)
+        self._initialize_conveyor_buffers(self)
         self._initialize_macines(self)
-        self._initialize_conveyors(self)
 
-        def _initialize_buffers(self):
+        def _initialize_conveyor_buffers(self):
         #There is no input buffer for machine 1. We can safely assume that it is infinity 
-            self.m1bin = simpy.Container(self.env, init = float('inf'), capacity = general.machine_infeed_buffer)  # machine 1, infeed buffer 
-            self.m1bout = simpy.Container(self.evn, init = general.machine_discharge_buffer, capacity= general.machine_discharge_buffer)
 
-            self.cb1 = simpy.Container(self.env, init = general.conveyor_capacity//2,  capacity = general.conveyor_capacity)
-
-            self.m2bin = simpy.Container(self.env, init = general.machine_infeed_buffer//3, capacity = general.machine_infeed_buffer)  # machine 1, infeed buffer 
-            self.m2bout = simpy.Container(self.evn, init = general.machine_discharge_buffer//3, capacity= general.machine_discharge_buffer)
-
-            self.cb2 = simpy.Container(self.env, init = general.conveyor_capacity//2,  capacity =  general.conveyor_capacity)
-
-            self.m3bin = simpy.Container(self.env, init = general.machine_infeed_buffer//3, capacity = general.machine_infeed_buffer)  # machine 1, infeed buffer 
-            self.m3bout = simpy.Container(self.evn, init = general.machine_discharge_buffer//3, capacity= general.machine_discharge_buffer)
-
-            self.cb3 = simpy.Container(self.env, init = general.conveyor_capacity//2,  capacity=  = general.conveyor_capacity)
-
-            self.m4bin = simpy.Container(self.env, init = general.machine_infeed_buffer//3, capacity = general.machine_infeed_buffer)  # machine 1, infeed buffer 
-            self.m4bout = simpy.Container(self.evn, init = general.machine_discharge_buffer//3, capacity= general.machine_discharge_buffer)
-
-            self.cb4 = simpy.Container(self.env, init = general.conveyor_capacity//2,  capacit y=  general.conveyor_capacity)
-
-            self.m5bin = simpy.Container(self.env, init = general.machine_infeed_buffer//3, capacity = general.machine_infeed_buffer)  # machine 1, infeed buffer 
-        # There is no output buffer it can safely be assumed to be infinity
+            # note -1: as number of conveyors are one less than total number of machines 
+            for i in range(0, general.number_of_machines-1):
+                setattr(self, "c" + str(i),  Conveyor(id = i, speed = 10))
     
         def _initialize_macines(self):
         # create instance of each machine 
-            self.m1 = Machine(id = 1, speed = 10)
-            self.m2 = Machine(id = 2, speed = 10)
-            self.m3 = Machine(id = 3, speed = 10)
-            self.m4 = Machine(id = 4, speed = 10)
-            self.m5 = Machine(id = 5, speed = 10)
-        
-        def _initialize_conveyor(self):
-            self.c1 = Conveyor(id, speed = 10, capacity = 100)
-            self.c2 = Conveyor(id, speed = 10, capcity = 100)
-            self.c3 = Conveyor(id, speed = 10, capacity = 100)
-            self.c4 = Conveyor(id, speed = 10, capacity = 100)
+            for i in range(0, general.number_of_machines-1):
+                setattr(self, "c" + str(i),  Machine(id = i, speed = 10))
 
 
     def downtime_generator(self):
@@ -157,12 +139,14 @@ class DES():
             print('started can processing. All machines working ')
             self.env.process(self.can_processor_machines)
             self.env.process(self.can_processor_conveyor)
-            yield Timeout()
+            
+            # Reserve the place holder to define the downtime events 
+            # yield Timeout()
+            # set a machine speed and state to a given mode 
+            # receive speed actions from the brain 
 
 
-
-
-    def can_processor_machines(self):
+    def can_processor(self):
         '''
         The idea is to take machine speed and update accumulation of cans at discharge of the each machine  
 
@@ -173,12 +157,19 @@ class DES():
                                                     # and calculate the can accumulation in the buffer and in the conveyor 
                                                     # we may think of a lag as well. 
         
-        # add cans to the output buffer
-        yield self.m1bout += self.m1.speed*control_frequency 
-        yield self.m2bout += self.m2.speed*control_frequency
-        yield self.m3bout += self.m3.speed*control_frequency
-        yield self.m4bout += self.m4.speed*control_frequency
-        yield self.m5bout += self.m5.speed*control_frequency
+        # update number of cans at each bin
+        for i in range(0, general.number_of_machines-1):
+            bin_val = getattr(self, "c"+ str(i)+ ".bin"+ str(i))
+            machine_speed = getattr(self, "m"+ str(i) + ".speed"
+            bin_capacity = getattr(self, "c" + str(i) + "bin" )
+            
+            yield setattr(self, "c"+ str(i)+ ".bin"+ str(i), bin_val +  self.m1.speed*control_frequency)
+
+        yield self.c1.bin1 += 
+        yield self.c2.bin1 += self.m2.speed*control_frequency
+        yield self.c3.bin1 += self.m3.speed*control_frequency
+        yield self.c1.bin1 += self.m4.speed*control_frequency
+        yield self.c1.bin1 += self.m5.speed*control_frequency
 
         # remove cans from the input buffer 
         yield self.m1bin -=  self.m1.speed*control_frequency 

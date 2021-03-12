@@ -9,6 +9,9 @@ class Machine():
         self._state = 'idle'
         self.min_speed = general.min_speed
         self.max_speed = general.max_speed
+        for i in range(1, 10):
+            setattr(self, "bin" + str(i), 2*i)
+
 
     @property
     def speed(self):
@@ -32,9 +35,11 @@ class Machine():
         if state not in ("prime","idle", "active", "down"):
             raise ValueError('state must be one of the following prime, idle, active, down')
         self._state = state
-        if state == 'down' or state = 'idle':
+        if state == 'down' or state == 'idle':
             self.speed = 0
 
+    def get_bin(self, i):
+        return getattr(self, "bin" + str(i))
 
     
 
