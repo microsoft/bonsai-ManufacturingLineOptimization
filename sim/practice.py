@@ -12,7 +12,6 @@ class Machine():
         for i in range(1, 10):
             setattr(self, "bin" + str(i), 2*i)
 
-
     @property
     def speed(self):
         return self._speed
