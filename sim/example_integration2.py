@@ -1,8 +1,8 @@
-import json 
 import os
 import time 
 import json
 import time
+import json
 from typing import Dict, Any, Optional
 from microsoft_bonsai_api.simulator.client import BonsaiClientConfig, BonsaiClient
 from microsoft_bonsai_api.simulator.generated.models import (
@@ -11,9 +11,6 @@ from microsoft_bonsai_api.simulator.generated.models import (
 )
 import numpy as np
 from dotenv import load_dotenv, set_key
-dir_path = os.path.dirname(os.path.realpath(__file__))
-log_path = "logs"
-
 
 config_client = BonsaiClientConfig()
 
@@ -27,7 +24,6 @@ with open('workspace.json') as file:
 
 config_client.workspace = args['workspace']
 config_client.access_key = args['access_key']
-
 client = BonsaiClient(config_client)
 
 
@@ -42,10 +38,8 @@ registered_session = client.session.create(
                         body=registration_info
 )
 
-
 print("Registered simulator.")
 sequence_id = 1
-
 
 
 
@@ -66,8 +60,6 @@ while True:
         sequence_id = event.sequence_id
         print("[{}] Last Event: {}".format(time.strftime('%H:%M:%S'), 
                                                 event.type))
-        
-        print(f'sequence id is {sequence_id}')
                                                 
 
         # Event loop

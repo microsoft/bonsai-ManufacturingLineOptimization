@@ -22,11 +22,19 @@ import numpy as np
 class BonsaiCall:
     def __init__(self):
         self.config_client = BonsaiClientConfig()
-        self.client = BonsaiClient(config_client)
 
         # Load json file as simulator integration config type file
         with open('interface.json') as file:
             interface = json.load(file)
+
+        with open('workspace.json') as file:
+            args = json.load(file)
+
+
+        self.config_client.workspace = args['workspace']
+        self.config_client.access_key = args['access_key']
+        self.client = BonsaiClient(config_client)
+
 
         # Create simulator session and init sequence id
         self.registration_info = SimulatorInterface(
@@ -38,10 +46,11 @@ class BonsaiCall:
                                 workspace_name=config_client.workspace, 
                                 body=registration_info
         )
-    
-        print("Registered simulator.")
-        sequence_id = 1
 
+        print("Registered simulator.")
+        self.sequence_id = 1
+
+    
 
 class general:
     number_of_machines = 3   # number of general machines 
@@ -155,20 +164,22 @@ class DES(general):
         #input->m1->c1->m2->c2->m3->c3->m4->c4->m5 output 
         self.env = simpy.Environment()
 
-        self._initialize_conveyor_buffers(self)
-        self._initialize_macines(self)
-
-        def _initialize_conveyor_buffers(self):
-        #There is no input buffer for machine 1. We can safely assume that it is infinity 
-
-            # note -1: as number of conveyors are one less than total number of machines 
-            for i in range(0, general.number_of_machines-1):
-                setattr(self, "c" + str(i),  Conveyor(id = i, speed = 10))
+        self._initialize_conveyor_buffers()
+        self._initialize_macines()
+        self._initialize_bonsai_connection()
+        
+    def _initialize_conveyor_buffers(self):
+    #There is no input buffer for machine 1. We can safely assume that it is infinity 
+        # note -1: as number of conveyors are one less than total number of machines 
+        for i in range(0, general.number_of_machines-1):
+            setattr(self, "c" + str(i),  Conveyor(id = i, speed = 10))
     
-        def _initialize_macines(self):
-        # create instance of each machine 
-            for i in range(0, general.number_of_machines-1):
-                setattr(self, "c" + str(i),  Machine(id = i, speed = 10))
+    def _initialize_macines(self):
+    # create instance of each machine 
+        for i in range(0, general.number_of_machines-1):
+            setattr(self, "c" + str(i),  Machine(id = i, speed = 10))
+    
+    def _initialize_machine(self):
 
 
     def downtime_generator(self):
@@ -198,7 +209,7 @@ class DES(general):
         # update number of cans at each bin
         for i in range(0, general.number_of_machines-1):
             bin_val = getattr(self, "c"+ str(i)+ ".bin"+ str(i))
-            machine_speed = getattr(self, "m"+ str(i) + ".speed"
+            machine_speed = getattr(self, "m"+ str(i) + ".speed")
             bin_capacity = getattr(self, "c" + str(i) + "bin" )
             
             yield setattr(self, "c"+ str(i)+ ".bin"+ str(i), bin_val +  self.m1.speed*control_frequency)
