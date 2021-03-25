@@ -24,8 +24,8 @@ adj = {
     'm9': ('c7', 'c8')
 }
 
-con_balance  = [('c1','c6')]   # balancing load between two line 
-con_join =  [('c3,c8')]   # adding the load from first one onto the second conveyor 
+con_balance  = [('c1','c6', 4)]   # balancing load between two conveyors, the last number indicates where cans are added. Use same for both  
+con_join =  [('c3,c8', 4)]   # adding the load from first one onto the second conveyor, the last number indicates the joining on the second conveyor's bin from the last bin of the first conveyor. 
 
 def plot():
     pass

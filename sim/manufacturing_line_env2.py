@@ -281,7 +281,47 @@ class DES(General):
                     the_bin.put(delta)
      
     def update_conveyor_junctions():
-        pass
+        
+        '''
+        Rules for the junctions: mainly balancing the load between lines. 
+        If a junction bin gets full, it can push cans to the neighbor conveyor. 
+        '''
+        for junction in con_balance:    # balancing load between two line 
+            conveyor1 = junction[0]
+            conveyor2 = junction[1]
+            join_bin = junction[2]
+            bin_1 =  getattr(getattr(self, conveyor1), "bin"+ str(join_bin))
+            bin_2 =  getattr(getattr(self, conveyor2), "bin"+ str(join_bin))
+
+            if bin_1.level < bin_1.capacity and bin_2.level <bin_2.capcity:
+                ## don't do any thing if both conveyors are operating below the capacity 
+            elif 
+            elif bin_1.level == bin_1.capacity and bin_2.level<bin_2.capcity:
+                ## push cans from bin_1 to bin_2
+                bin_1.get(getattr(eval('self.'+ conveyor1), 'speed')* General.control_frequency)
+                bin_2.put(getattr(eval('self.'+ conveyor2), 'speed')* General.control_frequency)
+            
+            elif bin_2.level == bin_2.capacity and bin_1.level<bin_1.capcity:
+                bin_2.get(getattr(eval('self.'+ conveyor2), 'speed')* General.control_frequency)
+                bin_1.put(getattr(eval('self.'+ conveyor1), 'speed')* General.control_frequency)
+            else:
+                ## bin_2.level == bin_2.capacity and bin_2.level == bin_2.capcity:
+                ## do nothing 
+                pass 
+
+        for junction in con_join:
+            conveyor1 = junction[0]
+            conveyor2 = junction[1]
+            join_bin = junction[2]
+            bin_1 =  getattr(getattr(self, conveyor1), "bin"+ str(General.num_conveyor_bins))
+            bin_2 =  getattr(getattr(self, conveyor2), "bin"+ str(join_bin))
+
+            if bin_1.level < bin_1.capacity:
+                ## always add from 
+                bin_1.put(getattr(eval('self.'+ conveyor2), 'speed')* General.control_frequency)
+                bin_2.get(getattr(eval('self.'+ conveyor2), 'speed')* General.control_frequency)                 
+            else:
+                pass       
 
 
     def update_machine_buffers(self):
