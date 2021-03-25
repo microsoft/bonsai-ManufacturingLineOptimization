@@ -16,30 +16,36 @@ import numpy as np
 Simulation environment for multi machine simulation environment. 
 
 '''
-from line_config import 
+from line_config import adj, con_balance, con_join
 
 def get_machines_conveyors_sources_sets(adj):
     conveyors = set()
     sources = set()
+    sinks = set()
     for key in list(adj.keys()):
-        for element in adj:
-            if "source" not in element:
+        for element in adj[key]:
+            if ("source" or "sink") not in element:
                 conveyors.add(element)
-            else:
+            elif "source" in element:
                 sources.add(element)
-    return set(adj.keys()), conveyors, sources 
+            elif "sink" in element: 
+                sinks.add(element)
+            else:
+                pass 
+
+    return set(adj.keys()), conveyors, sources, sinks
             
 
 class General:
-    machines, conveyors, sources = get_machines_conveyors_sources_sets(adj)
+    machines, conveyors, sources, sinks = get_machines_conveyors_sources_sets(adj)
     number_of_machines = len(machines)   # number of General machines
     number_of_conveyors =  len(conveyors)
     machine_infeed_buffer = 100
     machine_discharge_buffer = 100 # 
     conveyor_capacity = 1000  # in cans 
     num_conveyor_bins = 10  # every conveyor is divided into 10 sections. For approximation and connection purposes  
-    machine_min_speed = 10
-    machine_max_speed = 100
+    machine_min_speed = 1 # cans per second 
+    machine_max_speed = 10 # cans per second  
     conveyor_min_speed = 10
     conveyor_max_speed = 100
     warmup_time = 100  # seconds(s) 
@@ -154,17 +160,21 @@ class DES(General):
     def _initialize_conveyor_buffers(self):
     ## There is no input buffer for machine 1. We can safely assume that it is infinity 
         # note -1: as number of conveyors are one less than total number of machines 
-        for machine in General.machines :
-            setattr(self, "c" + str(i),  Conveyor(id = i, speed = 10, number_of_bins = General.num_conveyor_bins, env = self.env))
-            print(getattr(self, "c" + str(i)))
-            self.components_speed["c" + str(i)] = General.conveyor_max_speed
+        id = 0 
+        for conveyor in General.conveyors :
+            setattr(self, conveyor,  Conveyor(id = id, speed = 10, number_of_bins = General.num_conveyor_bins, env = self.env))
+            print(getattr(self, conveyor))
+            self.components_speed[conveyor] = General.conveyor_max_speed
+            id +=1 
     
     def _initialize_machines(self):
     ## create instance of each machine 
-        for i in range(0, General.number_of_machines):
-            setattr(self, "m" + str(i),  Machine(id = i, speed = General.machine_max_speed))
-            print(getattr(self, "m" + str(i)))
-            self.components_speed["m" + str(i)] = General.machine_max_speed
+        id = 0 
+        for machine in General.machines:
+            setattr(self, machine,  Machine(id = id, speed = General.machine_max_speed))
+            print(getattr(self, machine))
+            self.components_speed[machine] = General.machine_max_speed
+            id += 1 
 
     def processes_generator(self):  
         print('started can processing. All machines working ')
@@ -179,6 +189,7 @@ class DES(General):
             #self.env.process(self.can_processor_machines())
             self.update_machines_speed()
             self.update_conveyors_speed()
+            self.update_machine_adjacent_buffers()
             self.update_conveyors_buffers()
             
             # Reserve the place holder to define the downtime events 
@@ -198,98 +209,88 @@ class DES(General):
             print(f'................ now a machine went down at {self.env.now} ...')
 
 
-    def update_machines_speed(self):
+    def update_machines_speed(self, updated_speed = None):
         '''
         The idea is to take machine speed and update accumulation of cans at discharge of the each machine  
 
         '''  
         #####todo: add brain actions 
-        for i in range(0, General.number_of_machines):
+        for machine in General.machines:
             print(f'now at {self.env.now} s updating mechine speed')
-            machine_speed = self.components_speed['m' + str(i)]
-            setattr(eval('self' + ".m" + str(i)),'speed', machine_speed)
-            print(eval('self' + ".m" + str(i)))
+            if updated_speed is None: updated_speed = self.components_speed[machine]
+            setattr(eval('self.' + machine),'speed', updated_speed)
+            print(eval('self.' + machine))
+
+    def update_conveyors_speed(self, updated_speed = None):
+        '''
+        The idea is to take machine speed and update accumulation of cans at discharge of the each machine  
+
+        '''  
+        #####todo: add brain actions 
+        for conveyor in General.machines:
+            print(f'now at {self.env.now} s updating mechine speed')
+            if updated_speed is None: updated_speed = self.components_speed[conveyor]
+            setattr(eval('self.' + conveyor),'speed', updated_speed)
+            print(eval('self.' + conveyor))
 
     def update_machine_adjacent_buffers(self):
         '''
         For each machine, we will look at the adj matrix and update number of cans in their buffers. If the buffer is full, we need to shut down the machine. 
         '''
-        for i in range(0, General.number_of_machines):
-            infeed_buffer = 
-            discharge_buffer = 
-
-            print(f'now at {self.env.now} s updating mechine speed')
-            machine_speed = self.components_speed['m' + str(i)]
-            setattr(eval('self' + ".m" + str(i)),'speed', machine_speed)
-            print(eval('self' + ".m" + str(i)))
+        
+        ### update machine infeed and discharge buffers according to machine speed 
+        for machine in adj.keys():
+            adj_conveyors = adj[machine]
+            infeed = adj_conveyors[0]
+            discharge = adj_conveyors[1]
+            delta = getattr(eval('self.'+ machine), 'speed')* General.control_frequency   # amount of cans going from one side to the other side 
+            if 'source' not in infeed: 
+                # current_level = getattr(getattr(getattr(self, infeed), "bin"+ str(General.num_conveyor_bins-1)), 'level')
+                the_bin = getattr(getattr(self, infeed), "bin"+ str(General.num_conveyor_bins-1))
+                level = the_bin.level
+                the_bin.get(delta)
+                level_updated = the_bin.level
+                if level == level_updated:
+                    #TODO: generate event that prox is empty  
+                    
+            if 'sink' not in discharge:
+                # now check buffer full  ....................................TODO:
+                the_bin = getattr(getattr(self, discharge), "bin"+ str(0))
+                level = the_bin.level
+                the_bin.put(delta)
+                level_updated = the_bin.level 
+                if level == level_updated:
+                    #TOD: generate event that prox is full 
     
-    def update_conveyor_bins():
-        pass
+    
+    def update_conveyors_buffers():
+        for conveyor in General.conveyors:
+            delta = getattr(eval('self.'+ conveyor), 'speed')* General.control_frequency
+            for bin_num in range(1, General.number_of_bins):
+                the_bin =  getattr(getattr(self, conveyor), "bin"+ str(bin_num))
+                previous_bin = getattr(getattr(self, conveyor), "bin"+ str(bin_num - 1))
+                if previous_bin.level< delta:
+                    delta = previous_bin
+                else: 
+                    pass 
 
+                if the_bin.level == the_bin.capacity:
+                    # if bin is full then do nothing, i.e. delta = 0 
+                    delta = 0 
+                    the_previous.get(delta)
+                    the_bin.put(delta)
+     
     def update_conveyor_junctions():
         pass
 
 
-    def update_conveyor_buffers(self):
+    def update_machine_buffers(self):
         
-        ### update number of cans at each bin
         for i in range(0, General.number_of_machines-1):
             bin_val = getattr(self, "c"+ str(i)+ ".bin"+ str(i))
             machine_speed = getattr(self, "m"+ str(i) + ".speed")
             bin_capacity = getattr(self, "c" + str(i) + "bin" )
             setattr(self, "c"+ str(i)+ ".bin"+ str(i), bin_val +  self.m1.speed*control_frequency)
-
-        # yield self.c1.bin1 += 
-        # yield self.c2.bin1 += self.m2.speed*control_frequency
-        # yield self.c3.bin1 += self.m3.speed*control_frequency
-        # yield self.c1.bin1 += self.m4.speed*control_frequency
-        # yield self.c1.bin1 += self.m5.speed*control_frequency
-
-        # # remove cans from the input buffer 
-        # yield self.m1bin -=  self.m1.speed*control_frequency 
-        # yield self.m2bin -=  self.m2.speed*control_frequency
-        # yield self.m3bin -=  self.m3.speed*control_frequency
-        # yield self.m4bin -=  self.m4.speed*control_frequency
-        # yield self.m5bin -=  self.m5.speed*control_frequency
-
-        #now check their capacity and see if they should go to zero speed (idle speed)
-        # if self.m1bout == self.General.capacity:
-        #         ## then machine speed wills be set to zero 
-        # if self.m2bout == Self.General.capacity:
-                ## then mach
-                # 
-        
-        
-        # def update_conveyors_speed(self):
-        # '''
-        # The idea is to take conveyor speed and capacity and update can accumulation on the conveyor  
-        # ''' 
-        # print(f'now at {self.env.now} s processing can at {General.control_frequency} control frequency')
-        # for i in range(0, General.number_of_machines-1):
-        #     print(f'now at {self.env.now} s updating conveyor speed')
-        #     conveyor_speed = self.components_speed['c' + str(i)]
-        #     setattr(eval('self' + ".c" + str(i)),'speed', conveyor_speed)
-        #     print(eval('self' + ".c" + str(i)))
-
-
-        # in this section, we wil check if the conveyor is full, in this case cans are not moving forward  
-        # if self.cb1< self.c1.capcity:
-        #     yield self.m1bout -= self.c1.speed*control_frequency
-
-        # if self.cb2< self.c2.capcity:
-        #     yield self.m2bout -= self.c2.speed*control_frequency
-        
-        # if self.cb3< self.c3.capcity:
-        #     yield self.m3bout -= self.c3.speed*control_frequency
-
-        # if self.cb4< self.c4.capcity:
-        #     yield self.m4bout -= self.c4.speed*control_frequency
-
-
-    # def activity_m1(self):
-    #     time_machine_started = self.env.now
-
-    #     yield 
 
     def reset(self):
         self.episode_end = False
@@ -312,7 +313,7 @@ base = 20
 iteration = 0 
 while True:
     my_env.step(brain_actions = {'c0': base+iteration, 'm0': base+iteration, 'm1': base+iteration} )
-    input('Press Enter to continue ...')    
+    #input('Press Enter to continue ...')    
     iteration += 1 
     print(iteration)
     if iteration ==10:
