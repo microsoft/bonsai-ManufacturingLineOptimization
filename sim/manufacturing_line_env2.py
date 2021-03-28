@@ -251,8 +251,9 @@ class DES(General):
                 the_bin.get(delta)
                 level_updated = the_bin.level
                 if level == level_updated:
-                    #TODO: generate event that prox is empty  
-                    
+                    #TODO: generate event that prox is empty 
+                    pass 
+                
             if 'sink' not in discharge:
                 # now check buffer full  ....................................TODO:
                 the_bin = getattr(getattr(self, discharge), "bin"+ str(0))
@@ -261,6 +262,7 @@ class DES(General):
                 level_updated = the_bin.level 
                 if level == level_updated:
                     #TOD: generate event that prox is full 
+                    pass
     
     
     def update_conveyors_buffers():
@@ -295,7 +297,7 @@ class DES(General):
 
             if bin_1.level < bin_1.capacity and bin_2.level <bin_2.capcity:
                 ## don't do any thing if both conveyors are operating below the capacity 
-            elif 
+                pass
             elif bin_1.level == bin_1.capacity and bin_2.level<bin_2.capcity:
                 ## push cans from bin_1 to bin_2
                 bin_1.get(getattr(eval('self.'+ conveyor1), 'speed')* General.control_frequency)
