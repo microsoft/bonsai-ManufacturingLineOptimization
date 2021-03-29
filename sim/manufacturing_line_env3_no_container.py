@@ -112,7 +112,9 @@ class Conveyor(General):
         self.bins_capacity = self.capcity/self.number_of_bins 
         ## each bin is a container and has a capacity and initial value  
         for i in range(0, self.number_of_bins):
-            setattr(self, "bin" + str(i), simpy.Container(env, init = self.bins_capacity/2,  capacity = self.bins_capacity))
+            #setattr(self, "bin" + str(i), simpy.Container(env, init = self.bins_capacity/2,  capacity = self.bins_capacity))
+            setattr(self, "bin" + str(i), self.bins_capacity/2)
+
 
     @property
     def speed(self):
@@ -187,21 +189,12 @@ class DES(General):
             yield self.env.timeout(General.control_frequency)
             print('-------------------------------------------')
             print(f'control freq event at {self.env.now} s ...')
-            #time.sleep(5)
-
-            #self.env.process(self.can_processor_machines())
-
-            
-            # Reserve the place holder to define the downtime events 
-            # yield Timeout()
-            # set a machine speed and state to a given mode 
-            # receive speed actions from the brain 
 
     def update_line(self):
         self.update_machines_speed()
         self.update_conveyors_speed()
-        #self.update_machine_adjacent_buffers()
-        # self.update_conveyors_buffers()
+        self.update_machine_adjacent_buffers()
+        self.update_conveyors_buffers()
 
     def event_driven_update(self):
         '''
@@ -251,49 +244,56 @@ class DES(General):
             discharge = adj_conveyors[1]
             delta = getattr(eval('self.'+ machine), 'speed')* General.control_frequency   # amount of cans going from one side to the other side 
             if 'source' not in infeed: 
-                # current_level = getattr(getattr(getattr(self, infeed), "bin"+ str(General.num_conveyor_bins-1)), 'level')
-                the_bin = getattr(getattr(self, infeed), "bin"+ str(General.num_conveyor_bins-1))
-                level = the_bin.level
-                the_bin.get(delta)
-                level_updated = the_bin.level
-                if level == level_updated:
-                    #TODO: generate event that prox is empty 
-                    pass 
+
+                level = getattr(getattr(self, infeed), "bin"+ str(General.num_conveyor_bins-1))
+                level -= delta
+
+                if level <= 0:
+                    level = 0 
+                    #TODO: prox empty machine go down  
+                setattr(eval('self.' +infeed), "bin"+ str(General.num_conveyor_bins-1), level)
+
                 
             if 'sink' not in discharge:
                 # now check buffer full  ....................................TODO:
-                the_bin = getattr(getattr(self, discharge), "bin"+ str(0))
-                level = the_bin.level
-                the_bin.put(delta)
-                level_updated = the_bin.level 
-                if level == level_updated:
-                    #TOD: generate event that prox is full 
-                    pass
-    
+                level = getattr(getattr(self, discharge), "bin"+ str(0))
+                capacity = getattr(getattr(self, discharge), "bins_capacity")
+                
+                level += delta 
+
+                if level>= capacity:   
+                    level = capacity           
+                    #TODO: trigger discharge prox full  
+                setattr(eval('self.' + discharge ), "bin"+ str(0), level)
     
     def update_conveyors_buffers(self):
         for conveyor in General.conveyors:
             delta = getattr(eval('self.'+ conveyor), 'speed')* General.control_frequency
             for bin_num in range(1, General.num_conveyor_bins):
-                the_bin =  getattr(getattr(self, conveyor), "bin"+ str(bin_num))
-                previous_bin = getattr(getattr(self, conveyor), "bin"+ str(bin_num - 1))
-                if previous_bin.level< delta:
-                    delta = previous_bin.level
-                else: 
-                    pass 
+                bin_level =  getattr(getattr(self, conveyor), "bin"+ str(bin_num))
+                previous_bin_level = getattr(getattr(self, conveyor), "bin"+ str(bin_num - 1))
+                
+                
+                # now take from previous bin and add to the next bin 
+                capacity = getattr(getattr(self, conveyor), "bins_capacity")
 
-                if the_bin.level == the_bin.capacity:
-                    # if bin is full then do nothing, i.e. delta = 0 
-                    delta = 0 
-                # now add delta to the next buffer 
-                #print('delta for updating is: ', delta)
-                if delta>0:
-                    #update
-                    previous_bin.get(delta)
-                    the_bin.put(delta)
-                else:
-                    #no change 
-                    pass
+                # check if enough cans is available 
+                if previous_bin_level< delta:
+                    delta = previous_bin_level
+
+                # check not to overflow the cans  
+                if bin_level + delta > capacity:
+                    delta = capacity - bin_level
+
+
+                #update the buffers
+                bin_level += delta
+                previous_bin_level -= delta 
+
+                setattr(eval('self.' + conveyor), "bin"+ str(bin_num), bin_level)
+                setattr(eval('self.' + conveyor), "bin"+ str(bin_num - 1), previous_bin_level)
+
+
     def update_conveyor_junctions(self):
         
         '''
@@ -304,20 +304,26 @@ class DES(General):
             conveyor1 = junction[0]
             conveyor2 = junction[1]
             join_bin = junction[2]
-            bin_1 =  getattr(getattr(self, conveyor1), "bin"+ str(join_bin))
-            bin_2 =  getattr(getattr(self, conveyor2), "bin"+ str(join_bin))
+            bin_1_level =  getattr(getattr(self, conveyor1), "bin"+ str(join_bin))
+            bin_1_capacity =  getattr(getattr(self, conveyor1), "bins_capacity")
 
-            if bin_1.level < bin_1.capacity and bin_2.level <bin_2.capcity:
+            bin_2_level =  getattr(getattr(self, conveyor2), "bin"+ str(join_bin))
+            bin_2_capacity =  getattr(getattr(self, conveyor2), "bins_capacity")
+
+            if bin_1_level < bin_1_capacity and bin_2_level <bin_2_capcity:
                 ## don't do any thing if both conveyors are operating below the capacity 
                 pass
-            elif bin_1.level == bin_1.capacity and bin_2.level<bin_2.capcity:
+            elif bin_1_level == bin_1_capacity and bin_2_level<bin_2_capcity:
                 ## push cans from bin_1 to bin_2
-                bin_1.get(getattr(eval('self.'+ conveyor1), 'speed')* General.control_frequency)
-                bin_2.put(getattr(eval('self.'+ conveyor2), 'speed')* General.control_frequency)
+                delta = min(getattr(eval('self.'+ conveyor1), 'speed')* General.control_frequency, bin_2_capacity-bin_2_level)
+                setattr(eval('self.' + conveyor2),"bin"+ str(join_bin) , delta + bin_2_level)
+                setattr(eval('self.'+ conveyor1), "bin"+ str(join_bin) , bin_1_level - delta)
             
             elif bin_2.level == bin_2.capacity and bin_1.level<bin_1.capcity:
-                bin_2.get(getattr(eval('self.'+ conveyor2), 'speed')* General.control_frequency)
-                bin_1.put(getattr(eval('self.'+ conveyor1), 'speed')* General.control_frequency)
+                # do the opposite 
+                delta = min(getattr(eval('self.'+ conveyor2), 'speed')* General.control_frequency, bin_1_capacity-bin_1_level)
+                setattr(eval('self.' + conveyor1),"bin"+ str(join_bin) , delta + bin_1_level)
+                setattr(eval('self.' + conveyor2), "bin"+ str(join_bin) , bin_2_level - delta)
             else:
                 ## bin_2.level == bin_2.capacity and bin_2.level == bin_2.capcity:
                 ## do nothing 
@@ -327,24 +333,28 @@ class DES(General):
             conveyor1 = junction[0]
             conveyor2 = junction[1]
             join_bin = junction[2]
-            bin_1 =  getattr(getattr(self, conveyor1), "bin"+ str(General.num_conveyor_bins))
-            bin_2 =  getattr(getattr(self, conveyor2), "bin"+ str(join_bin))
+            bin_1_level =  getattr(getattr(self, conveyor1), "bin"+ str(General.num_conveyor_bins))
+            bin_1_capacity = getattr(getattr(self, conveyor1), "bins_capacity")
 
-            if bin_1.level < bin_1.capacity:
-                ## always add from 
-                bin_1.put(getattr(eval('self.'+ conveyor2), 'speed')* General.control_frequency)
-                bin_2.get(getattr(eval('self.'+ conveyor2), 'speed')* General.control_frequency)                 
+            bin_2_level =  getattr(getattr(self, conveyor2), "bin"+ str(join_bin))
+
+            if bin_2_level < bin_2.capacity:
+                ## always add from first one to the second one if there is room 
+                delta = min(getattr(eval('self.'+ conveyor1), 'speed')* General.control_frequency, bin_2_capacity-bin_2_level)
+
+                setattr(eval('self.' + conveyor1),"bin"+ str(join_bin) , bin_1_level - delta)
+                setattr(eval('self.' + conveyor2), "bin"+ str(join_bin) , bin_2_level + delta)               
             else:
                 pass       
 
 
     def update_machine_buffers(self):
-        
+        # update discharge buffer 
         for i in range(0, General.number_of_machines-1):
             bin_val = getattr(self, "c"+ str(i)+ ".bin"+ str(i))
             machine_speed = getattr(self, "m"+ str(i) + ".speed")
             bin_capacity = getattr(self, "c" + str(i) + "bin" )
-            setattr(self, "c"+ str(i)+ ".bin"+ str(i), bin_val +  self.m1.speed*control_frequency)
+            setattr(eval('self.' + "c" + str(i)), "bin"+ str(i), bin_val +  self.m1.speed*control_frequency)
 
     def reset(self):
         #self.episode_end = False
@@ -353,8 +363,7 @@ class DES(General):
 
     def step(self, brain_actions):
 
-        
-
+    
         # update the speed dictionary for those comming from the brain 
         for key in list(brain_actions.keys()):
             self.components_speed[key] = brain_actions[key]
