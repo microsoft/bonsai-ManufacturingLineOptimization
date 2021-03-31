@@ -144,13 +144,12 @@ class Conveyor(General):
     ## need to implement a setter and getter 
     def __repr__(self):
         return (f'Conveyor with id of {self.id}\
-                runs at speed of {self.speed} and is in {self.state} mode')
+            runs at speed of {self.speed} and is in {self.state} mode')
 
 
 class DES(General):
     def __init__(self,env):
         super().__init__()
-        #input->m1->c1->m2->c2->m3->c3->m4->c4->m5 output 
         self.env = env
         self.components_speed = {}
         self._initialize_conveyor_buffers()
@@ -163,11 +162,11 @@ class DES(General):
     ## There is no input buffer for machine 1. We can safely assume that it is infinity 
         # note -1: as number of conveyors are one less than total number of machines 
         id = 0 
-        for conveyor in General.conveyors :
+        for conveyor in General.conveyors:
             setattr(self, conveyor,  Conveyor(id = id, speed = General.conveyor_min_speed, number_of_bins = General.num_conveyor_bins, env = self.env))
             #print(getattr(self, conveyor))
             self.components_speed[conveyor] = General.conveyor_min_speed
-            id +=1 
+            id += 1 
     
     def _initialize_machines(self):
     ## create instance of each machine 
@@ -199,7 +198,6 @@ class DES(General):
         # enforcing PLC rules to prevent jamming. This may ignore brain actions if buffers are full. 
         self.plc_control_machine_speed()
         
-
         self.update_machine_adjacent_buffers()
         self.update_conveyors_buffers()
         self.update_conveyor_junctions()
@@ -456,22 +454,26 @@ class DES(General):
                 sink_machines_rate.append(getattr(eval('self.'+ machine), 'speed'))
         
         return machines_speed, conveyors_speed, conveyor_buffers, conveyor_buffers_full, sink_machines_rate,\
+            conveyor_infeed_m1_prox_empty, conveyor_infeed_m2_prox_empty, conveyor_discharge_p1_prox_full,\
+                conveyor_discharge_p2_prox_full
 
-                             
-env = simpy.Environment()
-my_env = DES(env)
-my_env.reset()
-iteration = 0 
-while True:
-    my_env.step(brain_actions = {'c0': 50, 'm0': 100, 'm1': 10} )
-    #input('Press Enter to continue ...')    
-    machines_speed, conveyors_speed, conveyor_buffers, conveyor_buffers_full, sink_machines_rate = my_env.get_states()
-    print(f'iteration is {iteration}')
-    iteration += 1 
-    if iteration ==100000:
-        my_env = DES(env)
-        my_env.reset()
-        iteration = 0
+
+
+if __name__=="__main__":                             
+    env = simpy.Environment()
+    my_env = DES(env)
+    my_env.reset()
+    iteration = 0 
+    while True:
+        my_env.step(brain_actions = {'c0': 50, 'm0': 100, 'm1': 10} )
+        #input('Press Enter to continue ...')    
+        machines_speed, conveyors_speed, conveyor_buffers, conveyor_buffers_full, sink_machines_rate = my_env.get_states()
+        print(f'iteration is {iteration}')
+        iteration += 1 
+        if iteration ==100000:
+            my_env = DES(env)
+            my_env.reset()
+            iteration = 0
 
     
 
