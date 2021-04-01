@@ -10,8 +10,8 @@ Maximize production in a manufacturing line.
 | ---------------------- | ------------------------------------------------------------ | ----- |
 | Objective              | maximize product production     |   Example: For a can manufacturing line, the goal is to maximize can production                        |
 | Constraints            |   NA |
-| Observations           | Conveyors speed, machine speed, infeed and discharge proxes, line throughput | Proxes are sensors that yield a binary value. When product accumulates on the conveyor and covers the location of the prox sensor, its value becomes 1, otherwise it's value is zero  |
-| Actions                |  Machine and conveyor speed | Speeds are in cans/second units |
+| Observations           | Conveyors speed, machines speed, infeed and discharge proxes, line throughput | Proxes are sensors that yield a binary value. When product accumulates on the conveyor and covers the location of the prox sensor, its value becomes 1, otherwise it's value is zero  |
+| Actions                |  Machines and conveyors speed | Speeds are in cans/second units |
 | Control Frequency      | Fixed control frequency | User can specify control frequency inside the sim |
 | Episode configurations | currently fixed | TODO: will add various configs such as downtime events |
 
