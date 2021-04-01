@@ -3,6 +3,7 @@ import os
 import time 
 import json
 import time
+from collections import OrderedDict
 from typing import Dict, Any, Optional
 from microsoft_bonsai_api.simulator.client import BonsaiClientConfig, BonsaiClient
 from microsoft_bonsai_api.simulator.generated.models import (
@@ -16,9 +17,12 @@ import numpy as np
 Simulation environment for multi machine simulation environment. 
 
 '''
-from line_config import adj, con_balance, con_join
+from sim.line_config import adj, con_balance, con_join
+
+
 
 def get_machines_conveyors_sources_sets(adj):
+    adj = OrderedDict(sorted(adj.items()))
     conveyors = set()
     sources = set()
     sinks = set()
@@ -33,7 +37,7 @@ def get_machines_conveyors_sources_sets(adj):
             else:
                 pass 
 
-    return set(adj.keys()), conveyors, sources, sinks
+    return sorted(list(set(adj.keys()))), sorted(list(conveyors)), sorted(list(sources)), sorted(list(sinks))
             
 class General:
     machines, conveyors, sources, sinks = get_machines_conveyors_sources_sets(adj)
@@ -459,15 +463,15 @@ class DES(General):
                   'conveyor_buffers': conveyor_buffers,
                   'conveyor_buffers_full': conveyor_buffers_full,
                   'sink_machines_rate': sink_machines_rate,
+                  'sink_machines_rate_sum': sum(sink_machines_rate),
                   'conveyor_infeed_m1_prox_empty': conveyor_infeed_m1_prox_empty,
                   'conveyor_infeed_m2_prox_empty': conveyor_infeed_m2_prox_empty,
                   'conveyor_discharge_p1_prox_full': conveyor_discharge_p1_prox_full,
                   'conveyor_discharge_p2_prox_full': conveyor_discharge_p2_prox_full,        
         }
-                
+
         return states 
                 
-
 
 
 if __name__=="__main__":                             

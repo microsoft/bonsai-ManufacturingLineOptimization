@@ -3,7 +3,6 @@ using Number
 using Math
 
 
-
 type SimState {
     machines_speed: number[10], 
     conveyors_speed: number[9],

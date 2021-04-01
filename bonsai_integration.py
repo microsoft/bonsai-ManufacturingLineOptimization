@@ -31,7 +31,9 @@ import logging
 import datetime
 import os
 import pathlib
-from sim import manufacturing as MLS
+# import manufacturing line sim (MLS)
+from sim import manufacturing_env as MLS
+from sim.line_config import adj
 import simpy 
 
 
@@ -66,7 +68,6 @@ class TemplateSimulatorSession:
     ):
 
         self.simulator = MLS.DES(ENV)
-        self.number_of_drivers = self.simulator.number_of_drivers
         
         self._episode_count = 0
         
@@ -87,12 +88,13 @@ class TemplateSimulatorSession:
         Dict[str, float]
             Returns float of current values from the simulator
         """
-        self.simulator.get_states()
+        sim_states = self.simulator.get_states()
+        print(sim_states)
 
         if self.render:
             pass 
 
-        return sim_state
+        return sim_states
 
     def halted(self) -> bool:
         """Halt current episode. Note, this should only be called if the simulator has reached an unexpected state.
@@ -126,7 +128,7 @@ class TemplateSimulatorSession:
         action : Dict
             An action to take to modulate environment.
         """
-
+        print(action)
 
         self.simulator.step(brain_actions = action)
     
@@ -147,8 +149,6 @@ class TemplateSimulatorSession:
 
         ## Custom way to turn lists into strings for logging
         log_state = state.copy()
-        log_state['n_clusters_per_bin_array_10'] = str(state['n_clusters_per_bin_array_10'])
-        log_state['hist_array_10'] = str(state['hist_array_10'])
 
         log_state = add_prefixes(log_state, "state")
 
@@ -279,8 +279,8 @@ def test_policy(
     num_episodes: int = 2,
     num_iterations: int = 9,
     log_iterations: bool = False,
-    policy=random_policy,
-    policy_name: str="staff-plan",
+    policy= random_policy,
+    policy_name: str="test_policy",
     scenario_file: str="assess_config.json",
     exported_brain_url: str="http://localhost:5000"
 ):
