@@ -1,33 +1,86 @@
-# Project
+# train brain for an optimal control of a Manufacturing line 
 
-> This repo has been populated by an initial template to help get you started. Please
-> make sure to update the content to build a great experience for community-building.
+## Bussiness problem
+Train brain to control machine and conveyor speed of a manufacturing line for maximum throughput.
 
-As the maintainer of this project, please make a few updates:
+## Objectives
+Maximize production in a manufacturing line.  
 
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+|                        | Definition                                                   | Notes |
+| ---------------------- | ------------------------------------------------------------ | ----- |
+| Objective              | maximize product production     |   Example: For a can manufacturing line, the goal is to maximize can production                        |
+| Constraints            |   NA |
+| Observations           | Conveyors speed, machine speed, infeed and discharge proxes, line throughput | Proxes are sensors that yield a binary value. When product accumulates on the conveyor and covers the location of the prox sensor, its value becomes 1, otherwise it's value is zero  |
+| Actions                |  Machine and conveyor speed | Speeds are in cans/second units |
+| Control Frequency      | Fixed control frequency | User can specify control frequency inside the sim |
+| Episode configurations | currently fixed | TODO: will add various configs such as downtime events |
 
-## Contributing
+## Solution approach
 
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
+### Detailed overview of the solution 
 
-When you submit a pull request, a CLA bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
+### TODO
 
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
 
-## Trademarks
+## Brain experimental card 
 
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft 
-trademarks or logos is subject to and must follow 
-[Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
-Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
-Any use of third-party trademarks or logos are subject to those third-party's policies.
+|                        | Definition                                                   | Notes |
+| ---------------------- | ------------------------------------------------------------ | ----- |
+| State                  |       |
+| Terminal               |          |       |
+| Action                 |                   |       |
+| Reward or Goal         |       |     |
+| Episode configurations |                      |       |
+
+*note: Episode configurations are described more in the results section  
+
+
+
+## Results of brain training
+### Create a new brain on bonsai platfrom  
+Use machine_teacher.ink that employs the following example configuration:
+
+|   Episode configuration parameter                     | value                                                 | Notes |
+| ---------------------- | ------------------------------------------------------------ | ----- |
+|            |      |                        |
+
+
+### Dockerize Simulator for Scaling and add the sim package
+
+```
+docker build -t <IMAGE_NAME> -f Dockerfile .
+az acr login --subscription <SUBSCRIPTION_ID> --name <ACR_REGISTRY_NAME
+docker tag <IMAGE_NAME> <ACR_REGISTRY_NAME>.azurecr.io/bonsai/<IMAGE_NAME>
+docker push <ACR_REGSITRY_NAME>.azurecr.io/bonsai/<IMAGE_NAME>
+```
+Add the simulator in the Web UI. To scale with multiple simulators, one can select the simulation to scale in two ways:
+
+1) write `package "<SimName>"` in the simulator clause in inkling
+2) click the Train button and select the simulator
+   
+### Train Brain
+
+<img src="img/.PNG" alt="drawing" width="900"/>
+
+
+### Assess the results
+(see assessment section in the appendix for details of the process)
+
+#### Comparison with Benchmark 
+
+
+<img src="img/.PNG" alt="drawing" width="900"/>
+
+
+
+### Assessment
+
+You can use custom assessment found in `assess_configs/myConfig.json`. 
+
+
+TODO: Run the simulation with rendering using the following flag. If you add the `--test` flag, you will run using an exported brain with `http://localhost:5000`.
+
+```sh
+docker run -d -p 5000:5000 <acr_name>.azurecr.io/<workspace_id>/<brain_name>:<version>
+python bonsai_integration.py --render --test
+```

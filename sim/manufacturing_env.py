@@ -35,7 +35,6 @@ def get_machines_conveyors_sources_sets(adj):
 
     return set(adj.keys()), conveyors, sources, sinks
             
-
 class General:
     machines, conveyors, sources, sinks = get_machines_conveyors_sources_sets(adj)
     number_of_machines = len(machines)   # number of General machines
@@ -44,16 +43,15 @@ class General:
     machine_discharge_buffer = 100 # 
     conveyor_capacity = 1000  # in cans 
     num_conveyor_bins = 10  # every conveyor is divided into 10 sections. For approximation and connection purposes  
-    machine_min_speed = 10 # cans per second 
-    machine_max_speed = 100 # cans per second  
+    machine_min_speed = 10 # cans/second 
+    machine_max_speed = 100 # cans/second  
     conveyor_min_speed = 20
     conveyor_max_speed = 100
-    warmup_time = 100  # seconds(s) 
+    # warmup_time = 100  # seconds(s) 
     downtime_event_gen_mean = 10    # seconds(s), on average every 100s one machine goes down 
     downtime_duration_mean = 5  # seconds(s), on average each downtime event lasts for about 30s.  
-    control_frequency = 1  #  0: Control at generation of events, any other number indicates a fixed control frequency  
+    control_frequency = 1  # 0: Control at generation of events, any other number indicates a fixed control frequency  
 
- 
 class Machine(General):
     '''
     This class represents a General machine, i.e. its states and function   
@@ -159,7 +157,7 @@ class DES(General):
         print(f'components speed are\n:', self.components_speed)
         
     def _initialize_conveyor_buffers(self):
-    ## There is no input buffer for machine 1. We can safely assume that it is infinity 
+    ## There is no input buffer for machine 1. We can safely assume that it is infinite 
         # note -1: as number of conveyors are one less than total number of machines 
         id = 0 
         for conveyor in General.conveyors:
@@ -211,6 +209,7 @@ class DES(General):
     def downtime_generator(self):
         while not self.episode_end:
             yield self.env.timeout(General.downtime_duration_mean) 
+
             print(f'................ now a machine went down at {self.env.now} ...')
 
 
@@ -407,8 +406,10 @@ class DES(General):
         '''
         ## 1
         machines_speed = []
+        #machines_state = []
         for machine in General.machines:
             machines_speed.append(getattr(eval('self.'+ machine), 'speed'))
+            #machines_state.append(getattr(eval('self.'+ machine), 'state'))
 
         ## 2
         conveyors_speed = []
@@ -435,11 +436,11 @@ class DES(General):
                 buffer.append(getattr(getattr(self, conveyor), "bin"+ str(bin_num)))
                 buffer_full.append(int(getattr(getattr(self, conveyor), "bin"+ str(bin_num)) == bin_capacity))
             
-            conveyor_infeed_m1_prox_empty.append(int(getattr(getattr(self, conveyor), "bin"+ str(General.num_conveyor_bins-1))) == 0))
-            conveyor_infeed_m2_prox_empty.append(int(getattr(getattr(self, conveyor), "bin"+ str(General.num_conveyor_bins-2))) == 0))
+            conveyor_infeed_m1_prox_empty.append(int(getattr(getattr(self, conveyor), "bin"+ str(General.num_conveyor_bins-1))) == 0)
+            conveyor_infeed_m2_prox_empty.append(int(getattr(getattr(self, conveyor), "bin"+ str(General.num_conveyor_bins-2))) == 0)
 
-            conveyor_discharge_p1_prox_full.append(int(getattr(getattr(self, conveyor), "bin"+ str(0))) == bin_capacity))
-            conveyor_discharge_p2_prox_full.append(int(getattr(getattr(self, conveyor), "bin"+ str(1))) == bin_capacity))            
+            conveyor_discharge_p1_prox_full.append(int(getattr(getattr(self, conveyor), "bin"+ str(0))) == bin_capacity)
+            conveyor_discharge_p2_prox_full.append(int(getattr(getattr(self, conveyor), "bin"+ str(1))) == bin_capacity)            
 
             conveyor_buffers.append(buffer)
             conveyor_buffers_full.append(buffer_full)
@@ -467,7 +468,9 @@ if __name__=="__main__":
     while True:
         my_env.step(brain_actions = {'c0': 50, 'm0': 100, 'm1': 10} )
         #input('Press Enter to continue ...')    
-        machines_speed, conveyors_speed, conveyor_buffers, conveyor_buffers_full, sink_machines_rate = my_env.get_states()
+        machines_speed, conveyors_speed, conveyor_buffers, conveyor_buffers_full, sink_machines_rate,\
+            conveyor_infeed_m1_prox_empty, conveyor_infeed_m2_prox_empty, conveyor_discharge_p1_prox_full,\
+                conveyor_discharge_p2_prox_full = my_env.get_states()
         print(f'iteration is {iteration}')
         iteration += 1 
         if iteration ==100000:
