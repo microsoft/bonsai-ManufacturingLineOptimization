@@ -453,10 +453,20 @@ class DES(General):
             discharge = adj_conveyors[1]
             if 'sink' in discharge: 
                 sink_machines_rate.append(getattr(eval('self.'+ machine), 'speed'))
-        
-        return machines_speed, conveyors_speed, conveyor_buffers, conveyor_buffers_full, sink_machines_rate,\
-            conveyor_infeed_m1_prox_empty, conveyor_infeed_m2_prox_empty, conveyor_discharge_p1_prox_full,\
-                conveyor_discharge_p2_prox_full
+            
+        states = {'machines_speed': machines_speed,
+                  'conveyors_speed': conveyors_speed,
+                  'conveyor_buffers': conveyor_buffers,
+                  'conveyor_buffers_full': conveyor_buffers_full,
+                  'sink_machines_rate': sink_machines_rate,
+                  'conveyor_infeed_m1_prox_empty': conveyor_infeed_m1_prox_empty,
+                  'conveyor_infeed_m2_prox_empty': conveyor_infeed_m2_prox_empty,
+                  'conveyor_discharge_p1_prox_full': conveyor_discharge_p1_prox_full,
+                  'conveyor_discharge_p2_prox_full': conveyor_discharge_p2_prox_full,        
+        }
+                
+        return states 
+                
 
 
 
