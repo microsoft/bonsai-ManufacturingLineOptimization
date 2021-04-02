@@ -321,7 +321,7 @@ class DES(General):
                 setattr(eval('self.' + conveyor2),"bin"+ str(join_bin) , delta + bin_2_level)
                 setattr(eval('self.'+ conveyor1), "bin"+ str(join_bin) , bin_1_level - delta)
             
-            elif bin_2_level == bin_2_capacity and bin_1.level<bin_1.capacity:
+            elif bin_2_level == bin_2_capacity and bin_1_level<bin_1_capacity:
                 # do the opposite 
                 delta = min(getattr(eval('self.'+ conveyor2), 'speed')* General.control_frequency, bin_1_capacity-bin_1_level)
                 setattr(eval('self.' + conveyor1),"bin"+ str(join_bin) , delta + bin_1_level)
