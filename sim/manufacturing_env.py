@@ -361,7 +361,7 @@ class DES(General):
             if 'source' not in infeed: 
                 level = getattr(getattr(self, infeed), "bin"+ str(General.num_conveyor_bins-1))
                 if level ==0: 
-                    print(f'stopping machine {machine} as infeed prox is empty')
+                    print(f'stopping machine {machine} as infeed prox is empty, i.e the whole conveyor is empty')
                     setattr(eval('self.' + machine), "speed", 0)
                     print(eval('self.' + machine))
 
@@ -371,7 +371,7 @@ class DES(General):
                 capacity = getattr(getattr(self, discharge), "bins_capacity")
                  
                 if level== capacity:
-                        print(f'stopping machine {machine} as discharge prox is full')
+                        print(f'stopping machine {machine} as discharge prox is full, i.e. the whole conveyor is full')
                         setattr(eval('self.' + machine), "speed", 0)    
                         print(eval('self.' + machine))
    
