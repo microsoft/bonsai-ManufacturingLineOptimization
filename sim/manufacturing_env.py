@@ -20,7 +20,6 @@ Simulation environment for multi machine simulation environment.
 from sim.line_config import adj, con_balance, con_join
 
 
-
 def get_machines_conveyors_sources_sets(adj):
     adj = OrderedDict(sorted(adj.items()))
     conveyors = set()
@@ -322,7 +321,7 @@ class DES(General):
                 setattr(eval('self.' + conveyor2),"bin"+ str(join_bin) , delta + bin_2_level)
                 setattr(eval('self.'+ conveyor1), "bin"+ str(join_bin) , bin_1_level - delta)
             
-            elif bin_2.level == bin_2.capacity and bin_1.level<bin_1.capacity:
+            elif bin_2_level == bin_2_capacity and bin_1.level<bin_1.capacity:
                 # do the opposite 
                 delta = min(getattr(eval('self.'+ conveyor2), 'speed')* General.control_frequency, bin_1_capacity-bin_1_level)
                 setattr(eval('self.' + conveyor1),"bin"+ str(join_bin) , delta + bin_1_level)
@@ -410,10 +409,18 @@ class DES(General):
         '''
         ## 1
         machines_speed = []
-        #machines_state = []
+        machines_state = []
         for machine in General.machines:
             machines_speed.append(getattr(eval('self.'+ machine), 'speed'))
-            #machines_state.append(getattr(eval('self.'+ machine), 'state'))
+            state = getattr(eval('self.'+ machine), 'state')
+            ## Bonsai platform can only handle numerical values
+            ## Assigning integer values to the states  
+            if state == 'active':
+                machines_state.append(1)
+            elif state == 'idle':
+                machines_state.append(0)
+            elif state =='down':
+                machines_state.append(-1)
 
         ## 2
         conveyors_speed = []
@@ -459,6 +466,8 @@ class DES(General):
                 sink_machines_rate.append(getattr(eval('self.'+ machine), 'speed'))
             
         states = {'machines_speed': machines_speed,
+                  'machines_state': machines_state,
+                  'machines_state_sum': sum(machines_state),
                   'conveyors_speed': conveyors_speed,
                   'conveyor_buffers': conveyor_buffers,
                   'conveyor_buffers_full': conveyor_buffers_full,

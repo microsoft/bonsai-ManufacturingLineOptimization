@@ -5,8 +5,10 @@ using Math
 
 type SimState {
     machines_speed: number[10], 
+    machines_state: number[10],
+    machines_state_sum: number,
     conveyors_speed: number[9],
-    sink_machines_rate: number,
+    sink_machines_rate_sum: number,
     conveyor_infeed_m1_prox_empty: number[9],
     conveyor_infeed_m2_prox_empty: number[9],
     conveyor_discharge_p1_prox_full: number[9],
@@ -16,8 +18,9 @@ type SimState {
 
 type ObservationState{
     machines_speed: number[10], 
+    machines_state: number[10],
     conveyors_speed: number[9],
-    sink_machines_rate: number,
+    sink_machines_rate_sum: number,
     conveyor_infeed_m1_prox_empty: number[9],
     conveyor_infeed_m2_prox_empty: number[9],
     conveyor_discharge_p1_prox_full: number[9],
@@ -36,17 +39,16 @@ type SimConfig {
     None: number
 }
 
-# function Terminal(sim_observation:SimState){
-#     return sim_observation.impossible_to_all_drops<0.85
-# }
+
 function Reward(sim_observation: SimState){
-    return sim_observation.sink_machines_rate
+    return sim_observation.sink_machines_rate_sum
 }
 
 # irrelevant 
-# function Terminal(sim_obervation: SimState){
-#     return sim_obervation.sim_terminal
-# }
+function Terminal(sim_obervation: SimState){
+    # terminal condition if more than two machine is down or more than 3 machines in idle mode 
+    return sim_obervation.machines_state_sum <7
+}
 
 simulator Simulator(action: SimAction, config: SimConfig): SimState {
     #package "PlannerTunnerDelta5"
@@ -67,6 +69,7 @@ graph (input: ObservationState): SimAction {
             }
             source Simulator
             reward Reward
+            
 
             lesson `learn 1` {
                 scenario {
@@ -76,6 +79,4 @@ graph (input: ObservationState): SimAction {
         }
     }
     output optimize 
-}
-
-    
+}   
