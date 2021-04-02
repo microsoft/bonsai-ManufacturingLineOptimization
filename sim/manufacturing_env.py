@@ -28,7 +28,7 @@ def get_machines_conveyors_sources_sets(adj):
     sinks = set()
     for key in list(adj.keys()):
         for element in adj[key]:
-            if ("source" or "sink") not in element:
+            if ("source" not in element) and ("sink" not in element):
                 conveyors.add(element)
             elif "source" in element:
                 sources.add(element)
@@ -49,7 +49,7 @@ class General:
     num_conveyor_bins = 10  # every conveyor is divided into 10 sections. For approximation and connection purposes  
     machine_min_speed = 10 # cans/second 
     machine_max_speed = 100 # cans/second  
-    conveyor_min_speed = 20
+    conveyor_min_speed = 10
     conveyor_max_speed = 100
     # warmup_time = 100  # seconds(s) 
     downtime_event_gen_mean = 10    # seconds(s), on average every 100s one machine goes down 
@@ -141,7 +141,7 @@ class Conveyor(General):
             raise ValueError('state must be one of the following prime, idle, active, down')
         self._state = state
         if state == 'down' or state == 'idle':
-            self.speed = 0
+            self._speed = 0
 
     ## need to implement a setter and getter 
     def __repr__(self):

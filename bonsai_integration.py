@@ -33,9 +33,11 @@ import os
 import pathlib
 # import manufacturing line sim (MLS)
 from sim import manufacturing_env as MLS
+# import adj dict to match actions 
 from sim.line_config import adj
 import simpy 
 
+MACHINES, CONVEYORS, _, _ = MLS.get_machines_conveyors_sources_sets(adj)
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 LOG_PATH = "logs"
@@ -117,8 +119,10 @@ class TemplateSimulatorSession:
 
 
 
-        # Re-intializing the simulator 
+        # Re-intializing the simulator to make sure all the processes are killed. 
         self.simulator = MLS.DES(ENV)
+        # Reset the simulator to create new processes 
+        self.simulator.reset()
 
     def episode_step(self, action: Dict):
         """Step through the environment for a single iteration.
@@ -128,9 +132,25 @@ class TemplateSimulatorSession:
         action : Dict
             An action to take to modulate environment.
         """
-        print(action)
+        print('brain action arrays is :\n', action)
+        machines_speed_list = action['machines_speed']
+        conveyors_speed_list = action['conveyors_speed']
 
-        self.simulator.step(brain_actions = action)
+        # take speed arrays and assign them into sim_action dictionary
+        sim_action = {}
+        index = 0 
+        print(MACHINES)
+        print(CONVEYORS)
+        for machine in MACHINES:
+            sim_action[machine] = machines_speed_list[index]
+            index += 1 
+        
+        index = 0 
+        for conveyor in CONVEYORS:
+            sim_action[conveyor] = conveyors_speed_list[index]
+            index += 1 
+        print('sim action is:\n', sim_action)
+        self.simulator.step(brain_actions = sim_action)
     
     def log_iterations(self, state, action, episode: int = 0, iteration: int = 1):
         """Log iterations during training to a CSV.
@@ -265,13 +285,13 @@ def main(render=False):
             session_id=registered_session.session_id
         )
         print("Unregistered simulator.")
-    except Exception as err:
-        # Gracefully unregister for any other exceptions
-        client.session.delete(
-            workspace_name=config_client.workspace, 
-            session_id=registered_session.session_id
-        )
-        print("Unregistered simulator because: {}".format(err))
+    # except Exception as err:
+    #     # Gracefully unregister for any other exceptions
+    #     client.session.delete(
+    #         workspace_name=config_client.workspace, 
+    #         session_id=registered_session.session_id
+    #     )
+    #     print("Unregistered simulator because: {}".format(err))
 
 # Manual test policy loop
 def test_policy(
