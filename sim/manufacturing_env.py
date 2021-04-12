@@ -217,13 +217,12 @@ class DES(General):
         while True:
             # randomly pick a machine
             random_machine = random.choice(list(General.machines))
-            print(f'................ now machine {random_machine} went down at {self.env.now} ...')
-            #yield self.env.timeout(General.downtime_duration_mean) 
             self.is_control_event = 1 
+            print(f'................ now machine {random_machine} goes down at {self.env.now} and event requires control: {self.is_control_event}...')
+            #yield self.env.timeout(General.downtime_duration_mean) 
             yield self.env.timeout(5)
-            print(f'................ now machine {random_machine} is active at {self.env.now} ...')
-
             self.is_control_event = 0 
+            print(f'................ now machine {random_machine} is up at {self.env.now} and event requires control: {self.is_control_event}...')
             print(f'................ let machines run for 15s')
             yield self.env.timeout(15)
 
@@ -235,15 +234,14 @@ class DES(General):
         while True:
             # randomly pick a machine
             random_machine = random.choice(list(General.machines))
-            print(f'................ now machine {random_machine} went down at {self.env.now} ...')
-            #yield self.env.timeout(General.downtime_duration_mean) 
             self.is_control_event = 1 
+            print(f'................ now machine {random_machine} goes down at {self.env.now} and event requires control: {self.is_control_event}...')
+            #yield self.env.timeout(General.downtime_duration_mean) 
             yield self.env.timeout(9)
-            print(f'................ now machine {random_machine} is active at {self.env.now} ...')
-
             self.is_control_event = 0 
+            print(f'................ now machine {random_machine} is up at {self.env.now} and event requires control: {self.is_control_event}...')
             print(f'................ let machines run for 15s')
-            yield self.env.timeout(100)
+            yield self.env.timeout(7)
             
 
     def update_line(self):
@@ -434,8 +432,11 @@ class DES(General):
         self.update_line()
         
         print('Simulation time at step:', self.env.now) 
-        # wait for next event to happen
+        
+        # step through the controllable event
+        self.env.step()
 
+        # Step through other events until a controllable event occurs. 
         while self.is_control_event==0:
             # step through events until a control event, such as downtime, occurs
             # Some events such as time laps are not control events and are excluded by the flag 
