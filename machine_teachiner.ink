@@ -30,8 +30,8 @@ type ObservationState{
 
 # multiarm bandit actions. 
 type SimAction{
-    machines_speed: number<0,10,20,30,100,>[10],
-    conveyors_speed: number<0,10,20,30,100,>[9]
+    machines_speed: number<0,25, 50, 75, 100,>[10],
+    conveyors_speed: number<0,25,50, 75, 100,>[9]
 }
 
 
@@ -41,7 +41,7 @@ type SimConfig {
 
 
 function Reward(sim_observation: SimState){
-    return sim_observation.sink_machines_rate_sum
+    return (sim_observation.sink_machines_rate_sum)/200
 }
 
 # irrelevant 
@@ -51,7 +51,7 @@ function Terminal(sim_obervation: SimState){
 }
 
 simulator Simulator(action: SimAction, config: SimConfig): SimState {
-    #package "PlannerTunnerDelta5"
+    #package "mls0402"
 }
 
 graph (input: ObservationState): SimAction {
@@ -59,7 +59,7 @@ graph (input: ObservationState): SimAction {
     concept optimize(input): SimAction {
         curriculum {
             algorithm {
-                Algorithm: "PPO",
+                Algorithm: "SAC",
                 #BatchSize: 8000,
                 #PolicyLearningRate: 0.001
             }
@@ -69,7 +69,7 @@ graph (input: ObservationState): SimAction {
             }
             source Simulator
             reward Reward
-            
+            terminal Terminal
 
             lesson `learn 1` {
                 scenario {
