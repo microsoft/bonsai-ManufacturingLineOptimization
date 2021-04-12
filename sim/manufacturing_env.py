@@ -1,8 +1,7 @@
 import json 
 import os
 import time 
-import json
-import time
+import random 
 from collections import OrderedDict
 from typing import Dict, Any, Optional
 from microsoft_bonsai_api.simulator.client import BonsaiClientConfig, BonsaiClient
@@ -17,7 +16,7 @@ import numpy as np
 Simulation environment for multi machine simulation environment. 
 
 '''
-from sim.line_config import adj, con_balance, con_join
+from line_config import adj, con_balance, con_join
 
 
 def get_machines_conveyors_sources_sets(adj):
@@ -53,7 +52,8 @@ class General:
     # warmup_time = 100  # seconds(s) 
     downtime_event_gen_mean = 10    # seconds(s), on average every 100s one machine goes down 
     downtime_duration_mean = 5  # seconds(s), on average each downtime event lasts for about 30s.  
-    control_frequency = 1  # 0: Control at generation of events, any other number indicates a fixed control frequency  
+    control_frequency = 1  # 0: Control at generation of events, any other number indicates a fixed control frequency
+    control_type = 1 # 0: control at fixed time frequency 1: event driven, i.e. when a downtime occurs   
 
 class Machine(General):
     '''
@@ -78,11 +78,15 @@ class Machine(General):
     @speed.setter
     def speed(self, value):
         if not (self.min_speed <= value <= self.max_speed or value == 0):
-            raise ValueError('speed must be 0 or between 10 and 100')
-        self._speed = value 
-        if value == 0 and self.state != "down":
+            raise ValueError(f'speed must be 0 or between {self.min_speed} and {self.max_speed}')
+        if self.state == "down":
+            self._speed = 0
+            print('Illegal action: machine is down, machine speed will be kept zero')
+        elif value == 0 and self.state != "down":
             self.state = "idle"
-        if value > 0:
+            self._speed = value 
+        elif  value > 0:
+            self._speed = value 
             self.state = "active"
 
     @state.setter
@@ -127,11 +131,15 @@ class Conveyor(General):
     @speed.setter
     def speed(self, value):
         if not (self.min_speed <= value <= self.max_speed or value == 0):
-            raise ValueError('speed must be 0 or between 10 and 100')
-        self._speed = value 
-        if value == 0 and self.state != "down":
+            raise ValueError(f'speed must be 0 or between {self.min_speed} and {self.max_speed}')
+        if self.state == "down":
+            self._speed = 0
+            print('Illegal action: machine is down, machine speed will be kept zero')
+        elif value == 0 and self.state != "down":
             self.state = "idle"
-        if value > 0:
+            self._speed = value 
+        elif  value > 0:
+            self._speed = value 
             self.state = "active"
 
     @state.setter
@@ -147,7 +155,6 @@ class Conveyor(General):
         return (f'Conveyor with id of {self.id}\
             runs at speed of {self.speed} and is in {self.state} mode')
 
-
 class DES(General):
     def __init__(self,env):
         super().__init__()
@@ -156,6 +163,8 @@ class DES(General):
         self._initialize_conveyor_buffers()
         self._initialize_machines()
         self.episode_end = False 
+        # a flag to identify events that require control 
+        self.is_control_event = 0 
 
         print(f'components speed are\n:', self.components_speed)
         
@@ -179,16 +188,63 @@ class DES(General):
             id += 1 
 
     def processes_generator(self):  
-        print('started can processing. All machines working ')
-        #self.env.process(self.downtime_generator())
-        self.env.process(self.control_frequency_update())  # aims to update machine speed at defined control freq
-        #self.env.process(self.event_driven_update())  # aims to update machine speed at when events occur 
-    
+        print('Started can processing ... ')
+        if General.control_type == 0:
+            self.env.process(self.control_frequency_update())  # aims to update machine speed at defined control freq
+        elif General.control_type == 1:
+            #self.env.process(self.event_driven_update()) 
+            self.env.process(self.downtime_generator1())
+            self.env.process(self.downtime_generator2())
+        else:
+            raise ValueError(f"Only two modes are currently available: fixed control frequency (0) or event driven (1)")
+        
     def control_frequency_update(self):
         while True: 
             yield self.env.timeout(General.control_frequency)
             print('-------------------------------------------')
             print(f'control freq event at {self.env.now} s ...')
+
+    # def event_driven_update(self):
+    #     '''
+    #     Events such as downtimes need to be defined seperately as separate functions and called here. 
+    #     One may consider downtime generation for each machine as separate function 
+    #     '''
+         
+    def downtime_generator1(self):
+        '''
+        Paramters used in General will be used to generate downtime events. 
+        '''
+        while True:
+            # randomly pick a machine
+            random_machine = random.choice(list(General.machines))
+            print(f'................ now machine {random_machine} went down at {self.env.now} ...')
+            #yield self.env.timeout(General.downtime_duration_mean) 
+            self.is_control_event = 1 
+            yield self.env.timeout(5)
+            print(f'................ now machine {random_machine} is active at {self.env.now} ...')
+
+            self.is_control_event = 0 
+            print(f'................ let machines run for 15s')
+            yield self.env.timeout(15)
+
+
+    def downtime_generator2(self):
+        '''
+        Paramters used in General will be used to generate downtime events. 
+        '''
+        while True:
+            # randomly pick a machine
+            random_machine = random.choice(list(General.machines))
+            print(f'................ now machine {random_machine} went down at {self.env.now} ...')
+            #yield self.env.timeout(General.downtime_duration_mean) 
+            self.is_control_event = 1 
+            yield self.env.timeout(9)
+            print(f'................ now machine {random_machine} is active at {self.env.now} ...')
+
+            self.is_control_event = 0 
+            print(f'................ let machines run for 15s')
+            yield self.env.timeout(100)
+            
 
     def update_line(self):
         # using brain actions 
@@ -202,18 +258,6 @@ class DES(General):
         self.update_machine_adjacent_buffers()
         self.update_conveyors_buffers()
         self.update_conveyor_junctions()
-
-    def event_driven_update(self):
-        '''
-        to be completed 
-        '''
-        pass
-    
-    def downtime_generator(self):
-        while not self.episode_end:
-            yield self.env.timeout(General.downtime_duration_mean) 
-
-            print(f'................ now a machine went down at {self.env.now} ...')
 
 
     def update_machines_speed(self):
@@ -391,12 +435,13 @@ class DES(General):
         
         print('Simulation time at step:', self.env.now) 
         # wait for next event to happen
-        self.env.step()
-        #self.env.run(self.env.event())
+
+        while self.is_control_event==0:
+            # step through events until a control event, such as downtime, occurs
+            # Some events such as time laps are not control events and are excluded by the flag 
+            self.env.step()
         
-        #self.env.run(until=2000)
-    # def end_episode(self):
-    #     self.episode_end = True
+
 
     def get_states(self):
         '''
@@ -405,7 +450,7 @@ class DES(General):
         (2) conveyor speed, an array indicating speed of all the conveyors 
         (3) proxes, amount of can accumulations in each bin (Note: Not available in real world )
         (4) if proxes are full (two proxes before and two proxes after each machine is available in real world)
-        (5) throughput, i.e. the production rate from sink, i.e the speed of the last machine (will be used as reward)
+        (5) Throughput, i.e. the production rate from sink, i.e the speed of the last machine (will be used as reward)
         '''
         ## 1
         machines_speed = []
@@ -491,9 +536,7 @@ if __name__=="__main__":
     while True:
         my_env.step(brain_actions = {'c0': 50, 'm0': 100, 'm1': 10} )
         #input('Press Enter to continue ...')    
-        machines_speed, conveyors_speed, conveyor_buffers, conveyor_buffers_full, sink_machines_rate,\
-            conveyor_infeed_m1_prox_empty, conveyor_infeed_m2_prox_empty, conveyor_discharge_p1_prox_full,\
-                conveyor_discharge_p2_prox_full = my_env.get_states()
+        states = my_env.get_states()
         print(f'iteration is {iteration}')
         iteration += 1 
         if iteration ==100000:
