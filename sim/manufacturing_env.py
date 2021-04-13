@@ -13,8 +13,7 @@ import simpy
 import numpy as np 
 
 '''
-Simulation environment for multi machine simulation environment. 
-
+Simulation environment for multi machine manufacturing line. 
 '''
 from line_config import adj, con_balance, con_join
 
@@ -426,7 +425,7 @@ class DES(General):
                         print(eval('self.' + machine))
    
 
-    def check_illegal_actions():
+    def check_illegal_actions(self):
         '''
         We will compare brain action (component action) with actual speed. If different then brain action was illegal. 
         '''
@@ -435,11 +434,11 @@ class DES(General):
 
         for machine in General.machines:
             speed = getattr(eval('self.' + machine),'speed')
-            illegal_machine_actions.append(int(speed == self.components_speed[machine]))
+            illegal_machine_actions.append(int(speed != self.components_speed[machine]))
 
         for conveyor in General.conveyors:
             speed = getattr(eval('self.' + conveyor),'speed')
-            illegal_conveyor_actions.append(int(speed == self.components_speed[conveyor]))
+            illegal_conveyor_actions.append(int(speed != self.components_speed[conveyor]))
 
         return illegal_machine_actions, illegal_conveyor_actions
         
@@ -510,7 +509,7 @@ class DES(General):
         conveyors_state = []
         for conveyor in General.conveyors:
             conveyors_speed.append(getattr(eval('self.' + conveyor),'speed'))
-            conveyor_state.append(getattr(eval('self.' + conveyor),'state'))
+            conveyors_state.append(getattr(eval('self.' + conveyor),'state'))
 
         ## 3,4
         conveyor_buffers = []
@@ -554,7 +553,6 @@ class DES(General):
 
         illegal_machine_actions, illegal_conveyor_actions = self.check_illegal_actions()
 
-
         ## downtime remaining time: 7 
 
 
@@ -563,7 +561,7 @@ class DES(General):
                   'machines_state': machines_state,
                   'machines_state_sum': sum(machines_state),
                   'conveyors_speed': conveyors_speed,
-                  'conveyor_state': conveyor_state, 
+                  'conveyors_state': conveyors_state, 
                   'conveyor_buffers': conveyor_buffers,
                   'conveyor_buffers_full': conveyor_buffers_full,
                   'sink_machines_rate': sink_machines_rate,
