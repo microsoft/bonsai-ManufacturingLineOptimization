@@ -2,7 +2,7 @@ import json
 import os
 import time 
 import random 
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from typing import Dict, Any, Optional
 from microsoft_bonsai_api.simulator.client import BonsaiClientConfig, BonsaiClient
 from microsoft_bonsai_api.simulator.generated.models import (
@@ -50,8 +50,9 @@ class General:
     conveyor_min_speed = 10
     conveyor_max_speed = 100
     # warmup_time = 100  # seconds(s) 
-    downtime_event_gen_mean = 10    # seconds(s), on average every 100s one machine goes down 
-    downtime_duration_mean = 5  # seconds(s), on average each downtime event lasts for about 30s.  
+    # downtime_event_prob = 0.1 # probability applied every "downtime-even_gen_mean" to create downtime on a random machine 
+    downtime_event_gen_mean = 100  # seconds(s), on average "downtime_event_gen_mean" s a random machine may go down using the proability above 
+    downtime_duration_mean = 30  # seconds(s), on average each downtime event lasts.   
     control_frequency = 1  # 0: Control at generation of events, any other number indicates a fixed control frequency
     control_type = 1 # 0: control at fixed time frequency 1: event driven, i.e. when a downtime occurs   
 
@@ -67,6 +68,7 @@ class Machine(General):
         self.id = id 
         self._speed = speed 
         self._state = 'idle' if speed == 0 else 'active'
+        # keep track of the down time event times.  
 
     @property
     def speed(self):
@@ -164,7 +166,9 @@ class DES(General):
         self._initialize_machines()
         self.episode_end = False 
         # a flag to identify events that require control 
-        self.is_control_event = 0 
+        self.is_control_downtime_event = 0 
+        self.is_control_frequency_event = 0 
+        self.downtime_event_times_history = deque(maxlen=10) 
 
         print(f'components speed are\n:', self.components_speed)
         
@@ -193,8 +197,8 @@ class DES(General):
             self.env.process(self.control_frequency_update())  # aims to update machine speed at defined control freq
         elif General.control_type == 1:
             #self.env.process(self.event_driven_update()) 
-            self.env.process(self.downtime_generator1())
-            self.env.process(self.downtime_generator2())
+            self.env.process(self.downtime_generator())
+            self.env.process(self.downtime_generator())
         else:
             raise ValueError(f"Only two modes are currently available: fixed control frequency (0) or event driven (1)")
         
@@ -210,40 +214,24 @@ class DES(General):
     #     One may consider downtime generation for each machine as separate function 
     #     '''
          
-    def downtime_generator1(self):
+    def downtime_generator(self):
         '''
-        Paramters used in General will be used to generate downtime events. 
+        Paramters used in General will be used to generate downtime events on a random machine. 
         '''
         while True:
             # randomly pick a machine
             random_machine = random.choice(list(General.machines))
-            self.is_control_event = 1 
+            self.is_control_downtime_event = 1 
             print(f'................ now machine {random_machine} goes down at {self.env.now} and event requires control: {self.is_control_event}...')
-            #yield self.env.timeout(General.downtime_duration_mean) 
+            setattr(eval('self.' + random_machine),'state', 'down')
             yield self.env.timeout(5)
-            self.is_control_event = 0 
+            setattr(eval('self.' + random_machine),'state', 'idle')
             print(f'................ now machine {random_machine} is up at {self.env.now} and event requires control: {self.is_control_event}...')
-            print(f'................ let machines run for 15s')
+            print(f'................ let machines run for a given period of time without any downtime event')
+            self.is_control_downtime_event = 0
             yield self.env.timeout(15)
 
-
-    def downtime_generator2(self):
-        '''
-        Paramters used in General will be used to generate downtime events. 
-        '''
-        while True:
-            # randomly pick a machine
-            random_machine = random.choice(list(General.machines))
-            self.is_control_event = 1 
-            print(f'................ now machine {random_machine} goes down at {self.env.now} and event requires control: {self.is_control_event}...')
-            #yield self.env.timeout(General.downtime_duration_mean) 
-            yield self.env.timeout(9)
-            self.is_control_event = 0 
-            print(f'................ now machine {random_machine} is up at {self.env.now} and event requires control: {self.is_control_event}...')
-            print(f'................ let machines run for 15s')
-            yield self.env.timeout(7)
             
-
     def update_line(self):
         # using brain actions 
         self.update_machines_speed()
@@ -257,12 +245,31 @@ class DES(General):
         self.update_conveyors_buffers()
         self.update_conveyor_junctions()
 
+    def add_event_time():
+        '''
+        Once called, will add current simulation time. 
+        It will be used to track the occurrence time of downtime events
+        '''
+        self.downtime_event_times_history.append(self.env.now)
+
+    def intra_event_delta_time():
+        '''
+        The goal is to keep track of time lapsed between events. 
+        potential use: (1) calculate remaining downtime (2) for reward normalization 
+        '''
+        return self.downtime_event_times_history[-1] - self.downtime_event_times_history[-2]
+
+    def update_remaining_downtime():
+        '''
+        To inform brain about the remaining downtime time for each machine  
+        '''
+        delta_t = self.intra_event_delta_time()
+
 
     def update_machines_speed(self):
         '''
         update the speed of the machine using brain actions that has written in components_speed[machine] dictionary
         '''  
-        #####todo: add brain actions 
         for machine in General.machines:
             #print(f'now at {self.env.now} s updating mechine speed')
             updated_speed = self.components_speed[machine]
@@ -273,7 +280,6 @@ class DES(General):
         '''
         update the speed of the conveyors using brain actions that has written in components_speed[machine] dictionary
         ''' 
-        #####todo: add brain actions 
         for conveyor in General.conveyors:
             #print(f'now at {self.env.now} s updating conveyor speed')
             updated_speed = self.components_speed[conveyor]
