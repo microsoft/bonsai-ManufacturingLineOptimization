@@ -428,8 +428,20 @@ class DES(General):
 
     def check_illegal_actions():
         '''
-        We will compare brain action with the actual speed. If different then brain action was illegal. 
+        We will compare brain action (component action) with actual speed. If different then brain action was illegal. 
         '''
+        illegal_machine_actions = []
+        illegal_conveyor_actions = []
+
+        for machine in General.machines:
+            speed = getattr(eval('self.' + machine),'speed')
+            illegal_machine_actions.append(int(speed == self.components_speed[machine]))
+
+        for conveyor in General.conveyors:
+            speed = getattr(eval('self.' + conveyor),'speed')
+            illegal_conveyor_actions.append(int(speed == self.components_speed[conveyor]))
+
+        return illegal_machine_actions, illegal_conveyor_actions
         
 
     def reset(self):
@@ -540,7 +552,7 @@ class DES(General):
 
         ## illegal actions: 6
 
-
+        illegal_machine_actions, illegal_conveyor_actions = self.check_illegal_actions()
 
 
         ## downtime remaining time: 7 
@@ -551,6 +563,7 @@ class DES(General):
                   'machines_state': machines_state,
                   'machines_state_sum': sum(machines_state),
                   'conveyors_speed': conveyors_speed,
+                  'conveyor_state': conveyor_state, 
                   'conveyor_buffers': conveyor_buffers,
                   'conveyor_buffers_full': conveyor_buffers_full,
                   'sink_machines_rate': sink_machines_rate,
@@ -558,7 +571,9 @@ class DES(General):
                   'conveyor_infeed_m1_prox_empty': conveyor_infeed_m1_prox_empty,
                   'conveyor_infeed_m2_prox_empty': conveyor_infeed_m2_prox_empty,
                   'conveyor_discharge_p1_prox_full': conveyor_discharge_p1_prox_full,
-                  'conveyor_discharge_p2_prox_full': conveyor_discharge_p2_prox_full,        
+                  'conveyor_discharge_p2_prox_full': conveyor_discharge_p2_prox_full, 
+                  'illegal_machine_actions': illegal_machine_actions,
+                  'illegal_conveyor_actions': illegal_conveyor_actions,       
         }
 
         return states 
