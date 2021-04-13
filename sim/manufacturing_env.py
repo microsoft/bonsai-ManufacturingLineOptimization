@@ -204,7 +204,11 @@ class DES(General):
         
     def control_frequency_update(self):
         while True: 
+            ## define event type as control frequency event a ahead of the event 
+            self.is_control_frequency_event = 1 
             yield self.env.timeout(General.control_frequency)
+            ## change the flag to zero, in case other events occur.  
+            self.is_control_frequency_event = 0 
             print('-------------------------------------------')
             print(f'control freq event at {self.env.now} s ...')
 
@@ -442,11 +446,20 @@ class DES(General):
         # step through the controllable event
         self.env.step()
 
-        # Step through other events until a controllable event occurs. 
-        while self.is_control_event==0:
-            # step through events until a control event, such as downtime, occurs
-            # Some events such as time laps are not control events and are excluded by the flag 
-            self.env.step()
+        if self.control_type == 0:
+            ## control at fixed frequency 
+            while self.is_control_frequency_event = 0:
+                self.env.step()
+
+        elif self.control_type == 1: 
+            ## control when downtime events occur
+            # Step through other events until a controllable event occurs. 
+            while self.is_control_downtime_event = 0:
+                # step through events until a control event, such as downtime, occurs
+                # Some events such as time laps are not control events and are excluded by the flag 
+                self.env.step()
+        else:
+            raise ValueError(f'unknown control type: {self.control_type}')
         
 
 
