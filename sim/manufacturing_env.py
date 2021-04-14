@@ -17,6 +17,7 @@ Simulation environment for multi machine manufacturing line.
 '''
 from line_config import adj, con_balance, con_join
 
+random.seed(10)
 
 def get_machines_conveyors_sources_sets(adj):
     adj = OrderedDict(sorted(adj.items()))
@@ -50,10 +51,14 @@ class General:
     conveyor_max_speed = 100
     # warmup_time = 100  # seconds(s) 
     # downtime_event_prob = 0.1 # probability applied every "downtime-even_gen_mean" to create downtime on a random machine 
-    downtime_event_gen_mean = 100  # seconds(s), on average "downtime_event_gen_mean" s a random machine may go down using the proability above 
-    downtime_duration_mean = 30  # seconds(s), on average each downtime event lasts.   
-    control_frequency = 1  # 0: Control at generation of events, any other number indicates a fixed control frequency
-    control_type = 1 # 0: control at fixed time frequency 1: event driven, i.e. when a downtime occurs, 2: both at fixed control frequency and downtime  
+    inter_downtime_event_mean = 100  # seconds (s) average time between random downtime events  
+    inter_downtime_event_dev = 20 # deviation, a random inter_downtime_event is generated in range [inter_downtime_event_mean - inter_downtime_event_dev, inter_downtime_event_mean - inter_downtime_event_dev]
+    downtime_event_duration_mean = 10  # seconds(s), mean duration of each downtime event 
+    downtime_event_duration_dev = 3  # seconds(s), deviation from mean. [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean - downtime_event_duration_std]   
+    control_frequency = 1  # fixed control frequency duration
+    ## control type: -1: control at fixed time frequency but no downtime event 0: control at fixed time frequency 
+    ## control type: 1: event driven, i.e. when a downtime occurs, 2: both at fixed control frequency and downtime  
+    control_type = 1 
 
 class Machine(General):
     '''
@@ -191,15 +196,19 @@ class DES(General):
 
     def processes_generator(self):  
         print('Started can processing ... ')
+        if General.control_type == -1: 
+            # no downtime event used for brain training for steady state 
+            self.env.process(self.control_frequency_update())
         if General.control_type == 0:
-            self.env.process(self.control_frequency_update())  
+            self.env.process(self.control_frequency_update())
+            self.env.process(self.downtime_generator())
         elif General.control_type == 1:
             self.env.process(self.downtime_generator())
-            self.env.process(self.downtime_generator())
+            #self.env.process(self.downtime_generator())
         elif General.control_type ==2:
             self.env.process(self.control_frequency_update()) 
             self.env.process(self.downtime_generator())
-            self.env.process(self.downtime_generator()) 
+            #self.env.process(self.downtime_generator()) 
         else:
             raise ValueError(f"Only three modes are currently available: fixed control frequency (0) or event driven (1), both (2)")
         
@@ -225,12 +234,18 @@ class DES(General):
             self.is_control_frequency_event = 0 
             print(f'................ now machine {random_machine} goes down at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
             setattr(eval('self.' + random_machine),'state', 'down')
-            yield self.env.timeout(5)
+            # track current downtime event for the specific machine 
+            random_downtime_duration = random.randint(self.downtime_event_duration_mean-self.downtime_event_duration_dev,
+                                        self.downtime_event_duration_mean +self.downtime_event_duration_dev )
+            self.add_event_time(random_machine, random_downtime_duration)
+            yield self.env.timeout(random_downtime_duration)
             setattr(eval('self.' + random_machine),'state', 'idle')
             print(f'................ now machine {random_machine} is up at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
             print(f'................ let machines run for a given period of time without any downtime event')
             self.is_control_downtime_event = 0
-            yield self.env.timeout(15)
+            intra_downtime_event_duration = random.randint(self.inter_downtime_event_mean + self.inter_downtime_event_dev,
+                            self.inter_downtime_event_mean + self.inter_downtime_event_dev)
+            yield self.env.timeout(intra_downtime_event_duration)
 
             
     def update_line(self):
@@ -246,7 +261,7 @@ class DES(General):
         self.update_conveyors_buffers()
         self.update_conveyor_junctions()
 
-    def add_event_time():
+    def add_event_time(self, random_machine, random_downtime_duration):
         '''
         Once called, will add current simulation time. 
         It will be used to track the occurrence time of downtime events
@@ -461,8 +476,8 @@ class DES(General):
         # step through the controllable event
         self.env.step()
 
-        if self.control_type == 0:
-            ## control at fixed frequency 
+        if self.control_type == 0 or self.control_type == -1:
+            ## control at fixed frequency. -1 for no-downtime event 
             while self.is_control_frequency_event == 0:
                 self.env.step()
 
@@ -553,8 +568,10 @@ class DES(General):
 
         illegal_machine_actions, illegal_conveyor_actions = self.check_illegal_actions()
 
-        ## downtime remaining time: 7 
 
+        ## downtime remaining time: 7 
+        
+        
 
             
         states = {'machines_speed': machines_speed,
