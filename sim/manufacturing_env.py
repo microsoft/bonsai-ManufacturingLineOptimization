@@ -172,6 +172,7 @@ class DES(General):
         self.is_control_downtime_event = 0 
         self.is_control_frequency_event = 0 
         self.downtime_event_times_history = deque(maxlen=10) 
+        self._initialize_downtime_tracker()
 
         print(f'components speed are\n:', self.components_speed)
         
@@ -194,6 +195,15 @@ class DES(General):
             self.components_speed[machine] = General.machine_min_speed
             id += 1 
 
+    def _initialize_downtime_tracker(self):
+        ## initialize a dictionary to keep track of remaining downtime 
+        self.downtime_tracker_machines ={}
+        self.downtime_tracker_conveyors = {}
+        for machine in General.machines:
+            self.downtime_tracker_machines[machine] = 0 
+        for conveyor in General.conveyors:
+            self.downtime_tracker_conveyors[conveyor] = 0 
+            
     def processes_generator(self):  
         print('Started can processing ... ')
         if General.control_type == -1: 
@@ -229,18 +239,19 @@ class DES(General):
         '''
         while True:
             # randomly pick a machine
-            random_machine = random.choice(list(General.machines))
+            self.random_down_machine = random.choice(list(General.machines))
             self.is_control_downtime_event = 1 
             self.is_control_frequency_event = 0 
-            print(f'................ now machine {random_machine} goes down at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
-            setattr(eval('self.' + random_machine),'state', 'down')
+            print(f'................ now machine {self.random_down_machine} goes down at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
+            setattr(eval('self.' + self.random_down_machine),'state', 'down')
             # track current downtime event for the specific machine 
-            random_downtime_duration = random.randint(self.downtime_event_duration_mean-self.downtime_event_duration_dev,
+            self.random_downtime_duration = random.randint(self.downtime_event_duration_mean-self.downtime_event_duration_dev,
                                         self.downtime_event_duration_mean +self.downtime_event_duration_dev )
-            self.add_event_time(random_machine, random_downtime_duration)
-            yield self.env.timeout(random_downtime_duration)
-            setattr(eval('self.' + random_machine),'state', 'idle')
-            print(f'................ now machine {random_machine} is up at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
+            #only add control events 
+            self.add_event_time()
+            yield self.env.timeout(self.random_downtime_duration)
+            setattr(eval('self.' + self.random_down_machine),'state', 'idle')
+            print(f'................ now machine {self.random_down_machine} is up at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
             print(f'................ let machines run for a given period of time without any downtime event')
             self.is_control_downtime_event = 0
             intra_downtime_event_duration = random.randint(self.inter_downtime_event_mean + self.inter_downtime_event_dev,
@@ -261,25 +272,20 @@ class DES(General):
         self.update_conveyors_buffers()
         self.update_conveyor_junctions()
 
-    def add_event_time(self, random_machine, random_downtime_duration):
+    def add_event_time(self):
         '''
         Once called, will add current simulation time. 
         It will be used to track the occurrence time of downtime events
         '''
         self.downtime_event_times_history.append(self.env.now)
 
-    def intra_event_delta_time():
+
+    def calculate_intra_event_delta_time(self):
         '''
         The goal is to keep track of time lapsed between events. 
         potential use: (1) calculate remaining downtime (2) for reward normalization 
         '''
         return self.downtime_event_times_history[-1] - self.downtime_event_times_history[-2]
-
-    def update_remaining_downtime():
-        '''
-        To inform brain about the remaining downtime time for each machine  
-        '''
-        delta_t = self.intra_event_delta_time()
 
 
     def update_machines_speed(self):
@@ -456,7 +462,29 @@ class DES(General):
             illegal_conveyor_actions.append(int(speed != self.components_speed[conveyor]))
 
         return illegal_machine_actions, illegal_conveyor_actions
+
+    def calculate_downtime_remaining_time(self):
+        ## first calculated the delta time elapsed since previous event
+        delta_t = self.calculate_intra_event_delta_time()
+
+        ## update the machine and conveyor downtime tracker using the delta t 
+        for machine in General.machines:
+            self.downtime_tracker_machines[machine] = max(self.downtime_tracker_machines[machine]-delta_t, 0)
+
+        for conveyor in General.conveyors:
+            self.downtime_tracker_conveyors[conveyor] = max(self.downtime_tracker_machines[machine]-delta_t, 0)
+
+        ## add/update the latest downtime event to the tracker 
+        ## currently only machines downtime is considered. 
+        self.downtime_tracker_machines[self.random_down_machine] = self.random_downtime_duration
+
+        remaining_downtime_machines = []
+
+        for machine in General.machines:
+            remaining_downtime_machines.append(self.downtime_tracker_machines[machine])
         
+        return remaining_downtime_machines
+
 
     def reset(self):
         #self.episode_end = False
@@ -570,9 +598,9 @@ class DES(General):
 
 
         ## downtime remaining time: 7 
-        
-        
 
+        remaining_downtime_machines = self.calculate_downtime_remaining_time():
+        
             
         states = {'machines_speed': machines_speed,
                   'machines_state': machines_state,
@@ -588,7 +616,8 @@ class DES(General):
                   'conveyor_discharge_p1_prox_full': conveyor_discharge_p1_prox_full,
                   'conveyor_discharge_p2_prox_full': conveyor_discharge_p2_prox_full, 
                   'illegal_machine_actions': illegal_machine_actions,
-                  'illegal_conveyor_actions': illegal_conveyor_actions,       
+                  'illegal_conveyor_actions': illegal_conveyor_actions, 
+                  'remaining_downtime_machines': remaining_downtime_machines,      
         }
 
         return states 
