@@ -52,13 +52,14 @@ class General:
     # warmup_time = 100  # seconds(s) 
     # downtime_event_prob = 0.1 # probability applied every "downtime-even_gen_mean" to create downtime on a random machine 
     inter_downtime_event_mean = 100  # seconds (s) average time between random downtime events  
-    inter_downtime_event_dev = 20 # deviation, a random inter_downtime_event is generated in range [inter_downtime_event_mean - inter_downtime_event_dev, inter_downtime_event_mean - inter_downtime_event_dev]
+    inter_downtime_event_dev = 20 # deviation, a random inter_downtime_event is generated in range [inter_downtime_event_mean - inter_downtime_event_dev, inter_downtime_event_mean + inter_downtime_event_dev]
     downtime_event_duration_mean = 10  # seconds(s), mean duration of each downtime event 
-    downtime_event_duration_dev = 3  # seconds(s), deviation from mean. [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean - downtime_event_duration_std]   
+    downtime_event_duration_dev = 3  # seconds(s), deviation from mean. [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean + downtime_event_duration_std]   
     control_frequency = 1  # fixed control frequency duration
     ## control type: -1: control at fixed time frequency but no downtime event 0: control at fixed time frequency 
     ## control type: 1: event driven, i.e. when a downtime occurs, 2: both at fixed control frequency and downtime  
     control_type = 1 
+    number_parallel_downtime_events = 1 
 
 class Machine(General):
     '''
@@ -213,14 +214,16 @@ class DES(General):
             self.env.process(self.control_frequency_update())
         if self.control_type == 0:
             self.env.process(self.control_frequency_update())
-            self.env.process(self.downtime_generator())
+            for num_process in range(0, self.number_parallel_downtime_events):
+                self.env.process(self.downtime_generator())
         elif self.control_type == 1:
-            self.env.process(self.downtime_generator())
+            for num_process in range(0, self.number_parallel_downtime_events):
+                self.env.process(self.downtime_generator())
             #self.env.process(self.downtime_generator())
         elif self.control_type ==2:
             self.env.process(self.control_frequency_update()) 
-            self.env.process(self.downtime_generator())
-            #self.env.process(self.downtime_generator()) 
+            for num_process in range(0, self.number_parallel_downtime_events):
+                self.env.process(self.downtime_generator()) 
         else:
             raise ValueError(f"Only three modes are currently available: fixed control frequency (0) or event driven (1), both (2)")
         

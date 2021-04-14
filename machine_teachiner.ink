@@ -2,6 +2,30 @@ inkling "2.0"
 using Number
 using Math
 
+## define constants, part of sim config 
+const number_of_iterations = 1000
+## control type: -1: control at fixed time frequency but no downtime event 
+## control_type:  0: control at fixed time frequency 
+## control type:  1: event driven, i.e. when a downtime occurs
+## control type:  2: both at fixed control frequency and downtime
+const control_type = -1
+## the below control frequency does not apply to control type 1 and will be ignored 
+const control_frequency = 1 
+
+## Downtime event config 
+## a random inter_downtime_event is generated in the range [inter_downtime_event_mean - inter_downtime_event_dev, inter_downtime_event_mean + inter_downtime_event_dev]
+## a random downtime duration is generated in the range [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean + downtime_event_duration_std]
+const inter_downtime_event_mean = 100  # seconds (s) 
+const inter_downtime_event_dev = 20 #  seconds (s) 
+const downtime_event_duration_mean = 10  # seconds (s),  
+const downtime_event_duration_dev = 3  # seconds (s)
+## The following indicate possibility of multiple machines going down in parallel and at overlapping times 
+const number_parallel_downtime_events = 1
+
+## plant layout
+## Currently only 1 configuration exists 
+const layout_configuration = 1 
+
 
 type SimState {
     machines_speed: number[10], 
@@ -36,7 +60,14 @@ type SimAction{
 
 
 type SimConfig {
-    None: number
+    control_type : control_type,
+    control_frequency : control_frequency, 
+    inter_downtime_event_mean : inter_downtime_event_mean,  
+    inter_downtime_event_dev : inter_downtime_event_dev,
+    downtime_event_duration_mean : downtime_event_duration_mean,   
+    downtime_event_duration_dev : downtime_event_duration_dev,  
+    number_parallel_downtime_events : number_parallel_downtime_events,
+    layout_configuration : layout_configuration, 
 }
 
 
@@ -51,7 +82,7 @@ function Terminal(sim_obervation: SimState){
 }
 
 simulator Simulator(action: SimAction, config: SimConfig): SimState {
-    #package "PlannerTunnerDelta5"
+    #package ""
 }
 
 graph (input: ObservationState): SimAction {
@@ -64,7 +95,7 @@ graph (input: ObservationState): SimAction {
                 #PolicyLearningRate: 0.001
             }
             training {
-                EpisodeIterationLimit: 200,
+                EpisodeIterationLimit: number_of_iterations,
                 NoProgressIterationLimit: 500000
             }
             source Simulator
@@ -73,7 +104,14 @@ graph (input: ObservationState): SimAction {
 
             lesson `learn 1` {
                 scenario {
-                    None: 2,
+                    control_type : control_type,
+                    control_frequency : control_frequency, 
+                    inter_downtime_event_mean : inter_downtime_event_mean,  
+                    inter_downtime_event_dev : inter_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
                 }
             }
         }
