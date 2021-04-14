@@ -171,7 +171,9 @@ class DES(General):
         # a flag to identify events that require control 
         self.is_control_downtime_event = 0 
         self.is_control_frequency_event = 0 
-        self.downtime_event_times_history = deque(maxlen=10) 
+        self.downtime_event_times_history = deque(maxlen=10,) 
+        self.downtime_event_times_history.append(0)
+        self.downtime_machine_history = deque(maxlen=10)
         self._initialize_downtime_tracker()
 
         print(f'components speed are\n:', self.components_speed)
@@ -206,16 +208,16 @@ class DES(General):
             
     def processes_generator(self):  
         print('Started can processing ... ')
-        if General.control_type == -1: 
+        if self.control_type == -1: 
             # no downtime event used for brain training for steady state 
             self.env.process(self.control_frequency_update())
-        if General.control_type == 0:
+        if self.control_type == 0:
             self.env.process(self.control_frequency_update())
             self.env.process(self.downtime_generator())
-        elif General.control_type == 1:
+        elif self.control_type == 1:
             self.env.process(self.downtime_generator())
             #self.env.process(self.downtime_generator())
-        elif General.control_type ==2:
+        elif self.control_type ==2:
             self.env.process(self.control_frequency_update()) 
             self.env.process(self.downtime_generator())
             #self.env.process(self.downtime_generator()) 
@@ -227,7 +229,7 @@ class DES(General):
             ## define event type as control frequency event a ahead of the event 
             self.is_control_frequency_event = 1 
             print(f'................ control at {self.env.now} and event requires control: {self.is_control_frequency_event}...')
-            yield self.env.timeout(General.control_frequency)
+            yield self.env.timeout(self.control_frequency)
             ## change the flag to zero, in case other events occur.  
             print('-------------------------------------------')
             print(f'control freq event at {self.env.now} s ...')
@@ -247,8 +249,8 @@ class DES(General):
             # track current downtime event for the specific machine 
             self.random_downtime_duration = random.randint(self.downtime_event_duration_mean-self.downtime_event_duration_dev,
                                         self.downtime_event_duration_mean +self.downtime_event_duration_dev )
-            #only add control events 
-            self.add_event_time()
+            #only add control events to a deque
+            self.track_event()
             yield self.env.timeout(self.random_downtime_duration)
             setattr(eval('self.' + self.random_down_machine),'state', 'idle')
             print(f'................ now machine {self.random_down_machine} is up at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
@@ -272,12 +274,13 @@ class DES(General):
         self.update_conveyors_buffers()
         self.update_conveyor_junctions()
 
-    def add_event_time(self):
+    def track_event(self):
         '''
-        Once called, will add current simulation time. 
+        Once called, will add current simulation time and also  
         It will be used to track the occurrence time of downtime events
         '''
         self.downtime_event_times_history.append(self.env.now)
+        self.downtime_machine_history.append((self.env.now, self.random_down_machine, self.random_downtime_duration))
 
 
     def calculate_intra_event_delta_time(self):
@@ -317,7 +320,7 @@ class DES(General):
             adj_conveyors = adj[machine]
             infeed = adj_conveyors[0]
             discharge = adj_conveyors[1]
-            delta = getattr(eval('self.'+ machine), 'speed')* General.control_frequency   # amount of cans going from one side to the other side 
+            delta = getattr(eval('self.'+ machine), 'speed')* self.control_frequency   # amount of cans going from one side to the other side 
             if 'source' not in infeed: 
 
                 level = getattr(getattr(self, infeed), "bin"+ str(General.num_conveyor_bins-1))
@@ -599,7 +602,7 @@ class DES(General):
 
         ## downtime remaining time: 7 
 
-        remaining_downtime_machines = self.calculate_downtime_remaining_time():
+        remaining_downtime_machines = self.calculate_downtime_remaining_time()
         
             
         states = {'machines_speed': machines_speed,
