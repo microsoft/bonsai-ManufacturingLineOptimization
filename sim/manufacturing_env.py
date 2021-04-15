@@ -173,9 +173,8 @@ class DES(General):
         # a flag to identify events that require control 
         self.is_control_downtime_event = 0 
         self.is_control_frequency_event = 0 
-        self.downtime_event_times_history = deque(maxlen=10,) 
-        self.downtime_event_times_history.append(0)
-        self.downtime_machine_history = deque(maxlen=10)
+        self.downtime_event_times_history = deque([0,0,0], maxlen=10) 
+        self.downtime_machine_history = deque([0,0,0], maxlen=10)
         self._initialize_downtime_tracker()
 
         print(f'components speed are\n:', self.components_speed)
@@ -213,7 +212,7 @@ class DES(General):
         if self.control_type == -1: 
             # no downtime event used for brain training for steady state 
             self.env.process(self.control_frequency_update())
-        if self.control_type == 0:
+        elif self.control_type == 0:
             self.env.process(self.control_frequency_update())
             for num_process in range(0, self.number_parallel_downtime_events):
                 self.env.process(self.downtime_generator())
@@ -221,12 +220,14 @@ class DES(General):
             for num_process in range(0, self.number_parallel_downtime_events):
                 self.env.process(self.downtime_generator())
             #self.env.process(self.downtime_generator())
-        elif self.control_type ==2:
+        elif self.control_type == 2:
             self.env.process(self.control_frequency_update()) 
             for num_process in range(0, self.number_parallel_downtime_events):
                 self.env.process(self.downtime_generator()) 
         else:
-            raise ValueError(f"Only three modes are currently available: fixed control frequency (0) or event driven (1), both (2)")
+            raise ValueError(f"Only the following modes are currently available: \
+                -1: fixed control frequency with no downtime event, \
+                    fixed control frequency (0) or event driven (1), both (2) with downtime events")
         
     def control_frequency_update(self):
         while True: 
@@ -482,8 +483,11 @@ class DES(General):
             self.downtime_tracker_conveyors[conveyor] = max(self.downtime_tracker_machines[machine]-delta_t, 0)
 
         ## add/update the latest downtime event to the tracker 
-        ## currently only machines downtime is considered. 
-        self.downtime_tracker_machines[self.random_down_machine] = self.random_downtime_duration
+        ## currently only machines downtime is considered.
+        try: 
+            self.downtime_tracker_machines[self.random_down_machine] = self.random_downtime_duration
+        except:
+            print('Iteration zero, could not update downtime_tracker_machines dict.')
 
         remaining_downtime_machines = []
 
@@ -527,7 +531,8 @@ class DES(General):
             while self.is_control_frequency_event == 0 or self.is_control_downtime_event == 0:
                 self.env.step()
         else:
-            raise ValueError(f'unknown control type: {self.control_type}. Only 0:fixed time, 1: downtime event, 2: both at fixed time and downtime event')
+            raise ValueError(f'unknown control type: {self.control_type}. \
+                available modes: -1: fixed time no downtime, 0:fixed time, 1: downtime event, 2: both at fixed time and downtime event')
         
 
     def get_states(self):

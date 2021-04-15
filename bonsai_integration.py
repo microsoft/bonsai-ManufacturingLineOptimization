@@ -7,7 +7,7 @@ Copyright 2020 Microsoft
 Usage:
   For registering simulator with the Bonsai service for training:
     python simulator_integration.py   
-    Then connect your registered simulator to a Brain via UI, or using the CLI: `bonsai simulator unmanaged connect -b <brain-name> -a <train-or-assess> -c BalancePole --simulator-name Cartpole
+    Then connect your registered simulator to a Brain via UI, or using the CLI: `bonsai simulator unmanaged connect -b <brain-name> -a <train-or-assess> -c  --simulator-name 
 """
 
 import datetime
@@ -74,7 +74,7 @@ class TemplateSimulatorSession:
     def __init__(
         self,
         render: bool = False,
-        env_name: str = "Cartpole",
+        env_name: str = "MLSim",
         log_data: bool = False,
         log_file_name: str = None,
     ):
