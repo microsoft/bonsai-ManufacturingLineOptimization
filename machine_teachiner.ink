@@ -37,6 +37,9 @@ type SimState {
     conveyor_infeed_m2_prox_empty: number[9],
     conveyor_discharge_p1_prox_full: number[9],
     conveyor_discharge_p2_prox_full: number[9],
+    illegal_machine_actions: number[10],
+    illegal_conveyor_actions: number[9],
+    remaining_downtime_machines: number[10]
 }
 
 
@@ -48,7 +51,9 @@ type ObservationState{
     conveyor_infeed_m1_prox_empty: number[9],
     conveyor_infeed_m2_prox_empty: number[9],
     conveyor_discharge_p1_prox_full: number[9],
-    conveyor_discharge_p2_prox_full: number[9],  
+    conveyor_discharge_p2_prox_full: number[9], 
+    illegal_machine_actions: number[10],
+    remaining_downtime_machines: number[10] 
 }
 
 

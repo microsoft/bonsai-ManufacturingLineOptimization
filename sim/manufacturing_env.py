@@ -15,7 +15,7 @@ import numpy as np
 '''
 Simulation environment for multi machine manufacturing line. 
 '''
-from line_config import adj, con_balance, con_join
+from sim.line_config import adj, con_balance, con_join
 
 random.seed(10)
 
@@ -44,7 +44,7 @@ class General:
     machine_infeed_buffer = 100
     machine_discharge_buffer = 100 # 
     conveyor_capacity = 1000  # in cans 
-    num_conveyor_bins = 10  # every conveyor is divided into 10 sections. For approximation and connection purposes  
+    num_conveyor_bins = 10  # every conveyor is divided into 10 sections. For approximate and connection purpose  
     machine_min_speed = 10 # cans/second 
     machine_max_speed = 100 # cans/second  
     conveyor_min_speed = 10
@@ -60,6 +60,7 @@ class General:
     ## control type: 1: event driven, i.e. when a downtime occurs, 2: both at fixed control frequency and downtime  
     control_type = 1 
     number_parallel_downtime_events = 1 
+    layout_configuration = 1 # placeholder for different configurations of machines 
 
 class Machine(General):
     '''

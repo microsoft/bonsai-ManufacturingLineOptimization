@@ -42,14 +42,14 @@ MACHINES, CONVEYORS, _, _ = MLS.get_machines_conveyors_sources_sets(adj)
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 LOG_PATH = "logs"
 default_config = {
-    control_type: 1,
-    control_frequency: 1, 
-    inter_downtime_event_mean: 100,  
-    inter_downtime_event_dev: 20,
-    downtime_event_duration_mean: 10,   
-    downtime_event_duration_dev: 3,  
-    number_parallel_downtime_events: 1,
-    layout_configuration: 1,
+    "control_type": 1,
+    "control_frequency": 1, 
+    "inter_downtime_event_mean": 100,  
+    "inter_downtime_event_dev": 20,
+    "downtime_event_duration_mean": 10,   
+    "downtime_event_duration_dev": 3,  
+    "number_parallel_downtime_events": 1,
+    "layout_configuration": 1,
 }
 
 ENV = simpy.Environment()
@@ -400,7 +400,7 @@ def main(
     client = BonsaiClient(config_client)
 
     # # Load json file as simulator integration config type file
-    with open("cartpole_description.json") as file:
+    with open('interface.json') as file:
         interface = json.load(file)
 
     # Create simulator session and init sequence id
@@ -549,13 +549,13 @@ def main(
             session_id=registered_session.session_id,
         )
         print("Unregistered simulator.")
-    except Exception as err:
-        # Gracefully unregister for any other exceptions
-        client.session.delete(
-            workspace_name=config_client.workspace,
-            session_id=registered_session.session_id,
-        )
-        print("Unregistered simulator because: {}".format(err))
+    # except Exception as err:
+    #     # Gracefully unregister for any other exceptions
+    #     client.session.delete(
+    #         workspace_name=config_client.workspace,
+    #         session_id=registered_session.session_id,
+    #     )
+    #     print("Unregistered simulator because: {}".format(err))
 
 
 if __name__ == "__main__":
