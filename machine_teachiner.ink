@@ -39,7 +39,8 @@ type SimState {
     conveyor_discharge_p2_prox_full: number[9],
     illegal_machine_actions: number[10],
     illegal_conveyor_actions: number[9],
-    remaining_downtime_machines: number[10]
+    remaining_downtime_machines: number[10],
+    control_delta_t: number
 }
 
 

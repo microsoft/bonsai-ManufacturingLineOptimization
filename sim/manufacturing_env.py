@@ -175,6 +175,7 @@ class DES(General):
         self.is_control_frequency_event = 0 
         self.downtime_event_times_history = deque([0,0,0], maxlen=10) 
         self.downtime_machine_history = deque([0,0,0], maxlen=10)
+        self.control_frequency_history = deque([0,0,0], maxlen=10)
         self._initialize_downtime_tracker()
 
         print(f'components speed are\n:', self.components_speed)
@@ -233,6 +234,7 @@ class DES(General):
         while True: 
             ## define event type as control frequency event a ahead of the event 
             self.is_control_frequency_event = 1 
+            self.is_control_downtime_event = 0 
             print(f'................ control at {self.env.now} and event requires control: {self.is_control_frequency_event}...')
             yield self.env.timeout(self.control_frequency)
             ## change the flag to zero, in case other events occur.  
@@ -261,6 +263,7 @@ class DES(General):
             print(f'................ now machine {self.random_down_machine} is up at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
             print(f'................ let machines run for a given period of time without any downtime event')
             self.is_control_downtime_event = 0
+            self.is_control_frequency_event = 0 
             intra_downtime_event_duration = random.randint(self.inter_downtime_event_mean + self.inter_downtime_event_dev,
                             self.inter_downtime_event_mean + self.inter_downtime_event_dev)
             yield self.env.timeout(intra_downtime_event_duration)
@@ -287,6 +290,9 @@ class DES(General):
         self.downtime_event_times_history.append(self.env.now)
         self.downtime_machine_history.append((self.env.now, self.random_down_machine, self.random_downtime_duration))
 
+    def track_control_frequency(self):
+        self.control_frequency_history.append(self.env.now)
+
 
     def calculate_intra_event_delta_time(self):
         '''
@@ -294,6 +300,12 @@ class DES(General):
         potential use: (1) calculate remaining downtime (2) for reward normalization 
         '''
         return self.downtime_event_times_history[-1] - self.downtime_event_times_history[-2]
+    
+    def calculate_control_frequency_delta_time(self):
+        '''
+        To track time between brain controls following the config parameter, set through inkling
+        '''
+        return self.control_frequency_history[-1] - self.control_frequency_history[-2]
 
 
     def update_machines_speed(self):
@@ -494,7 +506,7 @@ class DES(General):
         for machine in General.machines:
             remaining_downtime_machines.append(self.downtime_tracker_machines[machine])
         
-        return remaining_downtime_machines
+        return remaining_downtime_machines, delta_t
 
 
     def reset(self):
@@ -514,26 +526,28 @@ class DES(General):
         
         # step through the controllable event
         self.env.step()
-
+        self.track_control_frequency()
         if self.control_type == 0 or self.control_type == -1:
             ## control at fixed frequency. -1 for no-downtime event 
-            while self.is_control_frequency_event == 0:
+            while self.is_control_frequency_event != 1:
                 self.env.step()
 
         elif self.control_type == 1: 
             ## control when downtime events occur
             # Step through other events until a controllable event occurs. 
-            while self.is_control_downtime_event == 0:
+            while self.is_control_downtime_event != 1:
                 # step through events until a control event, such as downtime, occurs
                 # Some events such as time laps are not control events and are excluded by the flag 
                 self.env.step()
         elif self.control_type == 2:
-            while self.is_control_frequency_event == 0 or self.is_control_downtime_event == 0:
+            while self.is_control_frequency_event != 1 and self.is_control_downtime_event != 1:
                 self.env.step()
         else:
             raise ValueError(f'unknown control type: {self.control_type}. \
                 available modes: -1: fixed time no downtime, 0:fixed time, 1: downtime event, 2: both at fixed time and downtime event')
         
+        # register the time of the controllable event: for use in calculation of delta-t 
+        self.track_control_frequency()
 
     def get_states(self):
         '''
@@ -605,13 +619,12 @@ class DES(General):
                 sink_machines_rate.append(getattr(eval('self.'+ machine), 'speed'))
 
         ## illegal actions: 6
-
         illegal_machine_actions, illegal_conveyor_actions = self.check_illegal_actions()
 
+        ## downtime remaining time: 7 f
+        remaining_downtime_machines, downtime_event_delta_t = self.calculate_downtime_remaining_time()
 
-        ## downtime remaining time: 7 
-
-        remaining_downtime_machines = self.calculate_downtime_remaining_time()
+        control_delta_t = self.calculate_control_frequency_delta_time()
         
             
         states = {'machines_speed': machines_speed,
@@ -629,12 +642,12 @@ class DES(General):
                   'conveyor_discharge_p2_prox_full': conveyor_discharge_p2_prox_full, 
                   'illegal_machine_actions': illegal_machine_actions,
                   'illegal_conveyor_actions': illegal_conveyor_actions, 
-                  'remaining_downtime_machines': remaining_downtime_machines,      
+                  'remaining_downtime_machines': remaining_downtime_machines,
+                  'control_delta_t': control_delta_t,      
         }
 
         return states 
                 
-
 
 if __name__=="__main__":                             
     env = simpy.Environment()
