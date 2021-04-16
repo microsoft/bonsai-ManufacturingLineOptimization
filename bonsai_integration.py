@@ -115,7 +115,6 @@ class TemplateSimulatorSession:
         """
         sim_states = self.simulator.get_states()
         # Add an extra field needed for go-to-point experiments
-        print(sim_states)
 
         if self.render:
             pass 
@@ -173,6 +172,7 @@ class TemplateSimulatorSession:
         
         # Reset the simulator to create new processes 
         self.simulator.reset()
+        self.config = config
 
     def log_iterations(
         self,
@@ -180,7 +180,6 @@ class TemplateSimulatorSession:
         action,
         episode: int = 0,
         iteration: int = 1,
-        sim_speed_delay: float = 0.0,
     ):
         """Log iterations during training to a CSV.
 
@@ -198,13 +197,26 @@ class TemplateSimulatorSession:
         def add_prefixes(d, prefix: str):
             return {f"{prefix}_{k}": v for k, v in d.items()}
 
-        state = add_prefixes(state, "state")
-        action = add_prefixes(action, "action")
+        ## Custom way to turn lists into strings for logging
+        log_state = state.copy()
+        log_action = action.copy()
+
+        for key, value in log_state.items():
+            if type(value) == list:
+                log_state[key] = str(log_state[key])
+        
+        for key, value in log_action.items():
+            if type(value) == list:
+                log_action[key] = str(log_action[key])
+
+        log_state = add_prefixes(log_state, "state")
+        log_action = add_prefixes(log_action, "action")
+
         config = add_prefixes(self.config, "config")
-        data = {**state, **action, **config}
+        data = {**log_state, **log_action, **config}
+        
         data["episode"] = episode
         data["iteration"] = iteration
-        data["sim_speed_delay"] = sim_speed_delay
         log_df = pd.DataFrame(data, index=[0])
 
         if os.path.exists(self.log_full_path):
@@ -224,7 +236,6 @@ class TemplateSimulatorSession:
         action : Dict
             An action to take to modulate environment.
         """
-        print('brain action arrays is :\n', action)
         machines_speed_list = action['machines_speed']
         conveyors_speed_list = action['conveyors_speed']
 
@@ -291,36 +302,49 @@ def env_setup(env_file: str = ".env"):
 
     return workspace, access_key
 
-
+# Manual test policy loop
 def test_policy(
-    num_episodes: int = 10,
-    render: bool = True,
-    num_iterations: int = 200,
+    render=False,
+    num_episodes: int = 2,
+    num_iterations: int = 1000,
     log_iterations: bool = False,
     policy=random_policy,
-    policy_name: str = "random",
+    policy_name: str="test_policy",
+    scenario_file: str="assess_config.json",
+    exported_brain_url: str="http://localhost:5000"
 ):
     """Test a policy using random actions over a fixed number of episodes
-
     Parameters
     ----------
     num_episodes : int, optional
         number of iterations to run, by default 10
     """
+    
+    # Use custom assessment scenario configs
+    with open(scenario_file) as fname:
+        assess_info = json.load(fname)
+    scenario_configs = assess_info['episodeConfigurations']
+    num_episodes = len(scenario_configs)+1
 
     current_time = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     log_file_name = current_time + "_" + policy_name + "_log.csv"
     sim = TemplateSimulatorSession(
-        render=render, log_data=log_iterations, log_file_name=log_file_name
+        render=render,
+        log_data=log_iterations,
+        log_file_name=log_file_name
     )
-    # test_config = {"length": 1.5}
-    for episode in range(num_episodes):
-        iteration = 0
+    for episode in range(1, num_episodes):
+        iteration = 1
         terminal = False
-        # When testing, initialize throughout the range.
-        config = {"initial_cart_position": random.uniform(-0.9, 0.9)}
-        sim_state = sim.episode_start(config=config)
+        sim_state = sim.episode_start(config=scenario_configs[episode-1])
         sim_state = sim.get_state()
+        if log_iterations:
+            action = policy(sim_state)
+            for key, value in action.items():
+                action[key] = None
+            sim.log_iterations(sim_state, action, episode, iteration)
+        print(f"Running iteration #{iteration} for episode #{episode}")
+        iteration += 1
         while not terminal:
             action = policy(sim_state)
             sim.episode_step(action)
@@ -328,19 +352,16 @@ def test_policy(
             if log_iterations:
                 sim.log_iterations(sim_state, action, episode, iteration)
             print(f"Running iteration #{iteration} for episode #{episode}")
-            print(f"Observations: {sim_state}")
+            #print(f"Observations: {sim_state}")
             iteration += 1
-            terminal = iteration >= num_iterations
+            terminal = iteration >= num_iterations+2 or sim.halted()
 
     return sim
-
 
 def main(
     render: bool = False,
     log_iterations: bool = False,
     config_setup: bool = False,
-    sim_speed: int = 0,
-    sim_speed_variance: int = 0,
     env_file: Union[str, bool] = ".env",
     workspace: str = None,
     accesskey: str = None,
@@ -355,10 +376,6 @@ def main(
         log iterations during training to a CSV file
     config_setup: bool, optional
         if enabled then uses a local `.env` file to find sim workspace id and access_key
-    sim_speed: int, optional
-        the average delay to use, default = 0
-    sim_speed_variance: int, optional
-        the variance for sim delay
     env_file: str, optional
         if config_setup True, then where the environment variable for lookup exists
     workspace: str, optional
@@ -494,38 +511,14 @@ def main(
                 sim.episode_start(event.episode_start.config)
                 episode += 1
             elif event.type == "EpisodeStep":
-                iteration += 1
-                delay = 0.0
-                if sim_speed > 0:
-                    if (
-                        sim_speed_variance > 0
-                    ):  # stochastic delay, truncated normal distribution
-                        mu = sim_speed
-                        sigma = sim_speed_variance
-                        lower = np.max(
-                            [0, sim_speed - 3 * sim_speed_variance]
-                        )  # truncating at min +/- 3*variance
-                        upper = sim_speed + 3 * sim_speed_variance
-                        delay = truncnorm.rvs(
-                            (lower - mu) / sigma,
-                            (upper - mu) / sigma,
-                            loc=mu,
-                            scale=sigma,
-                        )
-                        print("stochastic sim delay: {}s".format(delay))
-                        time.sleep(delay)
-                    else:  # fixed delay
-                        delay = sim_speed
-                        print("sim delay: {}s".format(delay))
-                        time.sleep(delay)
                 sim.episode_step(event.episode_step.action)
+                iteration +=1
                 if sim.log_data:
                     sim.log_iterations(
                         episode=episode,
                         iteration=iteration,
                         state=sim.get_state(),
                         action=event.episode_step.action,
-                        sim_speed_delay=delay,
                     )
             elif event.type == "EpisodeFinish":
                 print("Episode Finishing...")
@@ -623,19 +616,10 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--sim-speed",
-        type=int,
-        metavar="SIM_SPEED",
-        help="additional emulated sim speed wait in seconds, default: adds 0s",
-        default=0,
-    )
-
-    parser.add_argument(
-        "--sim-speed-variance",
-        type=int,
-        metavar="SIM_SPEED_VARIANCE",
-        help="emulates stochastic sim speed, adds uniform variance to --sim-speed",
-        default=0,
+        "--custom_assess",
+        type=str,
+        default=None,
+        help="Custom assess config json filename",
     )
 
     args = parser.parse_args()
@@ -648,6 +632,9 @@ if __name__ == "__main__":
         port = args.test_exported
         url = f"http://localhost:{port}"
         print(f"Connecting to exported brain running at {url}...")
+        scenario_file = 'assess_config.json'
+        if args.custom_assess:
+            scenario_file = args.custom_assess
         trained_brain_policy = partial(brain_policy, exported_brain_url=url)
         test_policy(
             render=args.render,
@@ -655,14 +642,13 @@ if __name__ == "__main__":
             policy=trained_brain_policy,
             policy_name="exported",
             num_iterations=args.iteration_limit,
+            scenario_file=scenario_file
         )
     else:
         main(
             config_setup=args.config_setup,
             render=args.render,
             log_iterations=args.log_iterations,
-            sim_speed=args.sim_speed,
-            sim_speed_variance=args.sim_speed_variance,
             env_file=args.env_file,
             workspace=args.workspace,
             accesskey=args.accesskey,
