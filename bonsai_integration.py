@@ -38,6 +38,8 @@ from sim import manufacturing_env as MLS
 from sim.line_config import adj
 import simpy 
 MACHINES, CONVEYORS, _, _ = MLS.get_machines_conveyors_sources_sets(adj)
+ENV = simpy.Environment()
+
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 LOG_PATH = "logs"
@@ -52,7 +54,7 @@ default_config = {
     "layout_configuration": 1,
 }
 
-ENV = simpy.Environment()
+
 
 def ensure_log_dir(log_full_path):
     """
@@ -91,6 +93,7 @@ class TemplateSimulatorSession:
         log_file_name : str, optional
             where to log data, by default None. If not specified, will generate a name.
         """
+
         self.simulator = MLS.DES(ENV)
         self._episode_count = 0
 
@@ -151,7 +154,9 @@ class TemplateSimulatorSession:
         if config is None:
             config = default_config
 
+        print('--------------------------------------resetting new episode-------------------------------')
         ## Re-intializing the simulator to make sure all the processes are killed. 
+        ENV = simpy.Environment()
         self.simulator = MLS.DES(ENV)
         ## overwrite some parameters with that of config:
         self.simulator.control_type = \
