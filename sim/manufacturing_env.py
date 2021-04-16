@@ -643,7 +643,8 @@ class DES(General):
                   'illegal_machine_actions': illegal_machine_actions,
                   'illegal_conveyor_actions': illegal_conveyor_actions, 
                   'remaining_downtime_machines': remaining_downtime_machines,
-                  'control_delta_t': control_delta_t,      
+                  'control_delta_t': control_delta_t, 
+                  'env_time': self.env.now     
         }
 
         return states 
