@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "context": {},
+  "episodeConfigurations": [
+    {
+      "control_type": -1,
+      "control_frequency": 1,
+      "inter_downtime_event_mean": 100,
+      "inter_downtime_event_dev": 20,
+      "downtime_event_duration_mean": 10,
+      "downtime_event_duration_dev": 3,
+      "number_parallel_downtime_events": 1,
+      "layout_configuration": 1
+    },
+    {
+      "control_type": -1,
+      "control_frequency": 1,
+      "inter_downtime_event_mean": 100,
+      "inter_downtime_event_dev": 20,
+      "downtime_event_duration_mean": 10,
+      "downtime_event_duration_dev": 3,
+      "number_parallel_downtime_events": 1,
+      "layout_configuration": 1
+    },
+    {
+      "control_type": -1,
+      "control_frequency": 1,
+      "inter_downtime_event_mean": 100,
+      "inter_downtime_event_dev": 20,
+      "downtime_event_duration_mean": 10,
+      "downtime_event_duration_dev": 3,
+      "number_parallel_downtime_events": 1,
+      "layout_configuration": 1
+    }
+  ]
+}
