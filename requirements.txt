@@ -7,3 +7,4 @@ bonsai-cli>=1.0.0
 ortools
 sklearn
 simpy 
+dotenv
