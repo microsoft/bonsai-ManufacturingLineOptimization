@@ -15,7 +15,7 @@ import numpy as np
 '''
 Simulation environment for multi machine manufacturing line. 
 '''
-from sim.line_config import adj, con_balance, con_join
+from line_config import adj, con_balance, con_join
 
 random.seed(10)
 
@@ -55,10 +55,10 @@ class General:
     inter_downtime_event_dev = 20 # deviation, a random inter_downtime_event is generated in range [inter_downtime_event_mean - inter_downtime_event_dev, inter_downtime_event_mean + inter_downtime_event_dev]
     downtime_event_duration_mean = 10  # seconds(s), mean duration of each downtime event 
     downtime_event_duration_dev = 3  # seconds(s), deviation from mean. [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean + downtime_event_duration_std]   
-    control_frequency = 1  # fixed control frequency duration
+    control_frequency = 100  # fixed control frequency duration
     ## control type: -1: control at fixed time frequency but no downtime event 0: control at fixed time frequency 
     ## control type: 1: event driven, i.e. when a downtime occurs, 2: both at fixed control frequency and downtime  
-    control_type = 1 
+    control_type = 2 
     number_parallel_downtime_events = 1 
     layout_configuration = 1 # placeholder for different configurations of machines 
 
@@ -237,6 +237,7 @@ class DES(General):
             self.is_control_downtime_event = 0 
             print(f'................ control at {self.env.now} and event requires control: {self.is_control_frequency_event}...')
             yield self.env.timeout(self.control_frequency)
+            self.is_control_frequency_event = 0 
             ## change the flag to zero, in case other events occur.  
             print('-------------------------------------------')
             print(f'control freq event at {self.env.now} s ...')
@@ -255,7 +256,7 @@ class DES(General):
             setattr(eval('self.' + self.random_down_machine),'state', 'down')
             # track current downtime event for the specific machine 
             self.random_downtime_duration = random.randint(self.downtime_event_duration_mean-self.downtime_event_duration_dev,
-                                        self.downtime_event_duration_mean +self.downtime_event_duration_dev )
+                                        self.downtime_event_duration_mean + self.downtime_event_duration_dev )
             #only add control events to a deque
             self.track_event()
             yield self.env.timeout(self.random_downtime_duration)
@@ -264,7 +265,7 @@ class DES(General):
             print(f'................ let machines run for a given period of time without any downtime event')
             self.is_control_downtime_event = 0
             self.is_control_frequency_event = 0 
-            intra_downtime_event_duration = random.randint(self.inter_downtime_event_mean + self.inter_downtime_event_dev,
+            intra_downtime_event_duration = random.randint(self.inter_downtime_event_mean - self.inter_downtime_event_dev,
                             self.inter_downtime_event_mean + self.inter_downtime_event_dev)
             yield self.env.timeout(intra_downtime_event_duration)
 
@@ -526,7 +527,6 @@ class DES(General):
         
         # step through the controllable event
         self.env.step()
-        self.track_control_frequency()
         if self.control_type == 0 or self.control_type == -1:
             ## control at fixed frequency. -1 for no-downtime event 
             while self.is_control_frequency_event != 1:
@@ -540,7 +540,7 @@ class DES(General):
                 # Some events such as time laps are not control events and are excluded by the flag 
                 self.env.step()
         elif self.control_type == 2:
-            while self.is_control_frequency_event != 1 and self.is_control_downtime_event != 1:
+            while (self.is_control_frequency_event == 0 and self.is_control_downtime_event == 0):
                 self.env.step()
         else:
             raise ValueError(f'unknown control type: {self.control_type}. \
