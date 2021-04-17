@@ -9,8 +9,8 @@ const number_of_iterations = 1000
 ## control type:  1: event driven, i.e. when a downtime occurs
 ## control type:  2: both at fixed control frequency and downtime
 const control_type = -1
-## the below control frequency does not apply to control type 1 and will be ignored 
-const control_frequency = 1 
+## the below control frequency does not apply to control type 1 and will be ignored
+const control_frequency = 1 # in seconds (s)
 
 ## Downtime event config 
 ## a random inter_downtime_event is generated in the range [inter_downtime_event_mean - inter_downtime_event_dev, inter_downtime_event_mean + inter_downtime_event_dev]
@@ -19,7 +19,8 @@ const inter_downtime_event_mean = 100  # seconds (s)
 const inter_downtime_event_dev = 20 #  seconds (s) 
 const downtime_event_duration_mean = 10  # seconds (s),  
 const downtime_event_duration_dev = 3  # seconds (s)
-## The following indicate possibility of multiple machines going down in parallel and at overlapping times 
+## The following indicate possibility of multiple machines going down in parallel and at overlapping times
+## 1 means 1 machine goes down at a time
 const number_parallel_downtime_events = 1
 
 ## plant layout

@@ -4,11 +4,6 @@ import time
 import random 
 from collections import OrderedDict, deque
 from typing import Dict, Any, Optional
-from microsoft_bonsai_api.simulator.client import BonsaiClientConfig, BonsaiClient
-from microsoft_bonsai_api.simulator.generated.models import (
-    SimulatorState,
-    SimulatorInterface,
-)
 import simpy
 import numpy as np 
 
@@ -228,16 +223,20 @@ class DES(General):
         if self.control_type == -1: 
             # no downtime event used for brain training for steady state 
             self.env.process(self.control_frequency_update())
+            self.env.process(self.update_line_simulation_time_step())
         elif self.control_type == 0:
             self.env.process(self.control_frequency_update())
+            self.env.process(self.update_line_simulation_time_step())
             for num_process in range(0, self.number_parallel_downtime_events):
                 self.env.process(self.downtime_generator())
         elif self.control_type == 1:
+            self.env.process(self.update_line_simulation_time_step())
             for num_process in range(0, self.number_parallel_downtime_events):
                 self.env.process(self.downtime_generator())
             #self.env.process(self.downtime_generator())
         elif self.control_type == 2:
             self.env.process(self.control_frequency_update()) 
+            self.env.process(self.update_line_simulation_time_step())
             for num_process in range(0, self.number_parallel_downtime_events):
                 self.env.process(self.downtime_generator()) 
         else:
@@ -290,9 +289,9 @@ class DES(General):
             print(f'................ let machines run for a given period of time without any downtime event')
             self.is_control_downtime_event = 0
             self.is_control_frequency_event = 0 
-            intra_downtime_event_duration = random.randint(self.inter_downtime_event_mean - self.inter_downtime_event_dev,
+            inter_downtime_event_duration = random.randint(self.inter_downtime_event_mean - self.inter_downtime_event_dev,
                             self.inter_downtime_event_mean + self.inter_downtime_event_dev)
-            yield self.env.timeout(intra_downtime_event_duration)
+            yield self.env.timeout(inter_downtime_event_duration)
 
             
     def update_line(self):
@@ -320,7 +319,7 @@ class DES(General):
         self.control_frequency_history.append(self.env.now)
 
 
-    def calculate_intra_event_delta_time(self):
+    def calculate_inter_event_delta_time(self):
         '''
         The goal is to keep track of time lapsed between events. 
         potential use: (1) calculate remaining downtime (2) for reward normalization 
@@ -509,7 +508,7 @@ class DES(General):
 
     def calculate_downtime_remaining_time(self):
         ## first calculated the delta time elapsed since previous event
-        delta_t = self.calculate_intra_event_delta_time()
+        delta_t = self.calculate_inter_event_delta_time()
 
         ## update the machine and conveyor downtime tracker using the delta t 
         for machine in General.machines:
