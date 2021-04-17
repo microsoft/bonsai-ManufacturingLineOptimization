@@ -55,12 +55,13 @@ class General:
     inter_downtime_event_dev = 20 # deviation, a random inter_downtime_event is generated in range [inter_downtime_event_mean - inter_downtime_event_dev, inter_downtime_event_mean + inter_downtime_event_dev]
     downtime_event_duration_mean = 10  # seconds(s), mean duration of each downtime event 
     downtime_event_duration_dev = 3  # seconds(s), deviation from mean. [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean + downtime_event_duration_std]   
-    control_frequency = 100  # fixed control frequency duration
+    control_frequency = 1  # seconds (s), fixed control frequency duration 
     ## control type: -1: control at fixed time frequency but no downtime event 0: control at fixed time frequency 
     ## control type: 1: event driven, i.e. when a downtime occurs, 2: both at fixed control frequency and downtime  
     control_type = 2 
     number_parallel_downtime_events = 1 
-    layout_configuration = 1 # placeholder for different configurations of machines 
+    layout_configuration = 1 # placeholder for different configurations of machines.
+    simulation_time_step = 1 # granularity of simulation updates. Larger values make simulation less accurate. Recommended value: 1.
 
 class Machine(General):
     '''
@@ -177,6 +178,7 @@ class DES(General):
         self.downtime_machine_history = deque([0,0,0], maxlen=10)
         self.control_frequency_history = deque([0,0,0], maxlen=10)
         self._initialize_downtime_tracker()
+        self._check_simulation_step()
 
         print(f'components speed are\n:', self.components_speed)
         
@@ -207,6 +209,19 @@ class DES(General):
             self.downtime_tracker_machines[machine] = 0 
         for conveyor in General.conveyors:
             self.downtime_tracker_conveyors[conveyor] = 0 
+    
+    def _check_simulation_step(self):
+        '''
+        simulation step should be equal or smaller than control frequency
+        '''
+        if self.control_frequency < self.simulation_time_step:
+            print('Simulation time step should be equal or smaller than control frequency!')
+            print(f'Adjusting simulation time step from {self.simulation_time_step} s to {self.control_frequency}')
+            time.sleep(3)
+            self.simulation_time_step = self.control_frequency
+        else:
+            pass
+
             
     def processes_generator(self):  
         print('Started can processing ... ')
@@ -242,6 +257,16 @@ class DES(General):
             print('-------------------------------------------')
             print(f'control freq event at {self.env.now} s ...')
 
+    def update_line_simulation_time_step(self):
+        '''
+        updating can accumulation at fixed time interval, i.e General.simulation_time_step 
+        '''
+        while True:
+            self.is_control_frequency_event = 0
+            self.is_control_downtime_event = 0
+            yield self.env.timeout(self.simulation_time_step)
+            print(f'----simulation update at {env.now}')
+            self.update_line()
          
     def downtime_generator(self):
         '''
@@ -271,14 +296,14 @@ class DES(General):
 
             
     def update_line(self):
-        # using brain actions 
-        self.update_machines_speed()
-        # using brain actions 
-        self.update_conveyors_speed()
+        # now moved to step
+        # # using brain actions 
+        # self.update_machines_speed()
+        # # using brain actions 
+        # self.update_conveyors_speed()
 
         # enforcing PLC rules to prevent jamming. This may ignore brain actions if buffers are full. 
         self.plc_control_machine_speed()
-
         self.update_machine_adjacent_buffers()
         self.update_conveyors_buffers()
         self.update_conveyor_junctions()
@@ -338,17 +363,15 @@ class DES(General):
             adj_conveyors = adj[machine]
             infeed = adj_conveyors[0]
             discharge = adj_conveyors[1]
-            delta = getattr(eval('self.'+ machine), 'speed')* self.control_frequency   # amount of cans going from one side to the other side 
+            delta = getattr(eval('self.'+ machine), 'speed')* self.simulation_time_step   # amount of cans going from one side to the other side 
             if 'source' not in infeed: 
 
                 level = getattr(getattr(self, infeed), "bin"+ str(General.num_conveyor_bins-1))
                 level -= delta
-
                 if level <= 0:
                     level = 0 
                     #TODO: prox empty machine speed = 0   
                 setattr(eval('self.' +infeed), "bin"+ str(General.num_conveyor_bins-1), level)
-
                 
             if 'sink' not in discharge:
                 # now check buffer full  ....................................TODO:
@@ -365,7 +388,7 @@ class DES(General):
     def update_conveyors_buffers(self):
         for conveyor in General.conveyors:
             for bin_num in range(1, General.num_conveyor_bins):
-                delta2 = getattr(eval('self.'+ conveyor), 'speed')* General.control_frequency
+                delta2 = getattr(eval('self.'+ conveyor), 'speed')* self.simulation_time_step
                 bin_level =  getattr(getattr(self, conveyor), "bin"+ str(bin_num))
                 previous_bin_level = getattr(getattr(self, conveyor), "bin"+ str(bin_num - 1))
                 
@@ -408,13 +431,13 @@ class DES(General):
                 pass
             elif bin_1_level == bin_1_capacity and bin_2_level<bin_2_capacity:
                 ## push cans from bin_1 to bin_2
-                delta = min(getattr(eval('self.'+ conveyor1), 'speed')* General.control_frequency, bin_2_capacity-bin_2_level)
+                delta = min(getattr(eval('self.'+ conveyor1), 'speed')* self.simulation_time_step, bin_2_capacity-bin_2_level)
                 setattr(eval('self.' + conveyor2),"bin"+ str(join_bin) , delta + bin_2_level)
                 setattr(eval('self.'+ conveyor1), "bin"+ str(join_bin) , bin_1_level - delta)
             
             elif bin_2_level == bin_2_capacity and bin_1_level<bin_1_capacity:
                 # do the opposite 
-                delta = min(getattr(eval('self.'+ conveyor2), 'speed')* General.control_frequency, bin_1_capacity-bin_1_level)
+                delta = min(getattr(eval('self.'+ conveyor2), 'speed')* self.simulation_time_step, bin_1_capacity-bin_1_level)
                 setattr(eval('self.' + conveyor1),"bin"+ str(join_bin) , delta + bin_1_level)
                 setattr(eval('self.' + conveyor2), "bin"+ str(join_bin) , bin_2_level - delta)
             else:
@@ -433,7 +456,7 @@ class DES(General):
             bin_2_capacity = getattr(getattr(self, conveyor2), "bins_capacity")
             if bin_2_level < bin_2_capacity:
                 ## always add from first one to the second one if there is room 
-                delta = min(getattr(eval('self.'+ conveyor1), 'speed')* General.control_frequency, bin_2_capacity-bin_2_level)
+                delta = min(getattr(eval('self.'+ conveyor1), 'speed')* self.simulation_time_step, bin_2_capacity-bin_2_level)
 
                 setattr(eval('self.' + conveyor1),"bin"+ str(join_bin) , bin_1_level - delta)
                 setattr(eval('self.' + conveyor2), "bin"+ str(join_bin) , bin_2_level + delta)               
@@ -520,8 +543,13 @@ class DES(General):
         # update the speed dictionary for those comming from the brain 
         for key in list(brain_actions.keys()):
             self.components_speed[key] = brain_actions[key]
-        # update line using self.component_speed
-        self.update_line()
+        # # update line using self.component_speed
+        # self.update_line()
+
+        # using brain actions 
+        self.update_machines_speed()
+        # using brain actions 
+        self.update_conveyors_speed()
         
         print('Simulation time at step:', self.env.now) 
         
