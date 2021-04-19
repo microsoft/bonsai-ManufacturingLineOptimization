@@ -10,7 +10,7 @@ import numpy as np
 '''
 Simulation environment for multi machine manufacturing line. 
 '''
-from .line_config import adj, con_balance, con_join
+from line_config import adj, con_balance, con_join
 
 random.seed(10)
 
@@ -104,6 +104,7 @@ class Machine(General):
     def __repr__(self):
         return (f'Machine with id of {self.id} \
                 runs at speed of {self.speed} and is in {self.state} mode')
+
     
 class Conveyor(General):
 
@@ -158,6 +159,15 @@ class Conveyor(General):
         return (f'Conveyor with id of {self.id}\
             runs at speed of {self.speed} and is in {self.state} mode')
 
+class Sink():
+    def __init__(self,id):
+        super().__init__()
+        ## count of product accumulation at a sink, where manufactured product is collected.
+        ## assumption is an infinite capacity 
+        self.product_count = 0   
+        ## a deque to track can accumulation between events 
+        self.count_history = deque([0,0,0], maxlen = 10)
+
 class DES(General):
     def __init__(self,env):
         super().__init__()
@@ -165,6 +175,7 @@ class DES(General):
         self.components_speed = {}
         self._initialize_conveyor_buffers()
         self._initialize_machines()
+        self._initialize_sink()
         self.episode_end = False 
         # a flag to identify events that require control 
         self.is_control_downtime_event = 0 
@@ -196,6 +207,12 @@ class DES(General):
             self.components_speed[machine] = General.machine_min_speed
             id += 1 
 
+    def _initialize_sink(self):
+        id = 0 
+        for sink in General.sinks:
+            setattr(self, sink, Sink(id = id))
+            id += 1 
+
     def _initialize_downtime_tracker(self):
         ## initialize a dictionary to keep track of remaining downtime 
         self.downtime_tracker_machines ={}
@@ -220,23 +237,21 @@ class DES(General):
             
     def processes_generator(self):  
         print('Started can processing ... ')
+        self.env.process(self.update_line_simulation_time_step())
+
         if self.control_type == -1: 
             # no downtime event used for brain training for steady state 
             self.env.process(self.control_frequency_update())
-            self.env.process(self.update_line_simulation_time_step())
         elif self.control_type == 0:
             self.env.process(self.control_frequency_update())
-            self.env.process(self.update_line_simulation_time_step())
             for num_process in range(0, self.number_parallel_downtime_events):
                 self.env.process(self.downtime_generator())
         elif self.control_type == 1:
-            self.env.process(self.update_line_simulation_time_step())
             for num_process in range(0, self.number_parallel_downtime_events):
                 self.env.process(self.downtime_generator())
             #self.env.process(self.downtime_generator())
         elif self.control_type == 2:
             self.env.process(self.control_frequency_update()) 
-            self.env.process(self.update_line_simulation_time_step())
             for num_process in range(0, self.number_parallel_downtime_events):
                 self.env.process(self.downtime_generator()) 
         else:
@@ -264,7 +279,7 @@ class DES(General):
             self.is_control_frequency_event = 0
             self.is_control_downtime_event = 0
             yield self.env.timeout(self.simulation_time_step)
-            print(f'----simulation update at {env.now}')
+            print(f'----simulation update at {self.env.now}')
             self.update_line()
          
     def downtime_generator(self):
@@ -306,6 +321,24 @@ class DES(General):
         self.update_machine_adjacent_buffers()
         self.update_conveyors_buffers()
         self.update_conveyor_junctions()
+        self.update_sinks_product_accumulation()
+
+    def update_sinks_product_accumulation(self):
+        '''
+        For each machine, we will check if to is connected to sink, then accumulate product according to machine speed . 
+        '''
+        ### update machine infeed and discharge buffers according to machine speed 
+        for machine in adj.keys():
+            adj_conveyors = adj[machine]
+            infeed = adj_conveyors[0]
+            discharge = adj_conveyors[1]
+            delta = getattr(eval('self.'+ machine), 'speed')* self.simulation_time_step   # amount of cans going from one side to the other side 
+                
+            if 'sink' in discharge:
+                # now check buffer full  ....................................TODO:
+                level = getattr(getattr(self, discharge), "product_count") 
+                setattr(eval('self.' + discharge), "product_count", level + delta)
+
 
     def track_event(self):
         '''
@@ -317,6 +350,12 @@ class DES(General):
 
     def track_control_frequency(self):
         self.control_frequency_history.append(self.env.now)
+
+    def track_sinks_throughput(self):
+        for sink in General.sinks:
+            level = getattr(getattr(self, sink), "product_count") 
+            s = eval('self.' + sink)
+            s.count_history.append(level)
 
 
     def calculate_inter_event_delta_time(self):
@@ -338,7 +377,7 @@ class DES(General):
         update the speed of the machine using brain actions that has written in components_speed[machine] dictionary
         '''  
         for machine in General.machines:
-            #print(f'now at {self.env.now} s updating mechine speed')
+            # print(f'now at {self.env.now} s updating machine speed')
             updated_speed = self.components_speed[machine]
             setattr(eval('self.' + machine),'speed', updated_speed)
             print(eval('self.' + machine))
@@ -522,7 +561,7 @@ class DES(General):
         try: 
             self.downtime_tracker_machines[self.random_down_machine] = self.random_downtime_duration
         except:
-            print('Iteration zero, could not update downtime_tracker_machines dict.')
+            print('Could not update downtime_tracker_machines dict. Ok for iteration zero!')
 
         remaining_downtime_machines = []
 
@@ -573,8 +612,10 @@ class DES(General):
             raise ValueError(f'unknown control type: {self.control_type}. \
                 available modes: -1: fixed time no downtime, 0:fixed time, 1: downtime event, 2: both at fixed time and downtime event')
         
-        # register the time of the controllable event: for use in calculation of delta-t 
+        # register the time of the controllable event: for use in calculation of delta-t. 
         self.track_control_frequency()
+        # track can accumulation in sinks once a new control event is triggered. 
+        self.track_sinks_throughput()
 
     def get_states(self):
         '''
@@ -636,7 +677,8 @@ class DES(General):
             conveyor_buffers.append(buffer)
             conveyor_buffers_full.append(buffer_full)
         
-        ## throughput: 5
+        ## throughput rate: 5
+        ## Most useful for fixed control frequency 
         sink_machines_rate = []
         for machine in adj.keys():
             adj_conveyors = adj[machine]
@@ -645,10 +687,17 @@ class DES(General):
             if 'sink' in discharge: 
                 sink_machines_rate.append(getattr(eval('self.'+ machine), 'speed'))
 
-        ## illegal actions: 6
+        ## sink inter-event product accumulation: 6 
+        sinks_throughput_delta = []
+        for sink in General.sinks:
+            s = eval('self.'+ sink)
+            delta = s.count_history(-1) - s.count_history(-2)
+            sinks_throughput_delta.append(delta)        
+
+        ## illegal actions: 7
         illegal_machine_actions, illegal_conveyor_actions = self.check_illegal_actions()
 
-        ## downtime remaining time: 7 f
+        ## downtime remaining time: 8 
         remaining_downtime_machines, downtime_event_delta_t = self.calculate_downtime_remaining_time()
 
         control_delta_t = self.calculate_control_frequency_delta_time()
