@@ -10,7 +10,7 @@ import numpy as np
 '''
 Simulation environment for multi machine manufacturing line. 
 '''
-from line_config import adj, con_balance, con_join
+from .line_config import adj, con_balance, con_join
 
 random.seed(10)
 
