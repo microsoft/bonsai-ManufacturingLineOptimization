@@ -53,7 +53,7 @@ class General:
     control_frequency = 1  # seconds (s), fixed control frequency duration 
     ## control type: -1: control at fixed time frequency but no downtime event 0: control at fixed time frequency 
     ## control type: 1: event driven, i.e. when a downtime occurs, 2: both at fixed control frequency and downtime  
-    control_type = 2 
+    control_type = 1 
     number_parallel_downtime_events = 1 
     layout_configuration = 1 # placeholder for different configurations of machines.
     simulation_time_step = 1 # granularity of simulation updates. Larger values make simulation less accurate. Recommended value: 1.
@@ -691,7 +691,7 @@ class DES(General):
         sinks_throughput_delta = []
         for sink in General.sinks:
             s = eval('self.'+ sink)
-            delta = s.count_history(-1) - s.count_history(-2)
+            delta = s.count_history[-1] - s.count_history[-2]
             sinks_throughput_delta.append(delta)        
 
         ## illegal actions: 7
@@ -712,6 +712,8 @@ class DES(General):
                   'conveyor_buffers_full': conveyor_buffers_full,
                   'sink_machines_rate': sink_machines_rate,
                   'sink_machines_rate_sum': sum(sink_machines_rate),
+                  'sink_throughput_delta': sinks_throughput_delta,
+                  'sink_throughput_delta_sum': sum(sinks_throughput_delta),
                   'conveyor_infeed_m1_prox_empty': conveyor_infeed_m1_prox_empty,
                   'conveyor_infeed_m2_prox_empty': conveyor_infeed_m2_prox_empty,
                   'conveyor_discharge_p1_prox_full': conveyor_discharge_p1_prox_full,

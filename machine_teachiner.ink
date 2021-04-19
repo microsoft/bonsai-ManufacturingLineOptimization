@@ -33,7 +33,8 @@ type SimState {
     machines_state: number[10],
     machines_state_sum: number,
     conveyors_speed: number[9],
-    sink_machines_rate_sum: number,
+    sink_machines_rate_sum: number,   # rate of production in the last simulation step 
+    sink_throughput_delta_sum: number,  # amount of product produced between the controls 
     conveyor_infeed_m1_prox_empty: number[9],
     conveyor_infeed_m2_prox_empty: number[9],
     conveyor_discharge_p1_prox_full: number[9],
