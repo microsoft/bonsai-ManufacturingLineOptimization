@@ -1,0 +1,16 @@
+name: bonsai-MLO
+dependencies:
+- python=3.7
+- pip=19.1.1
+- pip:
+  - numpy==1.15.2
+  - matplotlib==3.0.3
+  - pandas==0.24.2
+  - microsoft-bonsai-api==0.1.1
+  - scipy==1.3.0
+  - bonsai-cli>=1.0.0
+  - ortools
+  - sklearn
+  - simpy 
+  - python-dotenv
+

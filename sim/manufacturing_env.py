@@ -338,6 +338,8 @@ class DES(General):
                 # now check buffer full  ....................................TODO:
                 level = getattr(getattr(self, discharge), "product_count") 
                 setattr(eval('self.' + discharge), "product_count", level + delta)
+                print(f'product level at sink is {self.sink.product_count}, count history is {self.sink.count_history}')
+                time.sleep(3)
 
 
     def track_event(self):
@@ -711,7 +713,7 @@ class DES(General):
                   'conveyor_buffers': conveyor_buffers,
                   'conveyor_buffers_full': conveyor_buffers_full,
                   'sink_machines_rate': sink_machines_rate,
-                  'sink_machines_rate_sum': sum(sink_machines_rate),
+                  'sink_machines_rate_sum': sum(sink_machines_rate)/100,
                   'sink_throughput_delta': sinks_throughput_delta,
                   'sink_throughput_delta_sum': sum(sinks_throughput_delta),
                   'conveyor_infeed_m1_prox_empty': conveyor_infeed_m1_prox_empty,
