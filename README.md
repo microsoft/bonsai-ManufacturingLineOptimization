@@ -1,4 +1,4 @@
-# train brain for an optimal control of a Manufacturing line 
+# Train brain for an optimal control of a Manufacturing line 
 
 ## Bussiness problem
 Train brain to control machine and conveyor speed of a manufacturing line for maximum throughput.
