@@ -42,7 +42,7 @@ type SimState {
     illegal_machine_actions: number[10],
     illegal_conveyor_actions: number[9],
     remaining_downtime_machines: number[10],
-    control_delta_t: number
+    control_delta_t: number,
     env_time: number,
 }
 
