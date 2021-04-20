@@ -229,7 +229,7 @@ class DES(General):
         if self.control_frequency < self.simulation_time_step:
             print('Simulation time step should be equal or smaller than control frequency!')
             print(f'Adjusting simulation time step from {self.simulation_time_step} s to {self.control_frequency}')
-            time.sleep(3)
+            time.sleep(1)
             self.simulation_time_step = self.control_frequency
         else:
             pass
@@ -338,8 +338,6 @@ class DES(General):
                 # now check buffer full  ....................................TODO:
                 level = getattr(getattr(self, discharge), "product_count") 
                 setattr(eval('self.' + discharge), "product_count", level + delta)
-                print(f'product level at sink is {self.sink.product_count}, count history is {self.sink.count_history}')
-                time.sleep(3)
 
 
     def track_event(self):
@@ -693,8 +691,10 @@ class DES(General):
         sinks_throughput_delta = []
         for sink in General.sinks:
             s = eval('self.'+ sink)
+            print(f'count hist for calculating delta {s.count_history[-1]} and {s.count_history[-2]} ')
             delta = s.count_history[-1] - s.count_history[-2]
-            sinks_throughput_delta.append(delta)        
+            sinks_throughput_delta.append(delta)  
+    
 
         ## illegal actions: 7
         illegal_machine_actions, illegal_conveyor_actions = self.check_illegal_actions()
@@ -713,7 +713,7 @@ class DES(General):
                   'conveyor_buffers': conveyor_buffers,
                   'conveyor_buffers_full': conveyor_buffers_full,
                   'sink_machines_rate': sink_machines_rate,
-                  'sink_machines_rate_sum': sum(sink_machines_rate)/100,
+                  'sink_machines_rate_sum': sum(sink_machines_rate),
                   'sink_throughput_delta': sinks_throughput_delta,
                   'sink_throughput_delta_sum': sum(sinks_throughput_delta),
                   'conveyor_infeed_m1_prox_empty': conveyor_infeed_m1_prox_empty,
