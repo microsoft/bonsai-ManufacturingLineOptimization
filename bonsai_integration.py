@@ -46,8 +46,8 @@ LOG_PATH = "logs"
 default_config = {
     "control_type": 1,
     "control_frequency": 1, 
-    "inter_downtime_event_mean": 100,  
-    "inter_downtime_event_dev": 20,
+    "interval_downtime_event_mean": 100,  
+    "interval_downtime_event_dev": 20,
     "downtime_event_duration_mean": 10,   
     "downtime_event_duration_dev": 3,  
     "number_parallel_downtime_events": 1,
@@ -162,10 +162,10 @@ class TemplateSimulatorSession:
              config["control_type"]
         self.simulator.control_frequency = \
              config["control_frequency"]
-        self.simulator.inter_downtime_event_mean = \
-             config["inter_downtime_event_mean"]  
-        self.simulator.inter_downtime_event_dev = \
-             config["inter_downtime_event_dev"]
+        self.simulator.interval_downtime_event_mean = \
+             config["interval_downtime_event_mean"]  
+        self.simulator.interval_downtime_event_dev = \
+             config["interval_downtime_event_dev"]
         self.simulator.downtime_event_duration_mean = \
              config["downtime_event_duration_mean"]   
         self.simulator.downtime_event_duration_dev = \

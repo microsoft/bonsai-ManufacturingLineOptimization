@@ -688,12 +688,17 @@ class DES(General):
                 sink_machines_rate.append(getattr(eval('self.'+ machine), 'speed'))
 
         ## sink inter-event product accumulation: 6 
+
+        ## throughput change between control actions
         sinks_throughput_delta = []
+        ## absolute value of throughput 
+        sinks_throughput_abs = []
+
         for sink in General.sinks:
             s = eval('self.'+ sink)
-            print(f'count hist for calculating delta {s.count_history[-1]} and {s.count_history[-2]} ')
             delta = s.count_history[-1] - s.count_history[-2]
             sinks_throughput_delta.append(delta)  
+            sinks_throughput_abs(s.count_history[-1])
     
 
         ## illegal actions: 7
@@ -716,6 +721,7 @@ class DES(General):
                   'sink_machines_rate_sum': sum(sink_machines_rate),
                   'sink_throughput_delta': sinks_throughput_delta,
                   'sink_throughput_delta_sum': sum(sinks_throughput_delta),
+                  'sink_throughput_absolute_sum':sum()
                   'conveyor_infeed_m1_prox_empty': conveyor_infeed_m1_prox_empty,
                   'conveyor_infeed_m2_prox_empty': conveyor_infeed_m2_prox_empty,
                   'conveyor_discharge_p1_prox_full': conveyor_discharge_p1_prox_full,
