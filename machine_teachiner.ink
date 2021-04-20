@@ -13,10 +13,10 @@ const control_type = -1
 const control_frequency = 1 # in seconds (s)
 
 ## Downtime event config 
-## a random inter_downtime_event is generated in the range [inter_downtime_event_mean - inter_downtime_event_dev, inter_downtime_event_mean + inter_downtime_event_dev]
+## a random interval_downtime_event is generated in the range [interval_downtime_event_mean - interval_downtime_event_dev, interval_downtime_event_mean + interval_downtime_event_dev]
 ## a random downtime duration is generated in the range [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean + downtime_event_duration_std]
-const inter_downtime_event_mean = 100  # seconds (s) 
-const inter_downtime_event_dev = 20 #  seconds (s) 
+const interval_downtime_event_mean = 100  # seconds (s) 
+const interval_downtime_event_dev = 20 #  seconds (s) 
 const downtime_event_duration_mean = 10  # seconds (s),  
 const downtime_event_duration_dev = 3  # seconds (s)
 ## The following indicate possibility of multiple machines going down in parallel and at overlapping times
@@ -71,8 +71,8 @@ type SimAction{
 type SimConfig {
     control_type : control_type,
     control_frequency : control_frequency, 
-    inter_downtime_event_mean : inter_downtime_event_mean,  
-    inter_downtime_event_dev : inter_downtime_event_dev,
+    interval_downtime_event_mean : interval_downtime_event_mean,  
+    interval_downtime_event_dev : interval_downtime_event_dev,
     downtime_event_duration_mean : downtime_event_duration_mean,   
     downtime_event_duration_dev : downtime_event_duration_dev,  
     number_parallel_downtime_events : number_parallel_downtime_events,
@@ -115,8 +115,8 @@ graph (input: ObservationState): SimAction {
                 scenario {
                     control_type : control_type,
                     control_frequency : control_frequency, 
-                    inter_downtime_event_mean : inter_downtime_event_mean,  
-                    inter_downtime_event_dev : inter_downtime_event_dev,
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
                     downtime_event_duration_mean : downtime_event_duration_mean,   
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,

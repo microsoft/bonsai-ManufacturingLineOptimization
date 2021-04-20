@@ -46,8 +46,8 @@ class General:
     conveyor_max_speed = 100
     # warmup_time = 100  # seconds(s) 
     # downtime_event_prob = 0.1 # probability applied every "downtime-even_gen_mean" to create downtime on a random machine 
-    inter_downtime_event_mean = 100  # seconds (s) average time between random downtime events  
-    inter_downtime_event_dev = 20 # deviation, a random inter_downtime_event is generated in range [inter_downtime_event_mean - inter_downtime_event_dev, inter_downtime_event_mean + inter_downtime_event_dev]
+    interval_downtime_event_mean = 100  # seconds (s) average time between random downtime events  
+    interval_downtime_event_dev = 20 # deviation, a random interval_downtime_event is generated in range [interval_downtime_event_mean - interval_downtime_event_dev, interval_downtime_event_mean + interval_downtime_event_dev]
     downtime_event_duration_mean = 10  # seconds(s), mean duration of each downtime event 
     downtime_event_duration_dev = 3  # seconds(s), deviation from mean. [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean + downtime_event_duration_std]   
     control_frequency = 1  # seconds (s), fixed control frequency duration 
@@ -304,9 +304,9 @@ class DES(General):
             print(f'................ let machines run for a given period of time without any downtime event')
             self.is_control_downtime_event = 0
             self.is_control_frequency_event = 0 
-            inter_downtime_event_duration = random.randint(self.inter_downtime_event_mean - self.inter_downtime_event_dev,
-                            self.inter_downtime_event_mean + self.inter_downtime_event_dev)
-            yield self.env.timeout(inter_downtime_event_duration)
+            interval_downtime_event_duration = random.randint(self.interval_downtime_event_mean - self.interval_downtime_event_dev,
+                            self.interval_downtime_event_mean + self.interval_downtime_event_dev)
+            yield self.env.timeout(interval_downtime_event_duration)
 
             
     def update_line(self):
