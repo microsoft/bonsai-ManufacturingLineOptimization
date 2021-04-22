@@ -20,7 +20,9 @@ const interval_downtime_event_dev = 20 #  seconds (s)
 const downtime_event_duration_mean = 10  # seconds (s),  
 const downtime_event_duration_dev = 3  # seconds (s)
 ## The following indicate possibility of multiple machines going down in parallel and at overlapping times
-## 1 means 1 machine goes down at a time
+## 1 means 0 or 1 machine may go down at any point in time
+## 2 means: 0, or 1 or 2 machines may go down at any point in time
+## n means: 0 upto n machines may go down at any point in time.
 const number_parallel_downtime_events = 1
 
 ## plant layout
