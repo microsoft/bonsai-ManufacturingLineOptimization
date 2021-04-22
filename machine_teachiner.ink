@@ -8,7 +8,7 @@ const number_of_iterations = 1000
 ## control_type:  0: control at fixed time frequency 
 ## control type:  1: event driven, i.e. when a downtime occurs
 ## control type:  2: both at fixed control frequency and downtime
-const control_type = -1
+const control_type = 1
 ## the below control frequency does not apply to control type 1 and will be ignored
 const control_frequency = 1 # in seconds (s)
 
@@ -53,6 +53,7 @@ type ObservationState{
     machines_state: number[10],
     conveyors_speed: number[9],
     sink_machines_rate_sum: number,
+    sink_throughput_delta_sum: number,
     conveyor_infeed_m1_prox_empty: number[9],
     conveyor_infeed_m2_prox_empty: number[9],
     conveyor_discharge_p1_prox_full: number[9],
@@ -82,7 +83,12 @@ type SimConfig {
 
 
 function Reward(sim_observation: SimState){
-    return sim_observation.sink_machines_rate_sum
+    if sim_observation.control_delta_t==0 {
+        return  0
+    }
+    else{
+        return sim_observation.sink_throughput_delta_sum/(100*sim_observation.control_delta_t)
+    }
 }
 
 # irrelevant 
@@ -92,7 +98,7 @@ function Terminal(sim_obervation: SimState){
 }
 
 simulator Simulator(action: SimAction, config: SimConfig): SimState {
-    #package ""
+    package "MLO0420"
 }
 
 graph (input: ObservationState): SimAction {
@@ -100,7 +106,7 @@ graph (input: ObservationState): SimAction {
     concept optimize(input): SimAction {
         curriculum {
             algorithm {
-                Algorithm: "PPO",
+                Algorithm: "SAC",
                 #BatchSize: 8000,
                 #PolicyLearningRate: 0.001
             }
