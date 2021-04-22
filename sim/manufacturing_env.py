@@ -273,7 +273,7 @@ class DES(General):
 
     def update_line_simulation_time_step(self):
         '''
-        updating can accumulation at fixed time interval, i.e General.simulation_time_step 
+        Updating can accumulation at fixed time interval, i.e General.simulation_time_step 
         '''
         while True:
             self.is_control_frequency_event = 0
@@ -284,7 +284,7 @@ class DES(General):
          
     def downtime_generator(self):
         '''
-        Paramters used in General will be used to generate downtime events on a random machine. 
+        Parameters used in General will be used to generate downtime events on a random machine. 
         '''
         while True:
             # randomly pick a machine
