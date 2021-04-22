@@ -2,17 +2,49 @@ inkling "2.0"
 using Number
 using Math
 
+## define constants, part of sim config 
+const number_of_iterations = 1000
+## control type: -1: control at fixed time frequency but no downtime event 
+## control_type:  0: control at fixed time frequency 
+## control type:  1: event driven, i.e. when a downtime occurs
+## control type:  2: both at fixed control frequency and downtime
+const control_type = 1
+## the below control frequency does not apply to control type 1 and will be ignored
+const control_frequency = 1 # in seconds (s)
+
+## Downtime event config 
+## a random interval_downtime_event is generated in the range [interval_downtime_event_mean - interval_downtime_event_dev, interval_downtime_event_mean + interval_downtime_event_dev]
+## a random downtime duration is generated in the range [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean + downtime_event_duration_std]
+const interval_downtime_event_mean = 100  # seconds (s) 
+const interval_downtime_event_dev = 20 #  seconds (s) 
+const downtime_event_duration_mean = 10  # seconds (s),  
+const downtime_event_duration_dev = 3  # seconds (s)
+## The following indicate possibility of multiple machines going down in parallel and at overlapping times
+## 1 means 1 machine goes down at a time
+const number_parallel_downtime_events = 1
+
+## plant layout
+## Currently only 1 configuration exists 
+const layout_configuration = 1 
+
 
 type SimState {
     machines_speed: number[10], 
     machines_state: number[10],
     machines_state_sum: number,
     conveyors_speed: number[9],
-    sink_machines_rate_sum: number,
+    sink_machines_rate_sum: number,  # rate of production in the last simulation step 
+    sink_throughput_delta_sum: number,  # amount of product produced between the controls 
+    sink_throughput_absolute_sum: number, # absolute sum of all the productions at eny iteration
     conveyor_infeed_m1_prox_empty: number[9],
     conveyor_infeed_m2_prox_empty: number[9],
     conveyor_discharge_p1_prox_full: number[9],
     conveyor_discharge_p2_prox_full: number[9],
+    illegal_machine_actions: number[10],
+    illegal_conveyor_actions: number[9],
+    remaining_downtime_machines: number[10],
+    control_delta_t: number,
+    env_time: number,
 }
 
 
@@ -21,27 +53,42 @@ type ObservationState{
     machines_state: number[10],
     conveyors_speed: number[9],
     sink_machines_rate_sum: number,
+    sink_throughput_delta_sum: number,
     conveyor_infeed_m1_prox_empty: number[9],
     conveyor_infeed_m2_prox_empty: number[9],
     conveyor_discharge_p1_prox_full: number[9],
-    conveyor_discharge_p2_prox_full: number[9],  
+    conveyor_discharge_p2_prox_full: number[9], 
+    illegal_machine_actions: number[10],
+    remaining_downtime_machines: number[10] 
 }
 
 
 # multiarm bandit actions. 
 type SimAction{
-    machines_speed: number<0,25, 50, 75, 100,>[10],
-    conveyors_speed: number<0,25,50, 75, 100,>[9]
+    machines_speed: number<0,10,20,30,100,>[10],
+    conveyors_speed: number<0,10,20,30,100,>[9]
 }
 
 
 type SimConfig {
-    None: number
+    control_type : control_type,
+    control_frequency : control_frequency, 
+    interval_downtime_event_mean : interval_downtime_event_mean,  
+    interval_downtime_event_dev : interval_downtime_event_dev,
+    downtime_event_duration_mean : downtime_event_duration_mean,   
+    downtime_event_duration_dev : downtime_event_duration_dev,  
+    number_parallel_downtime_events : number_parallel_downtime_events,
+    layout_configuration : layout_configuration, 
 }
 
 
 function Reward(sim_observation: SimState){
-    return (sim_observation.sink_machines_rate_sum)/200
+    if sim_observation.control_delta_t==0 {
+        return  0
+    }
+    else{
+        return sim_observation.sink_throughput_delta_sum/(100*sim_observation.control_delta_t)
+    }
 }
 
 # irrelevant 
@@ -51,7 +98,7 @@ function Terminal(sim_obervation: SimState){
 }
 
 simulator Simulator(action: SimAction, config: SimConfig): SimState {
-    #package "mls0402"
+    package "MLO0420"
 }
 
 graph (input: ObservationState): SimAction {
@@ -64,16 +111,23 @@ graph (input: ObservationState): SimAction {
                 #PolicyLearningRate: 0.001
             }
             training {
-                EpisodeIterationLimit: 200,
+                EpisodeIterationLimit: number_of_iterations,
                 NoProgressIterationLimit: 500000
             }
             source Simulator
             reward Reward
-            terminal Terminal
+            
 
             lesson `learn 1` {
                 scenario {
-                    None: 2,
+                    control_type : control_type,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
                 }
             }
         }

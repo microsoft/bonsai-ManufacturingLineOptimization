@@ -1,24 +1,18 @@
 import json 
 import os
 import time 
-import json
-import time
-from collections import OrderedDict
+import random 
+from collections import OrderedDict, deque
 from typing import Dict, Any, Optional
-from microsoft_bonsai_api.simulator.client import BonsaiClientConfig, BonsaiClient
-from microsoft_bonsai_api.simulator.generated.models import (
-    SimulatorState,
-    SimulatorInterface,
-)
 import simpy
 import numpy as np 
 
 '''
-Simulation environment for multi machine simulation environment. 
-
+Simulation environment for multi machine manufacturing line. 
 '''
-from sim.line_config import adj, con_balance, con_join
+from .line_config import adj, con_balance, con_join
 
+random.seed(10)
 
 def get_machines_conveyors_sources_sets(adj):
     adj = OrderedDict(sorted(adj.items()))
@@ -45,15 +39,24 @@ class General:
     machine_infeed_buffer = 100
     machine_discharge_buffer = 100 # 
     conveyor_capacity = 1000  # in cans 
-    num_conveyor_bins = 10  # every conveyor is divided into 10 sections. For approximation and connection purposes  
+    num_conveyor_bins = 10  # every conveyor is divided into 10 sections. For approximate and connection purpose  
     machine_min_speed = 10 # cans/second 
     machine_max_speed = 100 # cans/second  
     conveyor_min_speed = 10
     conveyor_max_speed = 100
     # warmup_time = 100  # seconds(s) 
-    downtime_event_gen_mean = 10    # seconds(s), on average every 100s one machine goes down 
-    downtime_duration_mean = 5  # seconds(s), on average each downtime event lasts for about 30s.  
-    control_frequency = 1  # 0: Control at generation of events, any other number indicates a fixed control frequency  
+    # downtime_event_prob = 0.1 # probability applied every "downtime-even_gen_mean" to create downtime on a random machine 
+    interval_downtime_event_mean = 100  # seconds (s) average time between random downtime events  
+    interval_downtime_event_dev = 20 # deviation, a random interval_downtime_event is generated in range [interval_downtime_event_mean - interval_downtime_event_dev, interval_downtime_event_mean + interval_downtime_event_dev]
+    downtime_event_duration_mean = 10  # seconds(s), mean duration of each downtime event 
+    downtime_event_duration_dev = 3  # seconds(s), deviation from mean. [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean + downtime_event_duration_std]   
+    control_frequency = 1  # seconds (s), fixed control frequency duration 
+    ## control type: -1: control at fixed time frequency but no downtime event 0: control at fixed time frequency 
+    ## control type: 1: event driven, i.e. when a downtime occurs, 2: both at fixed control frequency and downtime  
+    control_type = 1 
+    number_parallel_downtime_events = 1 
+    layout_configuration = 1 # placeholder for different configurations of machines.
+    simulation_time_step = 1 # granularity of simulation updates. Larger values make simulation less accurate. Recommended value: 1.
 
 class Machine(General):
     '''
@@ -67,6 +70,7 @@ class Machine(General):
         self.id = id 
         self._speed = speed 
         self._state = 'idle' if speed == 0 else 'active'
+        # keep track of the down time event times.  
 
     @property
     def speed(self):
@@ -78,11 +82,15 @@ class Machine(General):
     @speed.setter
     def speed(self, value):
         if not (self.min_speed <= value <= self.max_speed or value == 0):
-            raise ValueError('speed must be 0 or between 10 and 100')
-        self._speed = value 
-        if value == 0 and self.state != "down":
+            raise ValueError(f'speed must be 0 or between {self.min_speed} and {self.max_speed}')
+        if self.state == "down":
+            self._speed = 0
+            print('Illegal action: machine is down, machine speed will be kept zero')
+        elif value == 0 and self.state != "down":
             self.state = "idle"
-        if value > 0:
+            self._speed = value 
+        elif  value > 0:
+            self._speed = value 
             self.state = "active"
 
     @state.setter
@@ -93,10 +101,10 @@ class Machine(General):
         if state == 'down' or state == 'idle':
             self._speed = 0
 
-    # need to implement a setter and getter 
     def __repr__(self):
         return (f'Machine with id of {self.id} \
                 runs at speed of {self.speed} and is in {self.state} mode')
+
     
 class Conveyor(General):
 
@@ -127,11 +135,15 @@ class Conveyor(General):
     @speed.setter
     def speed(self, value):
         if not (self.min_speed <= value <= self.max_speed or value == 0):
-            raise ValueError('speed must be 0 or between 10 and 100')
-        self._speed = value 
-        if value == 0 and self.state != "down":
+            raise ValueError(f'speed must be 0 or between {self.min_speed} and {self.max_speed}')
+        if self.state == "down":
+            self._speed = 0
+            print('Illegal action: machine is down, machine speed will be kept zero')
+        elif value == 0 and self.state != "down":
             self.state = "idle"
-        if value > 0:
+            self._speed = value 
+        elif  value > 0:
+            self._speed = value 
             self.state = "active"
 
     @state.setter
@@ -147,6 +159,14 @@ class Conveyor(General):
         return (f'Conveyor with id of {self.id}\
             runs at speed of {self.speed} and is in {self.state} mode')
 
+class Sink():
+    def __init__(self,id):
+        super().__init__()
+        ## count of product accumulation at a sink, where manufactured product is collected.
+        ## assumption is an infinite capacity 
+        self.product_count = 0   
+        ## a deque to track can accumulation between events 
+        self.count_history = deque([0,0,0], maxlen = 10)
 
 class DES(General):
     def __init__(self,env):
@@ -155,7 +175,16 @@ class DES(General):
         self.components_speed = {}
         self._initialize_conveyor_buffers()
         self._initialize_machines()
+        self._initialize_sink()
         self.episode_end = False 
+        # a flag to identify events that require control 
+        self.is_control_downtime_event = 0 
+        self.is_control_frequency_event = 0 
+        self.downtime_event_times_history = deque([0,0,0], maxlen=10) 
+        self.downtime_machine_history = deque([0,0,0], maxlen=10)
+        self.control_frequency_history = deque([0,0,0], maxlen=10)
+        self._initialize_downtime_tracker()
+        self._check_simulation_step()
 
         print(f'components speed are\n:', self.components_speed)
         
@@ -178,51 +207,177 @@ class DES(General):
             self.components_speed[machine] = General.machine_min_speed
             id += 1 
 
-    def processes_generator(self):  
-        print('started can processing. All machines working ')
-        #self.env.process(self.downtime_generator())
-        self.env.process(self.control_frequency_update())  # aims to update machine speed at defined control freq
-        #self.env.process(self.event_driven_update())  # aims to update machine speed at when events occur 
+    def _initialize_sink(self):
+        id = 0 
+        for sink in General.sinks:
+            setattr(self, sink, Sink(id = id))
+            id += 1 
+
+    def _initialize_downtime_tracker(self):
+        ## initialize a dictionary to keep track of remaining downtime 
+        self.downtime_tracker_machines ={}
+        self.downtime_tracker_conveyors = {}
+        for machine in General.machines:
+            self.downtime_tracker_machines[machine] = 0 
+        for conveyor in General.conveyors:
+            self.downtime_tracker_conveyors[conveyor] = 0 
     
+    def _check_simulation_step(self):
+        '''
+        simulation step should be equal or smaller than control frequency
+        '''
+        if self.control_frequency < self.simulation_time_step:
+            print('Simulation time step should be equal or smaller than control frequency!')
+            print(f'Adjusting simulation time step from {self.simulation_time_step} s to {self.control_frequency}')
+            time.sleep(1)
+            self.simulation_time_step = self.control_frequency
+        else:
+            pass
+
+            
+    def processes_generator(self):  
+        print('Started can processing ... ')
+        self.env.process(self.update_line_simulation_time_step())
+
+        if self.control_type == -1: 
+            # no downtime event used for brain training for steady state 
+            self.env.process(self.control_frequency_update())
+        elif self.control_type == 0:
+            self.env.process(self.control_frequency_update())
+            for num_process in range(0, self.number_parallel_downtime_events):
+                self.env.process(self.downtime_generator())
+        elif self.control_type == 1:
+            for num_process in range(0, self.number_parallel_downtime_events):
+                self.env.process(self.downtime_generator())
+            #self.env.process(self.downtime_generator())
+        elif self.control_type == 2:
+            self.env.process(self.control_frequency_update()) 
+            for num_process in range(0, self.number_parallel_downtime_events):
+                self.env.process(self.downtime_generator()) 
+        else:
+            raise ValueError(f"Only the following modes are currently available: \
+                -1: fixed control frequency with no downtime event, \
+                    fixed control frequency (0) or event driven (1), both (2) with downtime events")
+        
     def control_frequency_update(self):
         while True: 
-            yield self.env.timeout(General.control_frequency)
+            ## define event type as control frequency event a ahead of the event 
+            self.is_control_frequency_event = 1 
+            self.is_control_downtime_event = 0 
+            print(f'................ control at {self.env.now} and event requires control: {self.is_control_frequency_event}...')
+            yield self.env.timeout(self.control_frequency)
+            self.is_control_frequency_event = 0 
+            ## change the flag to zero, in case other events occur.  
             print('-------------------------------------------')
             print(f'control freq event at {self.env.now} s ...')
 
+    def update_line_simulation_time_step(self):
+        '''
+        Updating can accumulation at fixed time interval, i.e General.simulation_time_step 
+        '''
+        while True:
+            self.is_control_frequency_event = 0
+            self.is_control_downtime_event = 0
+            yield self.env.timeout(self.simulation_time_step)
+            print(f'----simulation update at {self.env.now}')
+            self.update_line()
+         
+    def downtime_generator(self):
+        '''
+        Parameters used in General will be used to generate downtime events on a random machine. 
+        '''
+        while True:
+            # randomly pick a machine
+            self.random_down_machine = random.choice(list(General.machines))
+            self.is_control_downtime_event = 1 
+            self.is_control_frequency_event = 0 
+            print(f'................ now machine {self.random_down_machine} goes down at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
+            setattr(eval('self.' + self.random_down_machine),'state', 'down')
+            # track current downtime event for the specific machine 
+            self.random_downtime_duration = random.randint(self.downtime_event_duration_mean-self.downtime_event_duration_dev,
+                                        self.downtime_event_duration_mean + self.downtime_event_duration_dev )
+            #only add control events to a deque
+            self.track_event()
+            yield self.env.timeout(self.random_downtime_duration)
+            setattr(eval('self.' + self.random_down_machine),'state', 'idle')
+            print(f'................ now machine {self.random_down_machine} is up at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
+            print(f'................ let machines run for a given period of time without any downtime event')
+            self.is_control_downtime_event = 0
+            self.is_control_frequency_event = 0 
+            interval_downtime_event_duration = random.randint(self.interval_downtime_event_mean - self.interval_downtime_event_dev,
+                            self.interval_downtime_event_mean + self.interval_downtime_event_dev)
+            yield self.env.timeout(interval_downtime_event_duration)
+
+            
     def update_line(self):
-        # using brain actions 
-        self.update_machines_speed()
-        # using brain actions 
-        self.update_conveyors_speed()
+        # now moved to step
+        # # using brain actions 
+        # self.update_machines_speed()
+        # # using brain actions 
+        # self.update_conveyors_speed()
 
         # enforcing PLC rules to prevent jamming. This may ignore brain actions if buffers are full. 
         self.plc_control_machine_speed()
-        
         self.update_machine_adjacent_buffers()
         self.update_conveyors_buffers()
         self.update_conveyor_junctions()
+        self.update_sinks_product_accumulation()
 
-    def event_driven_update(self):
+    def update_sinks_product_accumulation(self):
         '''
-        to be completed 
+        For each machine, we will check if to is connected to sink, then accumulate product according to machine speed . 
         '''
-        pass
+        ### update machine infeed and discharge buffers according to machine speed 
+        for machine in adj.keys():
+            adj_conveyors = adj[machine]
+            infeed = adj_conveyors[0]
+            discharge = adj_conveyors[1]
+            delta = getattr(eval('self.'+ machine), 'speed')* self.simulation_time_step   # amount of cans going from one side to the other side 
+                
+            if 'sink' in discharge:
+                # now check buffer full  ....................................TODO:
+                level = getattr(getattr(self, discharge), "product_count") 
+                setattr(eval('self.' + discharge), "product_count", level + delta)
+
+
+    def track_event(self):
+        '''
+        Once called, will add current simulation time and also  
+        It will be used to track the occurrence time of downtime events
+        '''
+        self.downtime_event_times_history.append(self.env.now)
+        self.downtime_machine_history.append((self.env.now, self.random_down_machine, self.random_downtime_duration))
+
+    def track_control_frequency(self):
+        self.control_frequency_history.append(self.env.now)
+
+    def track_sinks_throughput(self):
+        for sink in General.sinks:
+            level = getattr(getattr(self, sink), "product_count") 
+            s = eval('self.' + sink)
+            s.count_history.append(level)
+
+
+    def calculate_inter_event_delta_time(self):
+        '''
+        The goal is to keep track of time lapsed between events. 
+        potential use: (1) calculate remaining downtime (2) for reward normalization 
+        '''
+        return self.downtime_event_times_history[-1] - self.downtime_event_times_history[-2]
     
-    def downtime_generator(self):
-        while not self.episode_end:
-            yield self.env.timeout(General.downtime_duration_mean) 
-
-            print(f'................ now a machine went down at {self.env.now} ...')
+    def calculate_control_frequency_delta_time(self):
+        '''
+        To track time between brain controls following the config parameter, set through inkling
+        '''
+        return self.control_frequency_history[-1] - self.control_frequency_history[-2]
 
 
     def update_machines_speed(self):
         '''
         update the speed of the machine using brain actions that has written in components_speed[machine] dictionary
         '''  
-        #####todo: add brain actions 
         for machine in General.machines:
-            #print(f'now at {self.env.now} s updating mechine speed')
+            # print(f'now at {self.env.now} s updating machine speed')
             updated_speed = self.components_speed[machine]
             setattr(eval('self.' + machine),'speed', updated_speed)
             print(eval('self.' + machine))
@@ -231,7 +386,6 @@ class DES(General):
         '''
         update the speed of the conveyors using brain actions that has written in components_speed[machine] dictionary
         ''' 
-        #####todo: add brain actions 
         for conveyor in General.conveyors:
             #print(f'now at {self.env.now} s updating conveyor speed')
             updated_speed = self.components_speed[conveyor]
@@ -247,17 +401,15 @@ class DES(General):
             adj_conveyors = adj[machine]
             infeed = adj_conveyors[0]
             discharge = adj_conveyors[1]
-            delta = getattr(eval('self.'+ machine), 'speed')* General.control_frequency   # amount of cans going from one side to the other side 
+            delta = getattr(eval('self.'+ machine), 'speed')* self.simulation_time_step   # amount of cans going from one side to the other side 
             if 'source' not in infeed: 
 
                 level = getattr(getattr(self, infeed), "bin"+ str(General.num_conveyor_bins-1))
                 level -= delta
-
                 if level <= 0:
                     level = 0 
                     #TODO: prox empty machine speed = 0   
                 setattr(eval('self.' +infeed), "bin"+ str(General.num_conveyor_bins-1), level)
-
                 
             if 'sink' not in discharge:
                 # now check buffer full  ....................................TODO:
@@ -274,7 +426,7 @@ class DES(General):
     def update_conveyors_buffers(self):
         for conveyor in General.conveyors:
             for bin_num in range(1, General.num_conveyor_bins):
-                delta2 = getattr(eval('self.'+ conveyor), 'speed')* General.control_frequency
+                delta2 = getattr(eval('self.'+ conveyor), 'speed')* self.simulation_time_step
                 bin_level =  getattr(getattr(self, conveyor), "bin"+ str(bin_num))
                 previous_bin_level = getattr(getattr(self, conveyor), "bin"+ str(bin_num - 1))
                 
@@ -317,13 +469,13 @@ class DES(General):
                 pass
             elif bin_1_level == bin_1_capacity and bin_2_level<bin_2_capacity:
                 ## push cans from bin_1 to bin_2
-                delta = min(getattr(eval('self.'+ conveyor1), 'speed')* General.control_frequency, bin_2_capacity-bin_2_level)
+                delta = min(getattr(eval('self.'+ conveyor1), 'speed')* self.simulation_time_step, bin_2_capacity-bin_2_level)
                 setattr(eval('self.' + conveyor2),"bin"+ str(join_bin) , delta + bin_2_level)
                 setattr(eval('self.'+ conveyor1), "bin"+ str(join_bin) , bin_1_level - delta)
             
             elif bin_2_level == bin_2_capacity and bin_1_level<bin_1_capacity:
                 # do the opposite 
-                delta = min(getattr(eval('self.'+ conveyor2), 'speed')* General.control_frequency, bin_1_capacity-bin_1_level)
+                delta = min(getattr(eval('self.'+ conveyor2), 'speed')* self.simulation_time_step, bin_1_capacity-bin_1_level)
                 setattr(eval('self.' + conveyor1),"bin"+ str(join_bin) , delta + bin_1_level)
                 setattr(eval('self.' + conveyor2), "bin"+ str(join_bin) , bin_2_level - delta)
             else:
@@ -342,7 +494,7 @@ class DES(General):
             bin_2_capacity = getattr(getattr(self, conveyor2), "bins_capacity")
             if bin_2_level < bin_2_capacity:
                 ## always add from first one to the second one if there is room 
-                delta = min(getattr(eval('self.'+ conveyor1), 'speed')* General.control_frequency, bin_2_capacity-bin_2_level)
+                delta = min(getattr(eval('self.'+ conveyor1), 'speed')* self.simulation_time_step, bin_2_capacity-bin_2_level)
 
                 setattr(eval('self.' + conveyor1),"bin"+ str(join_bin) , bin_1_level - delta)
                 setattr(eval('self.' + conveyor2), "bin"+ str(join_bin) , bin_2_level + delta)               
@@ -376,6 +528,49 @@ class DES(General):
                         print(eval('self.' + machine))
    
 
+    def check_illegal_actions(self):
+        '''
+        We will compare brain action (component action) with actual speed. If different then brain action was illegal. 
+        '''
+        illegal_machine_actions = []
+        illegal_conveyor_actions = []
+
+        for machine in General.machines:
+            speed = getattr(eval('self.' + machine),'speed')
+            illegal_machine_actions.append(int(speed != self.components_speed[machine]))
+
+        for conveyor in General.conveyors:
+            speed = getattr(eval('self.' + conveyor),'speed')
+            illegal_conveyor_actions.append(int(speed != self.components_speed[conveyor]))
+
+        return illegal_machine_actions, illegal_conveyor_actions
+
+    def calculate_downtime_remaining_time(self):
+        ## first calculated the delta time elapsed since previous event
+        delta_t = self.calculate_inter_event_delta_time()
+
+        ## update the machine and conveyor downtime tracker using the delta t 
+        for machine in General.machines:
+            self.downtime_tracker_machines[machine] = max(self.downtime_tracker_machines[machine]-delta_t, 0)
+
+        for conveyor in General.conveyors:
+            self.downtime_tracker_conveyors[conveyor] = max(self.downtime_tracker_machines[machine]-delta_t, 0)
+
+        ## add/update the latest downtime event to the tracker 
+        ## currently only machines downtime is considered.
+        try: 
+            self.downtime_tracker_machines[self.random_down_machine] = self.random_downtime_duration
+        except:
+            print('Could not update downtime_tracker_machines dict. Ok for iteration zero!')
+
+        remaining_downtime_machines = []
+
+        for machine in General.machines:
+            remaining_downtime_machines.append(self.downtime_tracker_machines[machine])
+        
+        return remaining_downtime_machines, delta_t
+
+
     def reset(self):
         #self.episode_end = False
         self.processes_generator()      
@@ -386,17 +581,41 @@ class DES(General):
         # update the speed dictionary for those comming from the brain 
         for key in list(brain_actions.keys()):
             self.components_speed[key] = brain_actions[key]
-        # update line using self.component_speed
-        self.update_line()
+        # # update line using self.component_speed
+        # self.update_line()
+
+        # using brain actions 
+        self.update_machines_speed()
+        # using brain actions 
+        self.update_conveyors_speed()
         
         print('Simulation time at step:', self.env.now) 
-        # wait for next event to happen
-        self.env.step()
-        #self.env.run(self.env.event())
         
-        #self.env.run(until=2000)
-    # def end_episode(self):
-    #     self.episode_end = True
+        # step through the controllable event
+        self.env.step()
+        if self.control_type == 0 or self.control_type == -1:
+            ## control at fixed frequency. -1 for no-downtime event 
+            while self.is_control_frequency_event != 1:
+                self.env.step()
+
+        elif self.control_type == 1: 
+            ## control when downtime events occur
+            # Step through other events until a controllable event occurs. 
+            while self.is_control_downtime_event != 1:
+                # step through events until a control event, such as downtime, occurs
+                # Some events such as time laps are not control events and are excluded by the flag 
+                self.env.step()
+        elif self.control_type == 2:
+            while (self.is_control_frequency_event == 0 and self.is_control_downtime_event == 0):
+                self.env.step()
+        else:
+            raise ValueError(f'unknown control type: {self.control_type}. \
+                available modes: -1: fixed time no downtime, 0:fixed time, 1: downtime event, 2: both at fixed time and downtime event')
+        
+        # register the time of the controllable event: for use in calculation of delta-t. 
+        self.track_control_frequency()
+        # track can accumulation in sinks once a new control event is triggered. 
+        self.track_sinks_throughput()
 
     def get_states(self):
         '''
@@ -405,7 +624,7 @@ class DES(General):
         (2) conveyor speed, an array indicating speed of all the conveyors 
         (3) proxes, amount of can accumulations in each bin (Note: Not available in real world )
         (4) if proxes are full (two proxes before and two proxes after each machine is available in real world)
-        (5) throughput, i.e. the production rate from sink, i.e the speed of the last machine (will be used as reward)
+        (5) Throughput, i.e. the production rate from sink, i.e the speed of the last machine (will be used as reward)
         '''
         ## 1
         machines_speed = []
@@ -424,8 +643,10 @@ class DES(General):
 
         ## 2
         conveyors_speed = []
+        conveyors_state = []
         for conveyor in General.conveyors:
             conveyors_speed.append(getattr(eval('self.' + conveyor),'speed'))
+            conveyors_state.append(getattr(eval('self.' + conveyor),'state'))
 
         ## 3,4
         conveyor_buffers = []
@@ -456,7 +677,8 @@ class DES(General):
             conveyor_buffers.append(buffer)
             conveyor_buffers_full.append(buffer_full)
         
-        ## 5
+        ## throughput rate: 5
+        ## Most useful for fixed control frequency 
         sink_machines_rate = []
         for machine in adj.keys():
             adj_conveyors = adj[machine]
@@ -464,24 +686,55 @@ class DES(General):
             discharge = adj_conveyors[1]
             if 'sink' in discharge: 
                 sink_machines_rate.append(getattr(eval('self.'+ machine), 'speed'))
+
+        ## sink inter-event product accumulation: 6 
+
+        ## throughput change between control actions
+        sinks_throughput_delta = []
+        ## absolute value of throughput 
+        sinks_throughput_abs = []
+
+        for sink in General.sinks:
+            s = eval('self.'+ sink)
+            delta = s.count_history[-1] - s.count_history[-2]
+            sinks_throughput_delta.append(delta)  
+            sinks_throughput_abs.append(s.count_history[-1])
+    
+
+        ## illegal actions: 7
+        illegal_machine_actions, illegal_conveyor_actions = self.check_illegal_actions()
+
+        ## downtime remaining time: 8 
+        remaining_downtime_machines, downtime_event_delta_t = self.calculate_downtime_remaining_time()
+
+        control_delta_t = self.calculate_control_frequency_delta_time()
+        
             
         states = {'machines_speed': machines_speed,
                   'machines_state': machines_state,
                   'machines_state_sum': sum(machines_state),
                   'conveyors_speed': conveyors_speed,
+                  'conveyors_state': conveyors_state, 
                   'conveyor_buffers': conveyor_buffers,
                   'conveyor_buffers_full': conveyor_buffers_full,
                   'sink_machines_rate': sink_machines_rate,
                   'sink_machines_rate_sum': sum(sink_machines_rate),
+                  'sink_throughput_delta': sinks_throughput_delta,
+                  'sink_throughput_delta_sum': sum(sinks_throughput_delta),
+                  'sink_throughput_absolute_sum':sum(sinks_throughput_abs),
                   'conveyor_infeed_m1_prox_empty': conveyor_infeed_m1_prox_empty,
                   'conveyor_infeed_m2_prox_empty': conveyor_infeed_m2_prox_empty,
                   'conveyor_discharge_p1_prox_full': conveyor_discharge_p1_prox_full,
-                  'conveyor_discharge_p2_prox_full': conveyor_discharge_p2_prox_full,        
+                  'conveyor_discharge_p2_prox_full': conveyor_discharge_p2_prox_full, 
+                  'illegal_machine_actions': illegal_machine_actions,
+                  'illegal_conveyor_actions': illegal_conveyor_actions, 
+                  'remaining_downtime_machines': remaining_downtime_machines,
+                  'control_delta_t': control_delta_t, 
+                  'env_time': self.env.now     
         }
 
         return states 
                 
-
 
 if __name__=="__main__":                             
     env = simpy.Environment()
@@ -491,9 +744,7 @@ if __name__=="__main__":
     while True:
         my_env.step(brain_actions = {'c0': 50, 'm0': 100, 'm1': 10} )
         #input('Press Enter to continue ...')    
-        machines_speed, conveyors_speed, conveyor_buffers, conveyor_buffers_full, sink_machines_rate,\
-            conveyor_infeed_m1_prox_empty, conveyor_infeed_m2_prox_empty, conveyor_discharge_p1_prox_full,\
-                conveyor_discharge_p2_prox_full = my_env.get_states()
+        states = my_env.get_states()
         print(f'iteration is {iteration}')
         iteration += 1 
         if iteration ==100000:
