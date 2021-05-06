@@ -5,6 +5,7 @@ A set of tests to insure that line configuration makes sense
 
 '''
 import os 
+import pytest
 # from pathlib import Path
 # p= Path(os.getcwd())
 # os.chdir(p.parent)

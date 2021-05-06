@@ -10,7 +10,7 @@ import numpy as np
 '''
 Simulation environment for multi machine manufacturing line. 
 '''
-from .line_config import adj, con_balance, con_join
+from line_config import adj, con_balance, con_join
 
 random.seed(10)
 
@@ -50,7 +50,7 @@ class General:
     interval_downtime_event_dev = 20 # deviation, a random interval_downtime_event is generated in range [interval_downtime_event_mean - interval_downtime_event_dev, interval_downtime_event_mean + interval_downtime_event_dev]
     downtime_event_duration_mean = 10  # seconds(s), mean duration of each downtime event 
     downtime_event_duration_dev = 3  # seconds(s), deviation from mean. [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean + downtime_event_duration_std]   
-    control_frequency = 1  # seconds (s), fixed control frequency duration 
+    control_frequency = 2  # seconds (s), fixed control frequency duration 
     ## control type: -1: control at fixed time frequency but no downtime event 0: control at fixed time frequency 
     ## control type: 1: event driven, i.e. when a downtime occurs, 2: both at fixed control frequency and downtime  
     control_type = 1 
@@ -510,12 +510,13 @@ class DES(General):
             adj_conveyors = adj[machine]
             infeed = adj_conveyors[0]
             discharge = adj_conveyors[1]
-            if 'source' not in infeed: 
-                level = getattr(getattr(self, infeed), "bin"+ str(General.num_conveyor_bins-1))
-                if level ==0: 
-                    print(f'stopping machine {machine} as infeed prox is empty, i.e the whole conveyor is empty')
-                    setattr(eval('self.' + machine), "speed", 0)
-                    print(eval('self.' + machine))
+            # Unnecessary
+            # if 'source' not in infeed: 
+            #     level = getattr(getattr(self, infeed), "bin"+ str(General.num_conveyor_bins-1))
+            #     if level ==0: 
+            #         print(f'stopping machine {machine} as infeed prox is empty, i.e the whole conveyor is empty')
+            #         setattr(eval('self.' + machine), "speed", 0)
+            #         print(eval('self.' + machine))
 
                 
             if 'sink' not in discharge:
