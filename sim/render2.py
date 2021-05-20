@@ -1,3 +1,5 @@
+from multiprocessing import Process
+from time import process_time
 from matplotlib import pyplot as plt
 from itertools import count
 from networkx.generators import line
@@ -6,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import networkx as nx
 import numpy as np
+
 plt.style.use('fivethirtyeight')
 
 # {x, Y] position of the line elements in the plot.
@@ -58,9 +61,22 @@ def animate(i):
 
 
 def render():
+    # plt.tight_layout()
     ani = FuncAnimation(plt.gcf(), animate, interval=1000)
     print('Rendering...')
     plt.show()
 
 
-render()
+def test():
+    i = 0
+    while i < 100000:
+        print(i)
+        i += 1
+
+
+if __name__ == "__main__":
+    p = Process(target=render)
+    p.start()
+    test()
+    p.join()
+#animation = Process(target=render)
