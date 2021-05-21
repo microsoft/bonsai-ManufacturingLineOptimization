@@ -3,9 +3,9 @@
   "context": {},
   "episodeConfigurations": [
     {
-      "control_type": -1,
+      "control_type": 1,
       "control_frequency": 1,
-      "interval_downtime_event_mean": 100,
+      "interval_downtime_event_mean": 200,
       "interval_downtime_event_dev": 20,
       "downtime_event_duration_mean": 10,
       "downtime_event_duration_dev": 3,
@@ -15,7 +15,7 @@
     {
       "control_type": -1,
       "control_frequency": 1,
-      "interval_downtime_event_mean": 100,
+      "interval_downtime_event_mean": 200,
       "interval_downtime_event_dev": 20,
       "downtime_event_duration_mean": 10,
       "downtime_event_duration_dev": 3,
@@ -23,9 +23,9 @@
       "layout_configuration": 1
     },
     {
-      "control_type": -1,
+      "control_type": 2,
       "control_frequency": 1,
-      "interval_downtime_event_mean": 100,
+      "interval_downtime_event_mean": 200,
       "interval_downtime_event_dev": 20,
       "downtime_event_duration_mean": 10,
       "downtime_event_duration_dev": 3,
