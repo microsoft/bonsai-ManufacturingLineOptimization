@@ -1,3 +1,4 @@
+from line_config import adj, con_balance, con_join
 import json
 import os
 import time
@@ -11,12 +12,15 @@ from matplotlib.animation import FuncAnimation
 import networkx as nx
 from networkx.generators import line
 import pandas as pd
-from multiprocessing import Process
+# from multiprocessing import Process
+import threading
+# from threading import Lock
+# from queue import Queue
+# lock = Lock()
 
 '''
-Simulation environment for multi machine manufacturing line. 
+Simulation environment for multi machine manufacturing line.
 '''
-from line_config import adj, con_balance, con_join
 
 random.seed(10)
 
@@ -77,7 +81,7 @@ class General:
 
 class Machine(General):
     '''
-    This class represents a General machine, i.e. its states and function   
+    This class represents a General machine, i.e. its states and function
 
     '''
 
@@ -142,7 +146,7 @@ class Conveyor(General):
         self.bins_capacity = self.capcity/self.number_of_bins
         # each bin is a container and has a capacity and initial value
         for i in range(0, self.number_of_bins):
-            #setattr(self, "bin" + str(i), simpy.Container(env, init = self.bins_capacity/2,  capacity = self.bins_capacity))
+            # setattr(self, "bin" + str(i), simpy.Container(env, init = self.bins_capacity/2,  capacity = self.bins_capacity))
             setattr(self, "bin" + str(i), self.bins_capacity/2)
 
     @property
@@ -210,7 +214,7 @@ class DES(General):
         self.control_frequency_history = deque([0, 0, 0], maxlen=10)
         self._initialize_downtime_tracker()
         self._check_simulation_step()
-
+        self.sinks_throughput_abs = 0
         print(f'components speed are\n:', self.components_speed)
 
     def _initialize_conveyor_buffers(self):
@@ -220,7 +224,7 @@ class DES(General):
         for conveyor in General.conveyors:
             setattr(self, conveyor,  Conveyor(id=id, speed=General.conveyor_min_speed,
                     number_of_bins=General.num_conveyor_bins, env=self.env))
-            #print(getattr(self, conveyor))
+            # print(getattr(self, conveyor))
             self.components_speed[conveyor] = General.conveyor_min_speed
             id += 1
 
@@ -230,7 +234,7 @@ class DES(General):
         for machine in General.machines:
             setattr(self, machine,  Machine(
                 id=id, speed=General.machine_min_speed))
-            #print(getattr(self, machine))
+            # print(getattr(self, machine))
             self.components_speed[machine] = General.machine_min_speed
             id += 1
 
@@ -302,7 +306,7 @@ class DES(General):
 
     def update_line_simulation_time_step(self):
         '''
-        Updating can accumulation at fixed time interval, i.e General.simulation_time_step 
+        Updating can accumulation at fixed time interval, i.e General.simulation_time_step
         '''
         while True:
             self.is_control_frequency_event = 0
@@ -313,7 +317,7 @@ class DES(General):
 
     def downtime_generator(self):
         '''
-        Parameters used in General will be used to generate downtime events on a random machine. 
+        Parameters used in General will be used to generate downtime events on a random machine.
         '''
         while True:
             # randomly pick a machine
@@ -356,7 +360,7 @@ class DES(General):
 
     def update_sinks_product_accumulation(self):
         '''
-        For each machine, we will check if to is connected to sink, then accumulate product according to machine speed . 
+        For each machine, we will check if to is connected to sink, then accumulate product according to machine speed .
         '''
         # update machine infeed and discharge buffers according to machine speed
         for machine in adj.keys():
@@ -375,7 +379,7 @@ class DES(General):
 
     def track_event(self):
         '''
-        Once called, will add current simulation time and also  
+        Once called, will add current simulation time and also
         It will be used to track the occurrence time of downtime events
         '''
         self.downtime_event_times_history.append(self.env.now)
@@ -393,8 +397,8 @@ class DES(General):
 
     def calculate_inter_event_delta_time(self):
         '''
-        The goal is to keep track of time lapsed between events. 
-        potential use: (1) calculate remaining downtime (2) for reward normalization 
+        The goal is to keep track of time lapsed between events.
+        potential use: (1) calculate remaining downtime (2) for reward normalization
         '''
         return self.downtime_event_times_history[-1] - self.downtime_event_times_history[-2]
 
@@ -419,14 +423,14 @@ class DES(General):
         update the speed of the conveyors using brain actions that has written in components_speed[machine] dictionary
         '''
         for conveyor in General.conveyors:
-            #print(f'now at {self.env.now} s updating conveyor speed')
+            # print(f'now at {self.env.now} s updating conveyor speed')
             updated_speed = self.components_speed[conveyor]
             setattr(eval('self.' + conveyor), 'speed', updated_speed)
-            #print(eval('self.' + conveyor))
+            # print(eval('self.' + conveyor))
 
     def update_machine_adjacent_buffers(self):
         '''
-        For each machine, we will look at the adj matrix and update number of cans in their buffers. If the buffer is full, we need to shut down the machine. 
+        For each machine, we will look at the adj matrix and update number of cans in their buffers. If the buffer is full, we need to shut down the machine.
         '''
         # update machine infeed and discharge buffers according to machine speed
         for machine in adj.keys():
@@ -490,8 +494,8 @@ class DES(General):
 
     def update_conveyor_junctions(self):
         '''
-        Rules for the junctions: mainly balancing the load between lines. 
-        If a junction bin gets full, it can push cans to the neighbor conveyor. 
+        Rules for the junctions: mainly balancing the load between lines.
+        If a junction bin gets full, it can push cans to the neighbor conveyor.
         '''
         for junction in con_balance:    # balancing load between two line
             conveyor1 = junction[0]
@@ -555,8 +559,8 @@ class DES(General):
 
     def plc_control_machine_speed(self):
         '''
-        rule1: machine should stop, i.e. speed = 0, if its discharge prox is full 
-        rule2: machine should stop, i.e. speed = 0, if its infeed prox is empty 
+        rule1: machine should stop, i.e. speed = 0, if its discharge prox is full
+        rule2: machine should stop, i.e. speed = 0, if its infeed prox is empty
         '''
         for machine in adj.keys():
             adj_conveyors = adj[machine]
@@ -583,7 +587,7 @@ class DES(General):
 
     def check_illegal_actions(self):
         '''
-        We will compare brain action (component action) with actual speed. If different then brain action was illegal. 
+        We will compare brain action (component action) with actual speed. If different then brain action was illegal.
         '''
         illegal_machine_actions = []
         illegal_conveyor_actions = []
@@ -630,7 +634,7 @@ class DES(General):
         return remaining_downtime_machines, delta_t
 
     def reset(self):
-        #self.episode_end = False
+        # self.episode_end = False
         self.processes_generator()
 
     def step(self, brain_actions):
@@ -677,8 +681,8 @@ class DES(General):
     def get_states(self):
         '''
         In this section, we will read the following:
-        (1) Machine speed, an array indicating speed of all the machines 
-        (2) conveyor speed, an array indicating speed of all the conveyors 
+        (1) Machine speed, an array indicating speed of all the machines
+        (2) conveyor speed, an array indicating speed of all the conveyors
         (3) proxes, amount of can accumulations in each bin (Note: Not available in real world )
         (4) if proxes are full (two proxes before and two proxes after each machine is available in real world)
         (5) Throughput, i.e. the production rate from sink, i.e the speed of the last machine (will be used as reward)
@@ -764,6 +768,7 @@ class DES(General):
             sinks_throughput_delta.append(delta)
             sinks_throughput_abs.append(s.count_history[-1])
 
+        self.sinks_throughput_abs = sum(sinks_throughput_abs)
         # illegal actions: 7
         illegal_machine_actions, illegal_conveyor_actions = self.check_illegal_actions()
 
@@ -797,9 +802,10 @@ class DES(General):
 
         return states
 
-    def render(self):
+    def animation_concurrent_run(self):
         """
-        Rendering for default configuration only 
+        Multi-threading for concurrent run of rendering
+        Supported for the default config
         """
         print('Rendering ....')
         print('Please note that rendering is only functional for the default line config.')
@@ -807,9 +813,9 @@ class DES(General):
         plt.style.use('fivethirtyeight')
 
         # {x, Y] position of the line elements in the plot.
-        position = {'Source1': (0, 0.02), 'M0': (5, 0.02), 'M1': (10, 0.02), 'Con1': (12.5, 0.02), 'M2': (15, 0.02),
-                    'M3': (20, 0.02), 'M4': (25, 0.02), 'Con2': (27.5, 0.02), 'M5': (30, 0.02), 'Sink': (35, 0.02),
-                    'Source2': (0, 0), 'M6': (5, 0), 'M7': (10, 0), 'Con3': (12.5, 0), 'M8': (15, 0), 'M9': (20, 0)}
+        position = {'source1': (0, 0.02), 'm0': (5, 0.02), 'm1': (10, 0.02), 'con1': (12.5, 0.02), 'm2': (15, 0.02),
+                    'm3': (20, 0.02), 'm4': (25, 0.02), 'con2': (27.5, 0.02), 'm5': (30, 0.02), 'sink': (35, 0.02),
+                    'source2': (0, 0), 'm6': (5, 0), 'm7': (10, 0), 'con3': (12.5, 0), 'm8': (15, 0), 'm9': (20, 0)}
 
         # functions only for use inside rendering
         def line_plot():
@@ -817,10 +823,10 @@ class DES(General):
             plt.figure(1, figsize=(300, 300))
 
             G = nx.Graph()
-            G.add_edges_from([("Source1", "M0"), ("M0", "M1"), ("M1", "Con1"), ("Con1", "Con3"), ("Con1", "M2"),
-                              ("M2", "M3"), ("M3", "M4"), ("M4",
-                                                           "Con2"), ("Con2", "M5"), ("M5", "Sink"),
-                              ("Source2", "M6"), ("M6", "M7"), ("M7", "Con3"), ("Con3", "M8"), ("M8", "M9"), ("M9", "Con2")])
+            G.add_edges_from([("source1", "m0"), ("m0", "m1"), ("m1", "con1"), ("con1", "con3"), ("con1", "m2"),
+                              ("m2", "m3"), ("m3", "m4"), ("m4",
+                                                           "con2"), ("con2", "m5"), ("m5", "sink"),
+                              ("source2", "m6"), ("m6", "m7"), ("m7", "con3"), ("con3", "m8"), ("m8", "m9"), ("m9", "con2")])
 
             node_sizes = [7500, 7500, 7500, 4000, 4000, 7500, 7500,
                           7500, 4000, 7500, 7500, 7500, 7500, 7500, 7500, 7500]
@@ -828,19 +834,25 @@ class DES(General):
 
             for key, val in position.items():
                 G.add_node(str(key), pos=val)
-                if key == "Con1" or key == "Con2" or key == "Con3":
+                if key == "con1" or key == "con2" or key == "con3"\
+                        or key == "source1" or key == "source2":
                     continue
-                txt = '(' + str(val[0]) + ',' + str(0) + ')'
-                plt.text(val[0]-0.6, val[1] + 0.002,
-                         'speed=' + str(np.random.randint(1, 10)), fontsize=8)
+                elif key == "sink":
+                    plt.text(val[0]-0.6, val[1] + 0.002,
+                             'Throughput =' + str(self.sinks_throughput_abs), fontsize=8)
+                else:
+                    machine_speed = getattr(eval('self.' + key), 'speed')
+                    plt.text(val[0]-0.6, val[1] + 0.002,
+                             'Speed =' + str(machine_speed), fontsize=8)
+
             nx.draw(G, nx.get_node_attributes(G, 'pos'),
                     with_labels=True, node_size=node_sizes, font_size=8)
-            nx.draw_networkx_edge_labels(G, position, edge_labels={('M0', 'M1'): 'C0', ('M1', 'Con1'): 'C1', ('Con1', 'M2'): 'C1',
-                                                                   ('Con3', 'Con1'): 'Load Balancing Conveyor',
-                                                                   ('M2', 'M3'): 'C2', ('M3', 'M4'): 'C3', ('M4', 'Con2'): 'C4',
-                                                                   ('Con2', 'M5'): 'C4', ('M6', 'M7'): 'C5', ('M7', 'Con3'): 'C6',
-                                                                   ('Con3', 'M8'): 'C6', ('M8', 'M9'): 'C7',
-                                                                   ('M9', 'Con2'): 'Joining Conveyor'}, font_color='red',
+            nx.draw_networkx_edge_labels(G, position, edge_labels={('m0', 'm1'): 'c0', ('m1', 'con1'): 'c1', ('con1', 'm2'): 'c1',
+                                                                   ('con3', 'con1'): 'Load Balancing Conveyor',
+                                                                   ('m2', 'm3'): 'c2', ('m3', 'm4'): 'c3', ('m4', 'con2'): 'c4',
+                                                                   ('con2', 'm5'): 'c4', ('m6', 'm7'): 'c5', ('m7', 'con3'): 'c6',
+                                                                   ('con3', 'm8'): 'c6', ('m8', 'm9'): 'c7',
+                                                                   ('m9', 'con2'): 'Joining Conveyor'}, font_color='red',
                                          font_size=8)
             plt.tight_layout()
 
@@ -849,29 +861,32 @@ class DES(General):
             plt.tight_layout()
             line_plot()
 
-        def animshow():
-            ani = FuncAnimation(plt.gcf(), animate, interval=100)
-            print('Rendering...')
-            plt.show()
-        animshow()
+        ani = FuncAnimation(plt.gcf(), animate, interval=1)
+        print('Rendering...')
+        plt.show()
+
+    def render(self):
+        p = threading.Thread(target=self.animation_concurrent_run)
+        p.daemon = True
+        p.start()
 
 
 if __name__ == "__main__":
     env = simpy.Environment()
     my_env = DES(env)
     my_env.reset()
-    rendering = Process(target=my_env.render)
-    rendering.start()
+    my_env.render()
     # rendering.join()
     # my_env.render()
     iteration = 0
     while True:
         my_env.step(brain_actions={'c0': 50, 'm0': 100, 'm1': 10})
-        #input('Press Enter to continue ...')
+        # input('Press Enter to continue ...')
         states = my_env.get_states()
         print(f'iteration is {iteration}')
         iteration += 1
         if iteration == 100000:
             my_env = DES(env)
             my_env.reset()
+            time.sleep(5)
             iteration = 0
