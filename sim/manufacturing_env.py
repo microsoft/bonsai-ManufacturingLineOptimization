@@ -1,4 +1,4 @@
-from line_config import adj, con_balance, con_join
+from .line_config import adj, con_balance, con_join
 import json
 import os
 import time
@@ -12,11 +12,10 @@ from matplotlib.animation import FuncAnimation
 import networkx as nx
 from networkx.generators import line
 import pandas as pd
-# from multiprocessing import Process
 import threading
-# from threading import Lock
+from threading import Lock
 # from queue import Queue
-# lock = Lock()
+lock = Lock()
 
 '''
 Simulation environment for multi machine manufacturing line.
@@ -819,7 +818,6 @@ class DES(General):
 
         # functions only for use inside rendering
         def line_plot():
-
             plt.figure(1, figsize=(300, 300))
 
             G = nx.Graph()
@@ -831,7 +829,7 @@ class DES(General):
             node_sizes = [7500, 7500, 7500, 4000, 4000, 7500, 7500,
                           7500, 4000, 7500, 7500, 7500, 7500, 7500, 7500, 7500]
             node_sizes = [node/10 for node in node_sizes]
-
+            lock.acquire()
             for key, val in position.items():
                 G.add_node(str(key), pos=val)
                 if key == "con1" or key == "con2" or key == "con3"\
@@ -844,7 +842,7 @@ class DES(General):
                     machine_speed = getattr(eval('self.' + key), 'speed')
                     plt.text(val[0]-0.6, val[1] + 0.002,
                              'Speed =' + str(machine_speed), fontsize=8)
-
+            lock.release()
             nx.draw(G, nx.get_node_attributes(G, 'pos'),
                     with_labels=True, node_size=node_sizes, font_size=8)
             nx.draw_networkx_edge_labels(G, position, edge_labels={('m0', 'm1'): 'c0', ('m1', 'con1'): 'c1', ('con1', 'm2'): 'c1',
@@ -861,7 +859,7 @@ class DES(General):
             plt.tight_layout()
             line_plot()
 
-        ani = FuncAnimation(plt.gcf(), animate, interval=1)
+        ani = FuncAnimation(plt.gcf(), animate, interval=1000)
         print('Rendering...')
         plt.show()
 
@@ -876,6 +874,7 @@ if __name__ == "__main__":
     my_env = DES(env)
     my_env.reset()
     my_env.render()
+    # my_env.animation_concurrent_run()
     # rendering.join()
     # my_env.render()
     iteration = 0

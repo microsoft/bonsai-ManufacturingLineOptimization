@@ -10,6 +10,10 @@ Usage:
     Then connect your registered simulator to a Brain via UI, or using the CLI: `bonsai simulator unmanaged connect -b <brain-name> -a <train-or-assess> -c  --simulator-name 
 """
 
+import simpy
+from sim.line_config import adj
+from sim import manufacturing_env as MLS
+from policies import random_policy, brain_policy
 import datetime
 import json
 import os
@@ -30,13 +34,13 @@ from microsoft_bonsai_api.simulator.generated.models import (
 )
 from azure.core.exceptions import HttpResponseError
 from functools import partial
+import threading
+# from threading import Lock
+# # from queue import Queue
+# lock = Lock()
 
-from policies import random_policy, brain_policy
 # import manufacturing line sim (MLS)
-from sim import manufacturing_env as MLS
-# import adj dict to match actions 
-from sim.line_config import adj
-import simpy 
+# import adj dict to match actions
 MACHINES, CONVEYORS, _, _ = MLS.get_machines_conveyors_sources_sets(adj)
 ENV = simpy.Environment()
 
@@ -45,15 +49,14 @@ DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 LOG_PATH = "logs"
 default_config = {
     "control_type": 1,
-    "control_frequency": 1, 
-    "interval_downtime_event_mean": 100,  
+    "control_frequency": 1,
+    "interval_downtime_event_mean": 100,
     "interval_downtime_event_dev": 20,
-    "downtime_event_duration_mean": 10,   
-    "downtime_event_duration_dev": 3,  
+    "downtime_event_duration_mean": 10,
+    "downtime_event_duration_dev": 3,
     "number_parallel_downtime_events": 1,
     "layout_configuration": 1,
 }
-
 
 
 def ensure_log_dir(log_full_path):
@@ -120,7 +123,7 @@ class TemplateSimulatorSession:
         # Add an extra field needed for go-to-point experiments
 
         if self.render:
-            pass 
+            pass
 
         return sim_states
 
@@ -149,35 +152,39 @@ class TemplateSimulatorSession:
             - initial_angular_velocity  # (rad/s)
             - target_pole_position  # (m)
         """
-        ## Reset the sim, passing fields from config
+        # Reset the sim, passing fields from config
         if config is None:
             config = default_config
 
         print('--------------------------------------resetting new episode-------------------------------')
-        ## Re-intializing the simulator to make sure all the processes are killed. 
+        print(config)
+        # Re-intializing the simulator to make sure all the processes are killed.
         ENV = simpy.Environment()
         self.simulator = MLS.DES(ENV)
-        ## overwrite some parameters with that of config:
+        # overwrite some parameters with that of config:
         self.simulator.control_type = \
-             config["control_type"]
+            config["control_type"]
         self.simulator.control_frequency = \
-             config["control_frequency"]
+            config["control_frequency"]
         self.simulator.interval_downtime_event_mean = \
-             config["interval_downtime_event_mean"]  
+            config["interval_downtime_event_mean"]
         self.simulator.interval_downtime_event_dev = \
-             config["interval_downtime_event_dev"]
+            config["interval_downtime_event_dev"]
         self.simulator.downtime_event_duration_mean = \
-             config["downtime_event_duration_mean"]   
+            config["downtime_event_duration_mean"]
         self.simulator.downtime_event_duration_dev = \
-             config["downtime_event_duration_dev"]  
+            config["downtime_event_duration_dev"]
         self.simulator.number_parallel_downtime_events = \
-             config["number_parallel_downtime_events"]
+            config["number_parallel_downtime_events"]
         self.simulator.layout_configuration = \
-             config["layout_configuration"]
-        
-        # Reset the simulator to create new processes 
+            config["layout_configuration"]
+
+        # Reset the simulator to create new processes
         self.simulator.reset()
         self.config = config
+
+        if self.render:
+            self.simulator.render()
 
     def log_iterations(
         self,
@@ -202,14 +209,14 @@ class TemplateSimulatorSession:
         def add_prefixes(d, prefix: str):
             return {f"{prefix}_{k}": v for k, v in d.items()}
 
-        ## Custom way to turn lists into strings for logging
+        # Custom way to turn lists into strings for logging
         log_state = state.copy()
         log_action = action.copy()
 
         for key, value in log_state.items():
             if type(value) == list:
                 log_state[key] = str(log_state[key])
-        
+
         for key, value in log_action.items():
             if type(value) == list:
                 log_action[key] = str(log_action[key])
@@ -219,7 +226,7 @@ class TemplateSimulatorSession:
 
         config = add_prefixes(self.config, "config")
         data = {**log_state, **log_action, **config}
-        
+
         data["episode"] = episode
         data["iteration"] = iteration
         log_df = pd.DataFrame(data, index=[0])
@@ -246,21 +253,21 @@ class TemplateSimulatorSession:
 
         # take speed arrays and assign them into sim_action dictionary
         sim_action = {}
-        index = 0 
+        index = 0
         print(MACHINES)
         print(CONVEYORS)
         for machine in MACHINES:
             sim_action[machine] = machines_speed_list[index]
-            index += 1 
-        
-        index = 0 
+            index += 1
+
+        index = 0
         for conveyor in CONVEYORS:
             sim_action[conveyor] = conveyors_speed_list[index]
-            index += 1 
+            index += 1
         print('sim action is:\n', sim_action)
-        self.simulator.step(brain_actions = sim_action)
+        self.simulator.step(brain_actions=sim_action)
 
-    # hkh commented until we add rendering 
+    # hkh commented until we add rendering
     #     if self.render:
     #         self.sim_render()
 
@@ -308,15 +315,17 @@ def env_setup(env_file: str = ".env"):
     return workspace, access_key
 
 # Manual test policy loop
+
+
 def test_policy(
     render=False,
     num_episodes: int = 2,
     num_iterations: int = 1000,
     log_iterations: bool = False,
     policy=random_policy,
-    policy_name: str="test_policy",
-    scenario_file: str="assess_config.json",
-    exported_brain_url: str="http://localhost:5000"
+    policy_name: str = "test_policy",
+    scenario_file: str = "assess_config.json",
+    exported_brain_url: str = "http://localhost:5000"
 ):
     """Test a policy using random actions over a fixed number of episodes
     Parameters
@@ -324,7 +333,7 @@ def test_policy(
     num_episodes : int, optional
         number of iterations to run, by default 10
     """
-    
+
     # Use custom assessment scenario configs
     with open(scenario_file) as fname:
         assess_info = json.load(fname)
@@ -362,6 +371,7 @@ def test_policy(
             terminal = iteration >= num_iterations+2 or sim.halted()
 
     return sim
+
 
 def main(
     render: bool = False,
@@ -441,12 +451,14 @@ def main(
 
         try:
             print(
-                "config: {}, {}".format(config_client.server, config_client.workspace)
+                "config: {}, {}".format(
+                    config_client.server, config_client.workspace)
             )
             registered_session: SimulatorSessionResponse = client.session.create(
                 workspace_name=config_client.workspace, body=registration_info
             )
-            print("Registered simulator. {}".format(registered_session.session_id))
+            print("Registered simulator. {}".format(
+                registered_session.session_id))
 
             return registered_session, 1
         except HttpResponseError as ex:
@@ -464,7 +476,8 @@ def main(
             )
             raise ex
 
-    registered_session, sequence_id = CreateSession(registration_info, config_client)
+    registered_session, sequence_id = CreateSession(
+        registration_info, config_client)
     episode = 0
     iteration = 0
 
@@ -483,7 +496,8 @@ def main(
                 )
                 sequence_id = event.sequence_id
                 print(
-                    "[{}] Last Event: {}".format(time.strftime("%H:%M:%S"), event.type)
+                    "[{}] Last Event: {}".format(
+                        time.strftime("%H:%M:%S"), event.type)
                 )
             except HttpResponseError as ex:
                 print(
@@ -517,7 +531,7 @@ def main(
                 episode += 1
             elif event.type == "EpisodeStep":
                 sim.episode_step(event.episode_step.action)
-                iteration +=1
+                iteration += 1
                 if sim.log_data:
                     sim.log_iterations(
                         episode=episode,
@@ -560,7 +574,8 @@ if __name__ == "__main__":
 
     import argparse
 
-    parser = argparse.ArgumentParser(description="Bonsai and Simulator Integration...")
+    parser = argparse.ArgumentParser(
+        description="Bonsai and Simulator Integration...")
     parser.add_argument(
         "--render", action="store_true", default=False, help="Render training episodes",
     )
@@ -658,4 +673,3 @@ if __name__ == "__main__":
             workspace=args.workspace,
             accesskey=args.accesskey,
         )
-
