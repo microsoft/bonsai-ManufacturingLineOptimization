@@ -13,8 +13,9 @@ def random_policy(state):
     Ignore the state, move randomly.
     """
     action = {
-        "machines_speed": [random.randint(10, 100) for i in range(10)],
-        "conveyors_speed": [random.randint(10, 100) for i in range(9)],
+        "machines_speed": [random.randint(10, 100) for i in range(10)], 
+        # [AJ]: Comment the following since brain is not responsible to determine conveyors' speeds
+        # "conveyors_speed": [random.randint(10, 100) for i in range(9)], 
     }
     return action
 

@@ -249,8 +249,9 @@ class TemplateSimulatorSession:
             An action to take to modulate environment.
         """
         machines_speed_list = action['machines_speed']
-        conveyors_speed_list = action['conveyors_speed']
-
+        # [AJ]: Comment the follwoing since we don't consider conveyors speeds as brain's actions
+        # conveyors_speed_list = action['conveyors_speed']
+        
         # take speed arrays and assign them into sim_action dictionary
         sim_action = {}
         index = 0
@@ -260,10 +261,11 @@ class TemplateSimulatorSession:
             sim_action[machine] = machines_speed_list[index]
             index += 1
 
-        index = 0
-        for conveyor in CONVEYORS:
-            sim_action[conveyor] = conveyors_speed_list[index]
-            index += 1
+        # [AJ]: Comment the follwoing since we don't consider conveyors speeds as brain's actions
+        # index = 0 
+        # for conveyor in CONVEYORS:
+        #     sim_action[conveyor] = conveyors_speed_list[index]
+        #     index += 1 
         print('sim action is:\n', sim_action)
         self.simulator.step(brain_actions=sim_action)
 
