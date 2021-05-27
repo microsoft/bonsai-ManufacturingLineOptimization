@@ -181,7 +181,7 @@ class TemplateSimulatorSession:
             config["layout_configuration"]
         # [AJ]: Following is added by Amir
         self.simulator.down_machine_index = \
-            config["down_machine_index"]
+            config.get("down_machine_index", -1)
 
         # Reset the simulator to create new processes
         self.simulator.reset()

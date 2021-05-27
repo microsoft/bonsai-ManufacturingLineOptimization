@@ -4,11 +4,6 @@ using Math
 
 ## define constants, part of sim config 
 const number_of_iterations = 1000
-## control type: -1: control at fixed time frequency but no downtime event 
-## control_type:  0: control at fixed time frequency 
-## control type:  1: event driven, i.e. when a downtime occurs
-## control type:  2: both at fixed control frequency and downtime
-const control_type = 1
 ## the below control frequency does not apply to control type 1 and will be ignored
 const control_frequency = 1 # in seconds (s)
 
@@ -79,6 +74,10 @@ type MachineActionMinusOne {
 }
 
 type SimConfig {
+    ## control type: -1: control at fixed time frequency but no downtime event 
+    ## control_type:  0: control at fixed time frequency 
+    ## control type:  1: event driven, i.e. when a downtime occurs
+    ## control type:  2: both at fixed control frequency and downtime
     control_type : number,
     control_frequency : number, 
     interval_downtime_event_mean : number,  
@@ -87,6 +86,7 @@ type SimConfig {
     downtime_event_duration_dev : number,  
     number_parallel_downtime_events : number,
     layout_configuration : number, 
+    # 0 to 5 for machine index, -1 for no downtime/random number parallel downtime
     down_machine_index: number,
 }
 
@@ -184,7 +184,7 @@ function Terminal(sim_obervation: SimState){
 }
 
 simulator Simulator(action: SimAction, config: SimConfig): SimState {
-    package "MfgLineSingle"
+    #package "MFGLineSingle"
 }
 
 function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAction {
@@ -300,9 +300,9 @@ graph (input: ObservationState): SimAction {
             reward Reward
             
 
-            lesson `learn 1` {
+            lesson `No Machines Down` {
                 scenario {
-                    control_type : control_type,
+                    control_type : -1, # must change to -1
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -310,7 +310,7 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 0,
+                    down_machine_index: -1 # allows parallel downtime events
                 }
             }
         }
@@ -331,9 +331,9 @@ graph (input: ObservationState): SimAction {
             reward Reward
             action TransformAction6Down
 
-            lesson `learn 1` {
+            lesson `Take Machine 6 Out` {
                 scenario {
-                    control_type : control_type,
+                    control_type : 1, # control type allows downtime
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -341,7 +341,7 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 6,
+                    down_machine_index: 5, # zero index machine
                 }
             }
         }
@@ -362,9 +362,9 @@ graph (input: ObservationState): SimAction {
             reward Reward
             action TransformAction5Down
 
-            lesson `learn 1` {
+            lesson `Take Machine 5 Out` {
                 scenario {
-                    control_type : control_type,
+                    control_type : 1,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -372,7 +372,7 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 5,
+                    down_machine_index: 4,
                 }
             }
         }
@@ -393,9 +393,9 @@ graph (input: ObservationState): SimAction {
             reward Reward
             action TransformAction4Down
 
-            lesson `learn 1` {
+            lesson `Take Machine 4 Out` {
                 scenario {
-                    control_type : control_type,
+                    control_type : 1,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -403,7 +403,7 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 4,
+                    down_machine_index: 3,
                 }
             }
         }
@@ -424,9 +424,9 @@ graph (input: ObservationState): SimAction {
             reward Reward
             action TransformAction3Down
 
-            lesson `learn 1` {
+            lesson `Take Machine 3 Out` {
                 scenario {
-                    control_type : control_type,
+                    control_type : 1,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -434,7 +434,7 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 3,
+                    down_machine_index: 2,
                 }
             }
         }
@@ -455,9 +455,9 @@ graph (input: ObservationState): SimAction {
             reward Reward
             action TransformAction2Down
 
-            lesson `learn 1` {
+            lesson `Take Machine 2 Out` {
                 scenario {
-                    control_type : control_type,
+                    control_type : 1,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -465,7 +465,7 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 2,
+                    down_machine_index: 1,
                 }
             }
         }
@@ -486,9 +486,9 @@ graph (input: ObservationState): SimAction {
             reward Reward
             action TransformAction1Down
 
-            lesson `learn 1` {
+            lesson `Take Machine 1 Out` {
                 scenario {
-                    control_type : control_type,
+                    control_type : 1,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -496,7 +496,7 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 1,
+                    down_machine_index: 0,
                 }
             }
         }

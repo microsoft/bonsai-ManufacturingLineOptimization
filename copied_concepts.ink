@@ -4,11 +4,6 @@ using Math
 
 ## define constants, part of sim config 
 const number_of_iterations = 1000
-## control type: -1: control at fixed time frequency but no downtime event 
-## control_type:  0: control at fixed time frequency 
-## control type:  1: event driven, i.e. when a downtime occurs
-## control type:  2: both at fixed control frequency and downtime
-const control_type = 1
 ## the below control frequency does not apply to control type 1 and will be ignored
 const control_frequency = 1 # in seconds (s)
 
@@ -79,6 +74,10 @@ type MachineAction {
 }
 
 type SimConfig {
+    ## control type: -1: control at fixed time frequency but no downtime event 
+    ## control_type:  0: control at fixed time frequency 
+    ## control type:  1: event driven, i.e. when a downtime occurs
+    ## control type:  2: both at fixed control frequency and downtime
     control_type : number,
     control_frequency : number, 
     interval_downtime_event_mean : number,  
@@ -218,9 +217,9 @@ graph (input: ObservationState): SimAction {
             reward Reward
             action ExpertActionExceptMachine1
 
-            lesson `learn 1` {
+            lesson `No machines down` {
                 scenario {
-                    control_type : control_type,
+                    control_type : -1,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -228,7 +227,21 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 0,
+                    down_machine_index: -1,
+                }
+            }
+            
+            lesson `Randomize 1 Machine down` {
+                scenario {
+                    control_type : 1,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
+                    down_machine_index: -1,
                 }
             }
         }
@@ -248,10 +261,10 @@ graph (input: ObservationState): SimAction {
             source Simulator
             reward Reward
             action ExpertActionExceptMachine2
-
-            lesson `learn 1` {
+            
+            lesson `No machines down` {
                 scenario {
-                    control_type : control_type,
+                    control_type : -1,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -259,7 +272,21 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 0,
+                    down_machine_index: -1,
+                }
+            }
+            
+            lesson `Randomize 1 Machine down` {
+                scenario {
+                    control_type : 1,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
+                    down_machine_index: -1,
                 }
             }
         }
@@ -279,10 +306,10 @@ graph (input: ObservationState): SimAction {
             source Simulator
             reward Reward
             action ExpertActionExceptMachine3
-
-            lesson `learn 1` {
+            
+            lesson `No machines down` {
                 scenario {
-                    control_type : control_type,
+                    control_type : -1,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -290,7 +317,21 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 0,
+                    down_machine_index: -1,
+                }
+            }
+            
+            lesson `Randomize 1 Machine down` {
+                scenario {
+                    control_type : 1,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
+                    down_machine_index: -1,
                 }
             }
         }
@@ -310,10 +351,10 @@ graph (input: ObservationState): SimAction {
             source Simulator
             reward Reward
             action ExpertActionExceptMachine4
-
-            lesson `learn 1` {
+            
+            lesson `No machines down` {
                 scenario {
-                    control_type : control_type,
+                    control_type : -1,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -321,7 +362,21 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 0,
+                    down_machine_index: -1,
+                }
+            }
+            
+            lesson `Randomize 1 Machine down` {
+                scenario {
+                    control_type : 1,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
+                    down_machine_index: -1,
                 }
             }
         }
@@ -341,10 +396,10 @@ graph (input: ObservationState): SimAction {
             source Simulator
             reward Reward
             action ExpertActionExceptMachine5
-
-            lesson `learn 1` {
+            
+            lesson `No machines down` {
                 scenario {
-                    control_type : control_type,
+                    control_type : -1,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -352,7 +407,21 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 0,
+                    down_machine_index: -1,
+                }
+            }
+            
+            lesson `Randomize 1 Machine down` {
+                scenario {
+                    control_type : 1,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
+                    down_machine_index: -1,
                 }
             }
         }
@@ -373,9 +442,9 @@ graph (input: ObservationState): SimAction {
             reward Reward
             action ExpertActionExceptMachine6
 
-            lesson `learn 1` {
+            lesson `No machines down` {
                 scenario {
-                    control_type : control_type,
+                    control_type : -1,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -383,7 +452,21 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 0,
+                    down_machine_index: -1,
+                }
+            }
+            
+            lesson `Randomize 1 Machine down` {
+                scenario {
+                    control_type : 1,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
+                    down_machine_index: -1,
                 }
             }
         }
