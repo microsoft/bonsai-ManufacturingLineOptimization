@@ -29,6 +29,9 @@ const number_parallel_downtime_events = 1
 ## Currently only 1 configuration exists 
 const layout_configuration = 1 
 
+# Specify the down machine
+const down_machine_index = 5 # It can be from 0 to 5
+
 
 type SimState {
     machines_speed: number[6], 
@@ -84,6 +87,7 @@ type SimConfig {
     downtime_event_duration_dev : downtime_event_duration_dev,  
     number_parallel_downtime_events : number_parallel_downtime_events,
     layout_configuration : layout_configuration, 
+    down_machine_index: down_machine_index,
 }
 
 
@@ -103,7 +107,7 @@ function Terminal(sim_obervation: SimState){
 }
 
 simulator Simulator(action: SimAction, config: SimConfig): SimState {
-    package "MLO0420"
+    # package "MLO0420"
 }
 
 graph (input: ObservationState): SimAction {
@@ -133,6 +137,7 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
+                    down_machine_index: down_machine_index,
                 }
             }
         }

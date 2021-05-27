@@ -56,6 +56,7 @@ default_config = {
     "downtime_event_duration_dev": 3,
     "number_parallel_downtime_events": 1,
     "layout_configuration": 1,
+    "down_machine_index": 0, # [AJ]: Added by Amir
 }
 
 
@@ -178,6 +179,9 @@ class TemplateSimulatorSession:
             config["number_parallel_downtime_events"]
         self.simulator.layout_configuration = \
             config["layout_configuration"]
+        # [AJ]: Following is added by Amir
+        self.simulator.down_machine_index = \
+            config["down_machine_index"]
 
         # Reset the simulator to create new processes
         self.simulator.reset()

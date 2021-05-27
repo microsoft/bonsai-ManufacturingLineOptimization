@@ -79,6 +79,9 @@ class General:
     layout_configuration = 1
     # granularity of simulation updates. Larger values make simulation less accurate. Recommended value: 1.
     simulation_time_step = 1
+    # [AJ]: The following is added by Amir
+    down_machine_index = 0 # [AJ]: From 0 to 5 to refer to the down machine
+
 
 
 class Machine(General):
@@ -331,7 +334,13 @@ class DES(General):
         '''
         while True:
             # randomly pick a machine
-            self.random_down_machine = random.choice(list(General.machines))
+            # [AJ]: Pick a machine randomly from the list of machines
+            # [AJ]: The following is added by Amir
+            machines_list = list(General.machines) # [AJ]: Added by Amir
+            self.down_machine = machines_list[self.down_machine_index] # [AJ]: Added by Amir
+            self.random_down_machine = self.down_machine # [AJ]: Added by Amir
+            # [AJ]: The following is commented by Amit
+            # self.random_down_machine = random.choice(list(General.machines))
             self.is_control_downtime_event = 1
             self.is_control_frequency_event = 0
             print(
