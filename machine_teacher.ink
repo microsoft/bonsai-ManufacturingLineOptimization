@@ -30,49 +30,50 @@ const number_parallel_downtime_events = 1
 const layout_configuration = 1 
 
 # Specify the down machine
-const down_machine_index = 5 # It can be from 0 to 5
+const down_machine_index = 5 # It can be from 0 to 9
 
 
 type SimState {
-    machines_speed: number[6], 
-    machines_state: number[6],
+    machines_speed: number[10], 
+    machines_state: number[10],
     machines_state_sum: number,
-    conveyors_speed: number[5],
+    conveyors_speed: number[9],
     sink_machines_rate_sum: number,  # rate of production in the last simulation step 
     sink_throughput_delta_sum: number,  # amount of product produced between the controls 
     sink_throughput_absolute_sum: number, # absolute sum of all the productions at eny iteration
-    conveyor_infeed_m1_prox_empty: number[5],
-    conveyor_infeed_m2_prox_empty: number[5],
-    conveyor_discharge_p1_prox_full: number[5],
-    conveyor_discharge_p2_prox_full: number[5],
-    illegal_machine_actions: number[6],
+    conveyor_infeed_m1_prox_empty: number[9],
+    conveyor_infeed_m2_prox_empty: number[9],
+    conveyor_discharge_p1_prox_full: number[9],
+    conveyor_discharge_p2_prox_full: number[9],
+    illegal_machine_actions: number[10],
     # [AJ]: Comment the following because brain is not taking action for conveyors
     # illegal_conveyor_actions: number[9],
-    remaining_downtime_machines: number[6],
+    remaining_downtime_machines: number[10],
     control_delta_t: number,
     env_time: number,
 }
 
 
 type ObservationState{
-    machines_speed: number[6], 
-    machines_state: number[6],
+    machines_speed: number[10], 
+    machines_state: number[10],
     # [AJ]: Comment the following as conveyors's speed is always the same
-    # conveyors_speed: number[5],
+    # conveyors_speed: number[9],
     sink_machines_rate_sum: number,
     sink_throughput_delta_sum: number,
-    conveyor_infeed_m1_prox_empty: number[5],
-    conveyor_infeed_m2_prox_empty: number[5],
-    conveyor_discharge_p1_prox_full: number[5],
-    conveyor_discharge_p2_prox_full: number[5], 
-    illegal_machine_actions: number[6],
-    remaining_downtime_machines: number[6] 
+    conveyor_infeed_m1_prox_empty: number[9],
+    conveyor_infeed_m2_prox_empty: number[9],
+    conveyor_discharge_p1_prox_full: number[9],
+    conveyor_discharge_p2_prox_full: number[9], 
+    illegal_machine_actions: number[10],
+    remaining_downtime_machines: number[10] 
 }
 
 
 # multiarm bandit actions. 
 type SimAction{
-    machines_speed: number<0,10,20,30,100,>[6],
+    machines_speed: number<0,10,20,30,100,>[10],
+    # machines_speed: number<10..100 step 10>[10],
     # [AJ]: Comment the following as brain's job is not to decide on conveyors' speeds
     # conveyors_speed: number<0,10,20,30,100,>[5]
 }

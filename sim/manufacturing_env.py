@@ -1,5 +1,5 @@
-# from .line_config import adj, con_balance, con_join
-from .line_config import adj # [AJ]: For single line
+from .line_config import adj, con_balance, con_join
+# from .line_config import adj # [AJ]: For single line
 import json
 import os
 import time
@@ -80,7 +80,7 @@ class General:
     # granularity of simulation updates. Larger values make simulation less accurate. Recommended value: 1.
     simulation_time_step = 1
     # [AJ]: The following is added by Amir
-    down_machine_index = -1 # [AJ]: From 0 to 5 to refer to the down machine, -1 for no downtime/random parallel downtime
+    down_machine_index = -1 # [AJ]: From 0 to 9 to refer to the down machine, -1 for no downtime/random parallel downtime
 
 
 
@@ -374,8 +374,8 @@ class DES(General):
         self.plc_control_machine_speed()
         self.update_machine_adjacent_buffers()
         self.update_conveyors_buffers()
-        # [AJ]: Comment to only consider single line without conveyor balancing load between two lines       
-        # self.update_conveyor_junctions()
+        # [AJ]: Comment following to only consider single line without conveyor balancing load between two lines       
+        self.update_conveyor_junctions()
         self.update_sinks_product_accumulation()
 
     def update_sinks_product_accumulation(self):
@@ -513,70 +513,70 @@ class DES(General):
                         str(bin_num - 1), previous_bin_level)
 
     # [AJ]: Comment since there is no conveyor balancing between two lines
-    # def update_conveyor_junctions(self):
-    #     '''
-    #     Rules for the junctions: mainly balancing the load between lines.
-    #     If a junction bin gets full, it can push cans to the neighbor conveyor.
-    #     '''
-    #     for junction in con_balance:    # balancing load between two line
-    #         conveyor1 = junction[0]
-    #         conveyor2 = junction[1]
-    #         join_bin = junction[2]
-    #         bin_1_level = getattr(
-    #             getattr(self, conveyor1), "bin" + str(join_bin))
-    #         bin_1_capacity = getattr(getattr(self, conveyor1), "bins_capacity")
+    def update_conveyor_junctions(self):
+        '''
+        Rules for the junctions: mainly balancing the load between lines.
+        If a junction bin gets full, it can push cans to the neighbor conveyor.
+        '''
+        for junction in con_balance:    # balancing load between two line
+            conveyor1 = junction[0]
+            conveyor2 = junction[1]
+            join_bin = junction[2]
+            bin_1_level = getattr(
+                getattr(self, conveyor1), "bin" + str(join_bin))
+            bin_1_capacity = getattr(getattr(self, conveyor1), "bins_capacity")
 
-    #         bin_2_level = getattr(
-    #             getattr(self, conveyor2), "bin" + str(join_bin))
-    #         bin_2_capacity = getattr(getattr(self, conveyor2), "bins_capacity")
+            bin_2_level = getattr(
+                getattr(self, conveyor2), "bin" + str(join_bin))
+            bin_2_capacity = getattr(getattr(self, conveyor2), "bins_capacity")
 
-    #         if bin_1_level < bin_1_capacity and bin_2_level < bin_2_capacity:
-    #             # don't do any thing if both conveyors are operating below the capacity
-    #             pass
-    #         elif bin_1_level == bin_1_capacity and bin_2_level < bin_2_capacity:
-    #             # push cans from bin_1 to bin_2
-    #             delta = min(getattr(eval('self.' + conveyor1), 'speed')
-    #                         * self.simulation_time_step, bin_2_capacity-bin_2_level)
-    #             setattr(eval('self.' + conveyor2), "bin" +
-    #                     str(join_bin), delta + bin_2_level)
-    #             setattr(eval('self.' + conveyor1), "bin" +
-    #                     str(join_bin), bin_1_level - delta)
+            if bin_1_level < bin_1_capacity and bin_2_level < bin_2_capacity:
+                # don't do any thing if both conveyors are operating below the capacity
+                pass
+            elif bin_1_level == bin_1_capacity and bin_2_level < bin_2_capacity:
+                # push cans from bin_1 to bin_2
+                delta = min(getattr(eval('self.' + conveyor1), 'speed')
+                            * self.simulation_time_step, bin_2_capacity-bin_2_level)
+                setattr(eval('self.' + conveyor2), "bin" +
+                        str(join_bin), delta + bin_2_level)
+                setattr(eval('self.' + conveyor1), "bin" +
+                        str(join_bin), bin_1_level - delta)
 
-    #         elif bin_2_level == bin_2_capacity and bin_1_level < bin_1_capacity:
-    #             # do the opposite
-    #             delta = min(getattr(eval('self.' + conveyor2), 'speed')
-    #                         * self.simulation_time_step, bin_1_capacity-bin_1_level)
-    #             setattr(eval('self.' + conveyor1), "bin" +
-    #                     str(join_bin), delta + bin_1_level)
-    #             setattr(eval('self.' + conveyor2), "bin" +
-    #                     str(join_bin), bin_2_level - delta)
-    #         else:
-    #             # bin_2.level == bin_2.capacity and bin_2.level == bin_2.capcity:
-    #             # do nothing
-    #             pass
+            elif bin_2_level == bin_2_capacity and bin_1_level < bin_1_capacity:
+                # do the opposite
+                delta = min(getattr(eval('self.' + conveyor2), 'speed')
+                            * self.simulation_time_step, bin_1_capacity-bin_1_level)
+                setattr(eval('self.' + conveyor1), "bin" +
+                        str(join_bin), delta + bin_1_level)
+                setattr(eval('self.' + conveyor2), "bin" +
+                        str(join_bin), bin_2_level - delta)
+            else:
+                # bin_2.level == bin_2.capacity and bin_2.level == bin_2.capcity:
+                # do nothing
+                pass
 
-    #     for junction in con_join:
-    #         conveyor1 = junction[0]
-    #         conveyor2 = junction[1]
-    #         join_bin = junction[2]
-    #         bin_1_level = getattr(getattr(self, conveyor1),
-    #                               "bin" + str(General.num_conveyor_bins-1))
-    #         bin_1_capacity = getattr(getattr(self, conveyor1), "bins_capacity")
+        for junction in con_join:
+            conveyor1 = junction[0]
+            conveyor2 = junction[1]
+            join_bin = junction[2]
+            bin_1_level = getattr(getattr(self, conveyor1),
+                                  "bin" + str(General.num_conveyor_bins-1))
+            bin_1_capacity = getattr(getattr(self, conveyor1), "bins_capacity")
 
-    #         bin_2_level = getattr(
-    #             getattr(self, conveyor2), "bin" + str(join_bin))
-    #         bin_2_capacity = getattr(getattr(self, conveyor2), "bins_capacity")
-    #         if bin_2_level < bin_2_capacity:
-    #             # always add from first one to the second one if there is room
-    #             delta = min(getattr(eval('self.' + conveyor1), 'speed')
-    #                         * self.simulation_time_step, bin_2_capacity-bin_2_level)
+            bin_2_level = getattr(
+                getattr(self, conveyor2), "bin" + str(join_bin))
+            bin_2_capacity = getattr(getattr(self, conveyor2), "bins_capacity")
+            if bin_2_level < bin_2_capacity:
+                # always add from first one to the second one if there is room
+                delta = min(getattr(eval('self.' + conveyor1), 'speed')
+                            * self.simulation_time_step, bin_2_capacity-bin_2_level)
 
-    #             setattr(eval('self.' + conveyor1), "bin" +
-    #                     str(join_bin), bin_1_level - delta)
-    #             setattr(eval('self.' + conveyor2), "bin" +
-    #                     str(join_bin), bin_2_level + delta)
-    #         else:
-    #             pass
+                setattr(eval('self.' + conveyor1), "bin" +
+                        str(join_bin), bin_1_level - delta)
+                setattr(eval('self.' + conveyor2), "bin" +
+                        str(join_bin), bin_2_level + delta)
+            else:
+                pass
 
     def plc_control_machine_speed(self):
         '''
