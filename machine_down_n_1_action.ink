@@ -276,12 +276,12 @@ function Terminal(sim_obervation: SimState){
 }
 
 simulator Simulator(action: SimAction, config: SimConfig): SimState {
-    #package "MFGLineSingle"
+    #package "MFGlinedouble"
 }
 
 function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAction {
     
-    if s.machines_state[9] != 0 {
+    if s.machines_state[9] == -1 {
         return {
             machines_speed: [
                 b.machines_speed[0],
@@ -298,7 +298,7 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
         }
     }
     
-    else if s.machines_state[8] != 0 {
+    else if s.machines_state[8] == -1 {
         return {
             machines_speed: [
                 b.machines_speed[0],
@@ -316,7 +316,7 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
         }
     }
     
-    else if s.machines_state[7] != 0 {
+    else if s.machines_state[7] == -1 {
         return {
             machines_speed: [
                 b.machines_speed[0],
@@ -333,7 +333,7 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
         }
     }
     
-    else if s.machines_state[6] != 0 {
+    else if s.machines_state[6] == -1 {
         return {
             machines_speed: [
                 b.machines_speed[0],
@@ -350,7 +350,7 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
         }
     }
     
-    else if s.machines_state[5] != 0 {
+    else if s.machines_state[5] == -1 {
         return {
             machines_speed: [
                 b.machines_speed[0],
@@ -368,7 +368,7 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
     }
 
     
-    else if s.machines_state[4] != 0 {
+    else if s.machines_state[4] == -1 {
         return {
             machines_speed: [
                 b.machines_speed[0],
@@ -385,7 +385,7 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
         }
     }
 
-    else if s.machines_state[3] != 0 {
+    else if s.machines_state[3] == -1 {
         return {
             machines_speed: [
                 b.machines_speed[0],
@@ -402,7 +402,7 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
         }
     }
 
-    else if s.machines_state[2] != 0 {
+    else if s.machines_state[2] == -1 {
         return {
             machines_speed: [
                 b.machines_speed[0],
@@ -419,7 +419,7 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
         }
     }
 
-    else if s.machines_state[1] != 0 {
+    else if s.machines_state[1] == -1 {
         return {
             machines_speed: [
                 b.machines_speed[0],
@@ -436,7 +436,7 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
         }
     }
 
-    else if s.machines_state[0] != 0 {
+    else if s.machines_state[0] == -1 {
         return {
             machines_speed: [
                 0,

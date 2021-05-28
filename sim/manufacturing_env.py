@@ -342,6 +342,7 @@ class DES(General):
             else:
                 self.down_machine = machines_list[self.down_machine_index] # [AJ]: Added by Amir
                 self.random_down_machine = self.down_machine # [AJ]: Added by Amir
+            self.is_control_downtime_event = 1
             self.is_control_frequency_event = 0
             print(
                 f'................ now machine {self.random_down_machine} goes down at {self.env.now} and event requires control: {self.is_control_downtime_event}...')

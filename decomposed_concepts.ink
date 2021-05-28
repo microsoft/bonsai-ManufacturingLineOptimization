@@ -26,46 +26,46 @@ const layout_configuration = 1
 
 
 type SimState {
-    machines_speed: number[6], 
-    machines_state: number[6],
+    machines_speed: number[10], 
+    machines_state: number[10],
     machines_state_sum: number,
-    conveyors_speed: number[5],
+    conveyors_speed: number[9],
     sink_machines_rate_sum: number,  # rate of production in the last simulation step 
     sink_throughput_delta_sum: number,  # amount of product produced between the controls 
     sink_throughput_absolute_sum: number, # absolute sum of all the productions at eny iteration
-    conveyor_infeed_m1_prox_empty: number[5],
-    conveyor_infeed_m2_prox_empty: number[5],
-    conveyor_discharge_p1_prox_full: number[5],
-    conveyor_discharge_p2_prox_full: number[5],
-    illegal_machine_actions: number[6],
+    conveyor_infeed_m1_prox_empty: number[10],
+    conveyor_infeed_m2_prox_empty: number[10],
+    conveyor_discharge_p1_prox_full: number[10],
+    conveyor_discharge_p2_prox_full: number[10],
+    illegal_machine_actions: number[10],
     # [AJ]: Comment the following because brain is not taking action for conveyors
     #illegal_conveyor_actions: number[9],
-    remaining_downtime_machines: number[6],
+    remaining_downtime_machines: number[10],
     control_delta_t: number,
     env_time: number,
 }
 
 
 type ObservationState {
-    machines_speed: number[6], 
-    machines_state: number[6],
+    machines_speed: number[10], 
+    machines_state: number[10],
     # [AJ]: Comment the following as conveyors's speed is always the same
     #conveyors_speed: number[5],
     sink_machines_rate_sum: number,
     sink_throughput_delta_sum: number,
-    conveyor_infeed_m1_prox_empty: number[5],
-    conveyor_infeed_m2_prox_empty: number[5],
-    conveyor_discharge_p1_prox_full: number[5],
-    conveyor_discharge_p2_prox_full: number[5], 
-    illegal_machine_actions: number[6],
-    remaining_downtime_machines: number[6] 
+    conveyor_infeed_m1_prox_empty: number[10],
+    conveyor_infeed_m2_prox_empty: number[10],
+    conveyor_discharge_p1_prox_full: number[10],
+    conveyor_discharge_p2_prox_full: number[10], 
+    illegal_machine_actions: number[10],
+    remaining_downtime_machines: number[10] 
 }
 
 type MachineState {
     machines_speed: number[2], 
     machines_state: number[2],
     # [AJ]: Comment the following as conveyors's speed is always the same
-    #conveyors_speed: number[5],
+    #conveyors_speed: number[1],
     sink_machines_rate_sum: number,
     sink_throughput_delta_sum: number,
     conveyor_infeed_m1_prox_empty: number[2],
@@ -79,9 +79,9 @@ type MachineState {
 
 # multiarm bandit actions. 
 type SimAction {
-    machines_speed: number<0,10,20,30,100,>[6],
+    machines_speed: number<0,10,20,30,100,>[10],
     # [AJ]: Comment the following as brain's job is not to decide on conveyors' speeds
-    #conveyors_speed: number<0,10,20,30,100,>[5]
+    #conveyors_speed: number<0,10,20,30,100,>[9]
 }
 
 type MachineAction {
@@ -104,6 +104,74 @@ type SimConfig {
     down_machine_index: number,
 }
 
+function ExpertActionExceptMachine10(a: MachineAction): SimAction {
+    return {
+        machines_speed: [
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            a.machines_speed,
+        ]
+    }
+}
+
+function ExpertActionExceptMachine9(a: MachineAction): SimAction {
+    return {
+        machines_speed: [
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            a.machines_speed,
+            100,
+        ]
+    }
+}
+
+function ExpertActionExceptMachine8(a: MachineAction): SimAction {
+    return {
+        machines_speed: [
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            a.machines_speed,
+            100,
+            100,
+        ]
+    }
+}
+
+function ExpertActionExceptMachine7(a: MachineAction): SimAction {
+    return {
+        machines_speed: [
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            a.machines_speed,
+            100,
+            100,
+            100,
+        ]
+    }
+}
+
 function ExpertActionExceptMachine6(a: MachineAction): SimAction {
     return {
         machines_speed: [
@@ -113,6 +181,10 @@ function ExpertActionExceptMachine6(a: MachineAction): SimAction {
             100,
             100,
             a.machines_speed,
+            100,
+            100,
+            100,
+            100,
         ]
     }
 }
@@ -126,6 +198,10 @@ function ExpertActionExceptMachine5(a: MachineAction): SimAction {
             100,
             a.machines_speed,
             100,
+            100,
+            100,
+            100,
+            100
         ]
     }
 }
@@ -139,6 +215,10 @@ function ExpertActionExceptMachine4(a: MachineAction): SimAction {
             a.machines_speed,
             100,
             100,
+            100,
+            100,
+            100,
+            100
         ]
     }
 }
@@ -152,6 +232,10 @@ function ExpertActionExceptMachine3(a: MachineAction): SimAction {
             100,
             100,
             100,
+            100,
+            100,
+            100,
+            100
         ]
     }
 }
@@ -165,6 +249,10 @@ function ExpertActionExceptMachine2(a: MachineAction): SimAction {
             100,
             100,
             100,
+            100,
+            100,
+            100,
+            100
         ]
     }
 }
@@ -178,6 +266,10 @@ function ExpertActionExceptMachine1(a: MachineAction): SimAction {
             100,
             100,
             100,
+            100,
+            100,
+            100,
+            100
         ]
     }
 }
@@ -201,7 +293,7 @@ simulator Simulator(action: SimAction, config: SimConfig): SimState {
     #package "MfgLineSingle"
 }
 
-function aggregate(a: MachineAction, b: MachineAction, c: MachineAction, d: MachineAction, e: MachineAction, f: MachineAction): SimAction {
+function aggregate(a: MachineAction, b: MachineAction, c: MachineAction, d: MachineAction, e: MachineAction, f: MachineAction, g: MachineAction, h: MachineAction, i: MachineAction, j: MachineAction): SimAction {
     return {
         machines_speed: [
             a.machines_speed,
@@ -210,6 +302,10 @@ function aggregate(a: MachineAction, b: MachineAction, c: MachineAction, d: Mach
             d.machines_speed,
             e.machines_speed,
             f.machines_speed,
+            g.machines_speed,
+            h.machines_speed,
+            i.machines_speed,
+            j.machines_speed
         ]
     }
 
@@ -418,38 +514,197 @@ function decompose5(s: ObservationState): MachineState {
 function decompose6(s: ObservationState): MachineState {
     return {
         machines_speed: [
-            s.machines_speed[4],
-            s.machines_speed[5]
+            s.machines_speed[5],
+            s.machines_speed[6]
         ], 
         machines_state: [
-            s.machines_state[4],
-            s.machines_state[5]
+            s.machines_state[5],
+            s.machines_state[6]
         ],
         sink_machines_rate_sum: s.sink_machines_rate_sum,
         sink_throughput_delta_sum: s.sink_throughput_delta_sum,
         conveyor_infeed_m1_prox_empty: [
-            s.conveyor_infeed_m1_prox_empty[3],
-            s.conveyor_infeed_m1_prox_empty[4]
+            s.conveyor_infeed_m1_prox_empty[5],
+            s.conveyor_infeed_m1_prox_empty[6]
         ],
         conveyor_infeed_m2_prox_empty: [
-            s.conveyor_infeed_m2_prox_empty[3], 
-            s.conveyor_infeed_m1_prox_empty[4]
+            s.conveyor_infeed_m2_prox_empty[5], 
+            s.conveyor_infeed_m1_prox_empty[6]
         ],
         conveyor_discharge_p1_prox_full: [
-            s.conveyor_discharge_p1_prox_full[3], 
-            s.conveyor_discharge_p1_prox_full[4]
+            s.conveyor_discharge_p1_prox_full[5], 
+            s.conveyor_discharge_p1_prox_full[6]
         ],
         conveyor_discharge_p2_prox_full: [
-            s.conveyor_discharge_p2_prox_full[3],
-            s.conveyor_discharge_p2_prox_full[4]
+            s.conveyor_discharge_p2_prox_full[5],
+            s.conveyor_discharge_p2_prox_full[6]
         ], 
         illegal_machine_actions: [
-            s.illegal_machine_actions[4],
-            s.illegal_machine_actions[5]
+            s.illegal_machine_actions[5],
+            s.illegal_machine_actions[6]
         ],
         remaining_downtime_machines: [
-            s.illegal_machine_actions[4],
-            s.illegal_machine_actions[5]
+            s.illegal_machine_actions[5],
+            s.illegal_machine_actions[6]
+        ]
+    }
+
+}
+
+function decompose7(s: ObservationState): MachineState {
+    return {
+        machines_speed: [
+            s.machines_speed[6],
+            s.machines_speed[7]
+        ], 
+        machines_state: [
+            s.machines_state[6],
+            s.machines_state[7]
+        ],
+        sink_machines_rate_sum: s.sink_machines_rate_sum,
+        sink_throughput_delta_sum: s.sink_throughput_delta_sum,
+        conveyor_infeed_m1_prox_empty: [
+            s.conveyor_infeed_m1_prox_empty[6],
+            s.conveyor_infeed_m1_prox_empty[7]
+        ],
+        conveyor_infeed_m2_prox_empty: [
+            s.conveyor_infeed_m2_prox_empty[6], 
+            s.conveyor_infeed_m1_prox_empty[7]
+        ],
+        conveyor_discharge_p1_prox_full: [
+            s.conveyor_discharge_p1_prox_full[6], 
+            s.conveyor_discharge_p1_prox_full[7]
+        ],
+        conveyor_discharge_p2_prox_full: [
+            s.conveyor_discharge_p2_prox_full[6],
+            s.conveyor_discharge_p2_prox_full[7]
+        ], 
+        illegal_machine_actions: [
+            s.illegal_machine_actions[6],
+            s.illegal_machine_actions[7]
+        ],
+        remaining_downtime_machines: [
+            s.illegal_machine_actions[6],
+            s.illegal_machine_actions[7]
+        ]
+    }
+
+}
+
+function decompose8(s: ObservationState): MachineState {
+    return {
+        machines_speed: [
+            s.machines_speed[7],
+            s.machines_speed[8]
+        ], 
+        machines_state: [
+            s.machines_state[7],
+            s.machines_state[8]
+        ],
+        sink_machines_rate_sum: s.sink_machines_rate_sum,
+        sink_throughput_delta_sum: s.sink_throughput_delta_sum,
+        conveyor_infeed_m1_prox_empty: [
+            s.conveyor_infeed_m1_prox_empty[7],
+            s.conveyor_infeed_m1_prox_empty[8]
+        ],
+        conveyor_infeed_m2_prox_empty: [
+            s.conveyor_infeed_m2_prox_empty[7], 
+            s.conveyor_infeed_m1_prox_empty[8]
+        ],
+        conveyor_discharge_p1_prox_full: [
+            s.conveyor_discharge_p1_prox_full[7], 
+            s.conveyor_discharge_p1_prox_full[8]
+        ],
+        conveyor_discharge_p2_prox_full: [
+            s.conveyor_discharge_p2_prox_full[7],
+            s.conveyor_discharge_p2_prox_full[8]
+        ], 
+        illegal_machine_actions: [
+            s.illegal_machine_actions[7],
+            s.illegal_machine_actions[8]
+        ],
+        remaining_downtime_machines: [
+            s.illegal_machine_actions[7],
+            s.illegal_machine_actions[8]
+        ]
+    }
+}
+
+function decompose9(s: ObservationState): MachineState {
+    return {
+        machines_speed: [
+            s.machines_speed[8],
+            s.machines_speed[9]
+        ], 
+        machines_state: [
+            s.machines_state[8],
+            s.machines_state[9]
+        ],
+        sink_machines_rate_sum: s.sink_machines_rate_sum,
+        sink_throughput_delta_sum: s.sink_throughput_delta_sum,
+        conveyor_infeed_m1_prox_empty: [
+            s.conveyor_infeed_m1_prox_empty[8],
+            s.conveyor_infeed_m1_prox_empty[9]
+        ],
+        conveyor_infeed_m2_prox_empty: [
+            s.conveyor_infeed_m2_prox_empty[8], 
+            s.conveyor_infeed_m1_prox_empty[9]
+        ],
+        conveyor_discharge_p1_prox_full: [
+            s.conveyor_discharge_p1_prox_full[8], 
+            s.conveyor_discharge_p1_prox_full[9]
+        ],
+        conveyor_discharge_p2_prox_full: [
+            s.conveyor_discharge_p2_prox_full[8],
+            s.conveyor_discharge_p2_prox_full[9]
+        ], 
+        illegal_machine_actions: [
+            s.illegal_machine_actions[8],
+            s.illegal_machine_actions[9]
+        ],
+        remaining_downtime_machines: [
+            s.illegal_machine_actions[8],
+            s.illegal_machine_actions[9]
+        ]
+    }
+
+}
+
+function decompose10(s: ObservationState): MachineState {
+    return {
+        machines_speed: [
+            s.machines_speed[8],
+            s.machines_speed[9]
+        ], 
+        machines_state: [
+            s.machines_state[8],
+            s.machines_state[9]
+        ],
+        sink_machines_rate_sum: s.sink_machines_rate_sum,
+        sink_throughput_delta_sum: s.sink_throughput_delta_sum,
+        conveyor_infeed_m1_prox_empty: [
+            s.conveyor_infeed_m1_prox_empty[8],
+            s.conveyor_infeed_m1_prox_empty[9]
+        ],
+        conveyor_infeed_m2_prox_empty: [
+            s.conveyor_infeed_m2_prox_empty[8], 
+            s.conveyor_infeed_m1_prox_empty[9]
+        ],
+        conveyor_discharge_p1_prox_full: [
+            s.conveyor_discharge_p1_prox_full[8], 
+            s.conveyor_discharge_p1_prox_full[9]
+        ],
+        conveyor_discharge_p2_prox_full: [
+            s.conveyor_discharge_p2_prox_full[8],
+            s.conveyor_discharge_p2_prox_full[9]
+        ], 
+        illegal_machine_actions: [
+            s.illegal_machine_actions[8],
+            s.illegal_machine_actions[9]
+        ],
+        remaining_downtime_machines: [
+            s.illegal_machine_actions[8],
+            s.illegal_machine_actions[9]
         ]
     }
 
@@ -478,6 +733,22 @@ graph (input: ObservationState): SimAction {
     }
 
     concept Decompose6(input): MachineState {
+        programmed decompose6
+    }
+
+    concept Decompose7(input): MachineState {
+        programmed decompose6
+    }
+
+    concept Decompose8(input): MachineState {
+        programmed decompose6
+    }
+
+    concept Decompose9(input): MachineState {
+        programmed decompose6
+    }
+
+    concept Decompose10(input): MachineState {
         programmed decompose6
     }
 
@@ -751,7 +1022,187 @@ graph (input: ObservationState): SimAction {
         }
     }
 
-    concept Aggregate(Machine1, Machine2, Machine3, Machine4, Machine5, Machine6): SimAction {
+    concept Machine7(Decompose7): MachineAction {
+        curriculum {
+            algorithm {
+                Algorithm: "SAC",
+                #BatchSize: 8000,
+                #PolicyLearningRate: 0.001
+            }
+            training {
+                EpisodeIterationLimit: number_of_iterations,
+                NoProgressIterationLimit: 500000
+            }
+            source Simulator
+            reward Reward
+            action ExpertActionExceptMachine7
+
+            lesson `No machines down` {
+                scenario {
+                    control_type : -1,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
+                    down_machine_index: -1,
+                }
+            }
+            
+            lesson `Randomize 1 Machine down` {
+                scenario {
+                    control_type : 1,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
+                    down_machine_index: -1,
+                }
+            }
+        }
+    }
+
+    concept Machine8(Decompose8): MachineAction {
+        curriculum {
+            algorithm {
+                Algorithm: "SAC",
+                #BatchSize: 8000,
+                #PolicyLearningRate: 0.001
+            }
+            training {
+                EpisodeIterationLimit: number_of_iterations,
+                NoProgressIterationLimit: 500000
+            }
+            source Simulator
+            reward Reward
+            action ExpertActionExceptMachine8
+
+            lesson `No machines down` {
+                scenario {
+                    control_type : -1,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
+                    down_machine_index: -1,
+                }
+            }
+            
+            lesson `Randomize 1 Machine down` {
+                scenario {
+                    control_type : 1,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
+                    down_machine_index: -1,
+                }
+            }
+        }
+    }
+
+    concept Machine9(Decompose9): MachineAction {
+        curriculum {
+            algorithm {
+                Algorithm: "SAC",
+                #BatchSize: 8000,
+                #PolicyLearningRate: 0.001
+            }
+            training {
+                EpisodeIterationLimit: number_of_iterations,
+                NoProgressIterationLimit: 500000
+            }
+            source Simulator
+            reward Reward
+            action ExpertActionExceptMachine9
+
+            lesson `No machines down` {
+                scenario {
+                    control_type : -1,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
+                    down_machine_index: -1,
+                }
+            }
+            
+            lesson `Randomize 1 Machine down` {
+                scenario {
+                    control_type : 1,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
+                    down_machine_index: -1,
+                }
+            }
+        }
+    }
+
+    concept Machine10(Decompose10): MachineAction {
+        curriculum {
+            algorithm {
+                Algorithm: "SAC",
+                #BatchSize: 8000,
+                #PolicyLearningRate: 0.001
+            }
+            training {
+                EpisodeIterationLimit: number_of_iterations,
+                NoProgressIterationLimit: 500000
+            }
+            source Simulator
+            reward Reward
+            action ExpertActionExceptMachine10
+
+            lesson `No machines down` {
+                scenario {
+                    control_type : -1,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
+                    down_machine_index: -1,
+                }
+            }
+            
+            lesson `Randomize 1 Machine down` {
+                scenario {
+                    control_type : 1,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
+                    down_machine_index: -1,
+                }
+            }
+        }
+    }
+
+    concept Aggregate(Machine1, Machine2, Machine3, Machine4, Machine5, Machine6, Machine7, Machine8, Machine9, Machine10): SimAction {
         programmed aggregate
     }
 
