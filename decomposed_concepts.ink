@@ -46,7 +46,7 @@ type SimState {
 }
 
 
-type ObservationState{
+type ObservationState {
     machines_speed: number[6], 
     machines_state: number[6],
     # [AJ]: Comment the following as conveyors's speed is always the same
@@ -61,9 +61,24 @@ type ObservationState{
     remaining_downtime_machines: number[6] 
 }
 
+type MachineState {
+    machines_speed: number[2], 
+    machines_state: number[2],
+    # [AJ]: Comment the following as conveyors's speed is always the same
+    #conveyors_speed: number[5],
+    sink_machines_rate_sum: number,
+    sink_throughput_delta_sum: number,
+    conveyor_infeed_m1_prox_empty: number[2],
+    conveyor_infeed_m2_prox_empty: number[2],
+    conveyor_discharge_p1_prox_full: number[2],
+    conveyor_discharge_p2_prox_full: number[2], 
+    illegal_machine_actions: number[2],
+    remaining_downtime_machines: number[2] 
+}
+
 
 # multiarm bandit actions. 
-type SimAction{
+type SimAction {
     machines_speed: number<0,10,20,30,100,>[6],
     # [AJ]: Comment the following as brain's job is not to decide on conveyors' speeds
     #conveyors_speed: number<0,10,20,30,100,>[5]
@@ -200,9 +215,273 @@ function aggregate(a: MachineAction, b: MachineAction, c: MachineAction, d: Mach
 
 }
 
+function decompose1(s: ObservationState): MachineState {
+    return {
+        machines_speed: [
+            s.machines_speed[0],
+            s.machines_speed[1]
+        ], 
+        machines_state: [
+            s.machines_state[0],
+            s.machines_state[1]
+        ],
+        sink_machines_rate_sum: s.sink_machines_rate_sum,
+        sink_throughput_delta_sum: s.sink_throughput_delta_sum,
+        conveyor_infeed_m1_prox_empty: [
+            s.conveyor_infeed_m1_prox_empty[0],
+            s.conveyor_infeed_m1_prox_empty[1]
+        ],
+        conveyor_infeed_m2_prox_empty: [
+            s.conveyor_infeed_m2_prox_empty[0], 
+            s.conveyor_infeed_m1_prox_empty[1]
+        ],
+        conveyor_discharge_p1_prox_full: [
+            s.conveyor_discharge_p1_prox_full[0], 
+            s.conveyor_discharge_p1_prox_full[1]
+        ],
+        conveyor_discharge_p2_prox_full: [
+            s.conveyor_discharge_p2_prox_full[0],
+            s.conveyor_discharge_p2_prox_full[1]
+        ], 
+        illegal_machine_actions: [
+            s.illegal_machine_actions[0],
+            s.illegal_machine_actions[1]
+        ],
+        remaining_downtime_machines: [
+            s.illegal_machine_actions[0],
+            s.illegal_machine_actions[1]
+        ]
+    }
+
+}
+
+function decompose2(s: ObservationState): MachineState {
+    return {
+        machines_speed: [
+            s.machines_speed[1],
+            s.machines_speed[2]
+        ], 
+        machines_state: [
+            s.machines_state[1],
+            s.machines_state[2]
+        ],
+        sink_machines_rate_sum: s.sink_machines_rate_sum,
+        sink_throughput_delta_sum: s.sink_throughput_delta_sum,
+        conveyor_infeed_m1_prox_empty: [
+            s.conveyor_infeed_m1_prox_empty[1],
+            s.conveyor_infeed_m1_prox_empty[2]
+        ],
+        conveyor_infeed_m2_prox_empty: [
+            s.conveyor_infeed_m2_prox_empty[1], 
+            s.conveyor_infeed_m1_prox_empty[2]
+        ],
+        conveyor_discharge_p1_prox_full: [
+            s.conveyor_discharge_p1_prox_full[1], 
+            s.conveyor_discharge_p1_prox_full[2]
+        ],
+        conveyor_discharge_p2_prox_full: [
+            s.conveyor_discharge_p2_prox_full[1],
+            s.conveyor_discharge_p2_prox_full[2]
+        ], 
+        illegal_machine_actions: [
+            s.illegal_machine_actions[1],
+            s.illegal_machine_actions[2]
+        ],
+        remaining_downtime_machines: [
+            s.illegal_machine_actions[1],
+            s.illegal_machine_actions[2]
+        ]
+    }
+
+}
+
+function decompose3(s: ObservationState): MachineState {
+    return {
+        machines_speed: [
+            s.machines_speed[2],
+            s.machines_speed[3]
+        ], 
+        machines_state: [
+            s.machines_state[2],
+            s.machines_state[3]
+        ],
+        sink_machines_rate_sum: s.sink_machines_rate_sum,
+        sink_throughput_delta_sum: s.sink_throughput_delta_sum,
+        conveyor_infeed_m1_prox_empty: [
+            s.conveyor_infeed_m1_prox_empty[2],
+            s.conveyor_infeed_m1_prox_empty[3]
+        ],
+        conveyor_infeed_m2_prox_empty: [
+            s.conveyor_infeed_m2_prox_empty[2], 
+            s.conveyor_infeed_m1_prox_empty[3]
+        ],
+        conveyor_discharge_p1_prox_full: [
+            s.conveyor_discharge_p1_prox_full[2], 
+            s.conveyor_discharge_p1_prox_full[3]
+        ],
+        conveyor_discharge_p2_prox_full: [
+            s.conveyor_discharge_p2_prox_full[2],
+            s.conveyor_discharge_p2_prox_full[3]
+        ], 
+        illegal_machine_actions: [
+            s.illegal_machine_actions[2],
+            s.illegal_machine_actions[3]
+        ],
+        remaining_downtime_machines: [
+            s.illegal_machine_actions[2],
+            s.illegal_machine_actions[3]
+        ]
+    }
+
+}
+
+function decompose4(s: ObservationState): MachineState {
+    return {
+        machines_speed: [
+            s.machines_speed[3],
+            s.machines_speed[4]
+        ], 
+        machines_state: [
+            s.machines_state[3],
+            s.machines_state[4]
+        ],
+        sink_machines_rate_sum: s.sink_machines_rate_sum,
+        sink_throughput_delta_sum: s.sink_throughput_delta_sum,
+        conveyor_infeed_m1_prox_empty: [
+            s.conveyor_infeed_m1_prox_empty[3],
+            s.conveyor_infeed_m1_prox_empty[4]
+        ],
+        conveyor_infeed_m2_prox_empty: [
+            s.conveyor_infeed_m2_prox_empty[3], 
+            s.conveyor_infeed_m1_prox_empty[4]
+        ],
+        conveyor_discharge_p1_prox_full: [
+            s.conveyor_discharge_p1_prox_full[3], 
+            s.conveyor_discharge_p1_prox_full[4]
+        ],
+        conveyor_discharge_p2_prox_full: [
+            s.conveyor_discharge_p2_prox_full[3],
+            s.conveyor_discharge_p2_prox_full[4]
+        ], 
+        illegal_machine_actions: [
+            s.illegal_machine_actions[3],
+            s.illegal_machine_actions[4]
+        ],
+        remaining_downtime_machines: [
+            s.illegal_machine_actions[3],
+            s.illegal_machine_actions[4]
+        ]
+    }
+
+}
+
+function decompose5(s: ObservationState): MachineState {
+    return {
+        machines_speed: [
+            s.machines_speed[4],
+            s.machines_speed[5]
+        ], 
+        machines_state: [
+            s.machines_state[4],
+            s.machines_state[5]
+        ],
+        sink_machines_rate_sum: s.sink_machines_rate_sum,
+        sink_throughput_delta_sum: s.sink_throughput_delta_sum,
+        conveyor_infeed_m1_prox_empty: [
+            s.conveyor_infeed_m1_prox_empty[3],
+            s.conveyor_infeed_m1_prox_empty[4]
+        ],
+        conveyor_infeed_m2_prox_empty: [
+            s.conveyor_infeed_m2_prox_empty[3], 
+            s.conveyor_infeed_m1_prox_empty[4]
+        ],
+        conveyor_discharge_p1_prox_full: [
+            s.conveyor_discharge_p1_prox_full[3], 
+            s.conveyor_discharge_p1_prox_full[4]
+        ],
+        conveyor_discharge_p2_prox_full: [
+            s.conveyor_discharge_p2_prox_full[3],
+            s.conveyor_discharge_p2_prox_full[4]
+        ], 
+        illegal_machine_actions: [
+            s.illegal_machine_actions[4],
+            s.illegal_machine_actions[5]
+        ],
+        remaining_downtime_machines: [
+            s.illegal_machine_actions[4],
+            s.illegal_machine_actions[5]
+        ]
+    }
+
+}
+
+function decompose6(s: ObservationState): MachineState {
+    return {
+        machines_speed: [
+            s.machines_speed[4],
+            s.machines_speed[5]
+        ], 
+        machines_state: [
+            s.machines_state[4],
+            s.machines_state[5]
+        ],
+        sink_machines_rate_sum: s.sink_machines_rate_sum,
+        sink_throughput_delta_sum: s.sink_throughput_delta_sum,
+        conveyor_infeed_m1_prox_empty: [
+            s.conveyor_infeed_m1_prox_empty[3],
+            s.conveyor_infeed_m1_prox_empty[4]
+        ],
+        conveyor_infeed_m2_prox_empty: [
+            s.conveyor_infeed_m2_prox_empty[3], 
+            s.conveyor_infeed_m1_prox_empty[4]
+        ],
+        conveyor_discharge_p1_prox_full: [
+            s.conveyor_discharge_p1_prox_full[3], 
+            s.conveyor_discharge_p1_prox_full[4]
+        ],
+        conveyor_discharge_p2_prox_full: [
+            s.conveyor_discharge_p2_prox_full[3],
+            s.conveyor_discharge_p2_prox_full[4]
+        ], 
+        illegal_machine_actions: [
+            s.illegal_machine_actions[4],
+            s.illegal_machine_actions[5]
+        ],
+        remaining_downtime_machines: [
+            s.illegal_machine_actions[4],
+            s.illegal_machine_actions[5]
+        ]
+    }
+
+}
+
 graph (input: ObservationState): SimAction {
 
-    concept Machine1(input): MachineAction {
+    concept Decompose1(input): MachineState {
+        programmed decompose1
+    }
+
+    concept Decompose2(input): MachineState {
+        programmed decompose2
+    }
+
+    concept Decompose3(input): MachineState {
+        programmed decompose3
+    }
+
+    concept Decompose4(input): MachineState {
+        programmed decompose4
+    }
+
+    concept Decompose5(input): MachineState {
+        programmed decompose5
+    }
+
+    concept Decompose6(input): MachineState {
+        programmed decompose6
+    }
+
+    concept Machine1(Decompose1): MachineAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
@@ -247,7 +526,7 @@ graph (input: ObservationState): SimAction {
         }
     }
     
-     concept Machine2(input): MachineAction {
+     concept Machine2(Decompose2): MachineAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
@@ -292,7 +571,7 @@ graph (input: ObservationState): SimAction {
         }
     }
 
-    concept Machine3(input): MachineAction {
+    concept Machine3(Decompose3): MachineAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
@@ -337,7 +616,7 @@ graph (input: ObservationState): SimAction {
         }
     }
 
-    concept Machine4(input): MachineAction {
+    concept Machine4(Decompose4): MachineAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
@@ -382,7 +661,7 @@ graph (input: ObservationState): SimAction {
         }
     }
 
-    concept Machine5(input): MachineAction {
+    concept Machine5(Decompose5): MachineAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
@@ -427,7 +706,7 @@ graph (input: ObservationState): SimAction {
         }
     }
 
-    concept Machine6(input): MachineAction {
+    concept Machine6(Decompose6): MachineAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
