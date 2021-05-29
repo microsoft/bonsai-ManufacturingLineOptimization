@@ -90,7 +90,7 @@ type SimConfig {
     down_machine_index: number,
 }
 
-function TransformAction10Down(a: MachineActionMinusOne): SimAction {
+function TransformAction9Down(a: MachineActionMinusOne): SimAction {
     return {
         machines_speed: [
             a.machines_speed[0],
@@ -107,23 +107,6 @@ function TransformAction10Down(a: MachineActionMinusOne): SimAction {
     }
 }
 
-function TransformAction9Down(a: MachineActionMinusOne): SimAction {
-    return {
-        machines_speed: [
-            a.machines_speed[0],
-            a.machines_speed[1],
-            a.machines_speed[2],
-            a.machines_speed[3],
-            a.machines_speed[4],
-            a.machines_speed[5],
-            a.machines_speed[6],
-            a.machines_speed[7],
-            0,
-            a.machines_speed[8]
-        ]
-    }
-}
-
 function TransformAction8Down(a: MachineActionMinusOne): SimAction {
     return {
         machines_speed: [
@@ -134,8 +117,8 @@ function TransformAction8Down(a: MachineActionMinusOne): SimAction {
             a.machines_speed[4],
             a.machines_speed[5],
             a.machines_speed[6],
-            0,
             a.machines_speed[7],
+            0,
             a.machines_speed[8]
         ]
     }
@@ -150,8 +133,8 @@ function TransformAction7Down(a: MachineActionMinusOne): SimAction {
             a.machines_speed[3],
             a.machines_speed[4],
             a.machines_speed[5],
-            0,
             a.machines_speed[6],
+            0,
             a.machines_speed[7],
             a.machines_speed[8]
         ]
@@ -166,8 +149,8 @@ function TransformAction6Down(a: MachineActionMinusOne): SimAction {
             a.machines_speed[2],
             a.machines_speed[3],
             a.machines_speed[4],
-            0,
             a.machines_speed[5],
+            0,
             a.machines_speed[6],
             a.machines_speed[7],
             a.machines_speed[8]
@@ -182,8 +165,8 @@ function TransformAction5Down(a: MachineActionMinusOne): SimAction {
             a.machines_speed[1],
             a.machines_speed[2],
             a.machines_speed[3],
-            0,
             a.machines_speed[4],
+            0,
             a.machines_speed[5],
             a.machines_speed[6],
             a.machines_speed[7],
@@ -198,8 +181,8 @@ function TransformAction4Down(a: MachineActionMinusOne): SimAction {
             a.machines_speed[0],
             a.machines_speed[1],
             a.machines_speed[2],
-            0,
             a.machines_speed[3],
+            0,
             a.machines_speed[4],
             a.machines_speed[5],
             a.machines_speed[6],
@@ -214,6 +197,23 @@ function TransformAction3Down(a: MachineActionMinusOne): SimAction {
         machines_speed: [
             a.machines_speed[0],
             a.machines_speed[1],
+            a.machines_speed[2],
+            0,
+            a.machines_speed[3],
+            a.machines_speed[4],
+            a.machines_speed[5],
+            a.machines_speed[6],
+            a.machines_speed[7],
+            a.machines_speed[8]
+        ]
+    }
+}
+
+function TransformAction2Down(a: MachineActionMinusOne): SimAction {
+    return {
+        machines_speed: [
+            a.machines_speed[0],
+            a.machines_speed[1],
             0,
             a.machines_speed[2],
             a.machines_speed[3],
@@ -226,7 +226,7 @@ function TransformAction3Down(a: MachineActionMinusOne): SimAction {
     }
 }
 
-function TransformAction2Down(a: MachineActionMinusOne): SimAction {
+function TransformAction1Down(a: MachineActionMinusOne): SimAction {
     return {
         machines_speed: [
             a.machines_speed[0],
@@ -243,7 +243,7 @@ function TransformAction2Down(a: MachineActionMinusOne): SimAction {
     }
 }
 
-function TransformAction1Down(a: MachineActionMinusOne): SimAction {
+function TransformAction0Down(a: MachineActionMinusOne): SimAction {
     return {
         machines_speed: [
             0,
@@ -275,9 +275,7 @@ function Terminal(sim_obervation: SimState){
     return sim_obervation.machines_state_sum <7
 }
 
-simulator Simulator(action: SimAction, config: SimConfig): SimState {
-    #package "MFGlinedouble"
-}
+
 
 function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAction {
     
@@ -470,7 +468,10 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
             ],
         }        
     }
+}
 
+simulator Simulator(action: SimAction, config: SimConfig): SimState {
+    package "MFGLineDoubleWork"
 }
 
 graph (input: ObservationState): SimAction {
@@ -506,37 +507,6 @@ graph (input: ObservationState): SimAction {
         }
     }
 
-    concept Machine10Down(input): MachineActionMinusOne {
-        curriculum {
-            algorithm {
-                Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
-            }
-            training {
-                EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 500000
-            }
-            source Simulator
-            reward Reward
-            action TransformAction10Down
-
-            lesson `Take Machine 10 Out` {
-                scenario {
-                    control_type : 1, # control type allows downtime
-                    control_frequency : control_frequency, 
-                    interval_downtime_event_mean : interval_downtime_event_mean,  
-                    interval_downtime_event_dev : interval_downtime_event_dev,
-                    downtime_event_duration_mean : downtime_event_duration_mean,   
-                    downtime_event_duration_dev : downtime_event_duration_dev,  
-                    number_parallel_downtime_events : number_parallel_downtime_events,
-                    layout_configuration : layout_configuration,
-                    down_machine_index: 9, # zero index machine
-                }
-            }
-        }
-    }
-    
     concept Machine9Down(input): MachineActionMinusOne {
         curriculum {
             algorithm {
@@ -554,7 +524,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 9 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 1, # control type allows downtime
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -562,7 +532,7 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 8,
+                    down_machine_index: 9, # zero index machine
                 }
             }
         }
@@ -593,7 +563,7 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 7,
+                    down_machine_index: 8,
                 }
             }
         }
@@ -624,7 +594,7 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 6,
+                    down_machine_index: 7,
                 }
             }
         }
@@ -655,7 +625,7 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 5,
+                    down_machine_index: 6,
                 }
             }
         }
@@ -686,12 +656,12 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 4,
+                    down_machine_index: 5,
                 }
             }
         }
     }
-
+    
     concept Machine4Down(input): MachineActionMinusOne {
         curriculum {
             algorithm {
@@ -717,12 +687,12 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 3,
+                    down_machine_index: 4,
                 }
             }
         }
     }
-    
+
     concept Machine3Down(input): MachineActionMinusOne {
         curriculum {
             algorithm {
@@ -748,12 +718,12 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 2,
+                    down_machine_index: 3,
                 }
             }
         }
     }
-
+    
     concept Machine2Down(input): MachineActionMinusOne {
         curriculum {
             algorithm {
@@ -767,7 +737,7 @@ graph (input: ObservationState): SimAction {
             }
             source Simulator
             reward Reward
-            action TransformAction2Down
+            action TransformAction3Down
 
             lesson `Take Machine 2 Out` {
                 scenario {
@@ -779,7 +749,7 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 1,
+                    down_machine_index: 2,
                 }
             }
         }
@@ -810,13 +780,44 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
+                    down_machine_index: 1,
+                }
+            }
+        }
+    }
+
+    concept Machine0Down(input): MachineActionMinusOne {
+        curriculum {
+            algorithm {
+                Algorithm: "SAC",
+                #BatchSize: 8000,
+                #PolicyLearningRate: 0.001
+            }
+            training {
+                EpisodeIterationLimit: number_of_iterations,
+                NoProgressIterationLimit: 500000
+            }
+            source Simulator
+            reward Reward
+            action TransformAction0Down
+
+            lesson `Take Machine 0 Out` {
+                scenario {
+                    control_type : 1,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
                     down_machine_index: 0,
                 }
             }
         }
     }
 
-    concept Padding(input, AllMachines, Machine10Down, Machine9Down, Machine8Down, Machine7Down, Machine6Down, Machine5Down, Machine4Down, Machine3Down, Machine2Down, Machine1Down): SimAction {
+    concept Padding(input, AllMachines, Machine9Down, Machine8Down, Machine7Down, Machine6Down, Machine5Down, Machine4Down, Machine3Down, Machine2Down, Machine1Down, Machine0Down): SimAction {
         programmed pad
     }
 
