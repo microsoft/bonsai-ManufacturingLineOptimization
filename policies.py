@@ -19,6 +19,17 @@ def random_policy(state):
     }
     return action
 
+def max_policy(state):
+    """
+    Ignore the state, move randomly.
+    """
+    action = {
+        "machines_speed": [100 for i in range(10)], 
+        # [AJ]: Comment the following since brain is not responsible to determine conveyors' speeds
+        # "conveyors_speed": [random.randint(10, 100) for i in range(9)], 
+    }
+    return action
+
 
 def brain_policy(
     state: Dict[str, float],
