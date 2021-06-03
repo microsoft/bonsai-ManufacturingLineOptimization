@@ -503,6 +503,9 @@ graph (input: ObservationState): SimAction {
                     layout_configuration : layout_configuration,
                     down_machine_index: -1 # allows parallel downtime events
                 }
+                training {
+                    LessonAssessmentWindow: 1,
+                }
             }
         }
     }
@@ -533,6 +536,9 @@ graph (input: ObservationState): SimAction {
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
                     down_machine_index: 9, # zero index machine
+                }
+                training {
+                    LessonAssessmentWindow: 1,
                 }
             }
         }
@@ -565,6 +571,9 @@ graph (input: ObservationState): SimAction {
                     layout_configuration : layout_configuration,
                     down_machine_index: 8,
                 }
+                training {
+                    LessonAssessmentWindow: 1,
+                }
             }
         }
     }
@@ -595,6 +604,9 @@ graph (input: ObservationState): SimAction {
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
                     down_machine_index: 7,
+                }
+                training {
+                    LessonAssessmentWindow: 1,
                 }
             }
         }
@@ -627,6 +639,9 @@ graph (input: ObservationState): SimAction {
                     layout_configuration : layout_configuration,
                     down_machine_index: 6,
                 }
+                training {
+                    LessonAssessmentWindow: 1,
+                }
             }
         }
     }
@@ -657,6 +672,9 @@ graph (input: ObservationState): SimAction {
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
                     down_machine_index: 5,
+                }
+                training {
+                    LessonAssessmentWindow: 1,
                 }
             }
         }
@@ -689,6 +707,9 @@ graph (input: ObservationState): SimAction {
                     layout_configuration : layout_configuration,
                     down_machine_index: 4,
                 }
+                training {
+                    LessonAssessmentWindow: 1,
+                }
             }
         }
     }
@@ -720,6 +741,9 @@ graph (input: ObservationState): SimAction {
                     layout_configuration : layout_configuration,
                     down_machine_index: 3,
                 }
+                training {
+                    LessonAssessmentWindow: 1,
+                }
             }
         }
     }
@@ -737,7 +761,7 @@ graph (input: ObservationState): SimAction {
             }
             source Simulator
             reward Reward
-            action TransformAction3Down
+            action TransformAction2Down
 
             lesson `Take Machine 2 Out` {
                 scenario {
@@ -750,6 +774,9 @@ graph (input: ObservationState): SimAction {
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
                     down_machine_index: 2,
+                }
+                training {
+                    LessonAssessmentWindow: 1,
                 }
             }
         }
@@ -782,6 +809,9 @@ graph (input: ObservationState): SimAction {
                     layout_configuration : layout_configuration,
                     down_machine_index: 1,
                 }
+                training {
+                    LessonAssessmentWindow: 1,
+                }
             }
         }
     }
@@ -812,6 +842,9 @@ graph (input: ObservationState): SimAction {
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
                     down_machine_index: 0,
+                }
+                training {
+                    LessonAssessmentWindow: 1,
                 }
             }
         }
