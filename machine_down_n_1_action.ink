@@ -277,20 +277,20 @@ function Terminal(sim_obervation: SimState){
 
 
 
-function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAction {
+function pad(s: ObservationState, a: SimAction, m9down: MachineActionMinusOne, m8down: MachineActionMinusOne, m7down: MachineActionMinusOne, m6down: MachineActionMinusOne, m5down: MachineActionMinusOne, m4down: MachineActionMinusOne, m3down: MachineActionMinusOne, m2down: MachineActionMinusOne, m1down: MachineActionMinusOne, m0down: MachineActionMinusOne): SimAction {
     
     if s.machines_state[9] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
-                a.machines_speed[5],
-                a.machines_speed[6],
-                a.machines_speed[7],
-                a.machines_speed[8],
+                m9down.machines_speed[0],
+                m9down.machines_speed[1],
+                m9down.machines_speed[2],
+                m9down.machines_speed[3],
+                m9down.machines_speed[4],
+                m9down.machines_speed[5],
+                m9down.machines_speed[6],
+                m9down.machines_speed[7],
+                m9down.machines_speed[8],
                 0,
             ],
         }
@@ -299,16 +299,16 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
     else if s.machines_state[8] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
-                b.machines_speed[5],
-                b.machines_speed[6],
-                b.machines_speed[7],
+                m8down.machines_speed[0],
+                m8down.machines_speed[1],
+                m8down.machines_speed[2],
+                m8down.machines_speed[3],
+                m8down.machines_speed[4],
+                m8down.machines_speed[5],
+                m8down.machines_speed[6],
+                m8down.machines_speed[7],
                 0,
-                b.machines_speed[8],
+                m8down.machines_speed[8],
 
             ],
         }
@@ -317,16 +317,16 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
     else if s.machines_state[7] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
-                b.machines_speed[5],
-                b.machines_speed[6],
+                m7down.machines_speed[0],
+                m7down.machines_speed[1],
+                m7down.machines_speed[2],
+                m7down.machines_speed[3],
+                m7down.machines_speed[4],
+                m7down.machines_speed[5],
+                m7down.machines_speed[6],
                 0,
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m7down.machines_speed[7],
+                m7down.machines_speed[8],
             ],
         }
     }
@@ -334,16 +334,16 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
     else if s.machines_state[6] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
-                b.machines_speed[5],
+                m6down.machines_speed[0],
+                m6down.machines_speed[1],
+                m6down.machines_speed[2],
+                m6down.machines_speed[3],
+                m6down.machines_speed[4],
+                m6down.machines_speed[5],
                 0,
-                b.machines_speed[6],
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m6down.machines_speed[6],
+                m6down.machines_speed[7],
+                m6down.machines_speed[8],
             ],
         }
     }
@@ -351,16 +351,16 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
     else if s.machines_state[5] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
+                m5down.machines_speed[0],
+                m5down.machines_speed[1],
+                m5down.machines_speed[2],
+                m5down.machines_speed[3],
+                m5down.machines_speed[4],
                 0,
-                b.machines_speed[5],
-                b.machines_speed[6],
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m5down.machines_speed[5],
+                m5down.machines_speed[6],
+                m5down.machines_speed[7],
+                m5down.machines_speed[8],
             ],
         }
     }
@@ -369,16 +369,16 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
     else if s.machines_state[4] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
+                m4down.machines_speed[0],
+                m4down.machines_speed[1],
+                m4down.machines_speed[2],
+                m4down.machines_speed[3],
                 0,
-                b.machines_speed[4],
-                b.machines_speed[5],
-                b.machines_speed[6],
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m4down.machines_speed[4],
+                m4down.machines_speed[5],
+                m4down.machines_speed[6],
+                m4down.machines_speed[7],
+                m4down.machines_speed[8],
             ],
         }
     }
@@ -386,16 +386,16 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
     else if s.machines_state[3] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
+                m3down.machines_speed[0],
+                m3down.machines_speed[1],
+                m3down.machines_speed[2],
                 0,
-                b.machines_speed[3],
-                b.machines_speed[4],
-                b.machines_speed[5],
-                b.machines_speed[6],
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m3down.machines_speed[3],
+                m3down.machines_speed[4],
+                m3down.machines_speed[5],
+                m3down.machines_speed[6],
+                m3down.machines_speed[7],
+                m3down.machines_speed[8],
             ],
         }
     }
@@ -403,16 +403,16 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
     else if s.machines_state[2] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
+                m2down.machines_speed[0],
+                m2down.machines_speed[1],
                 0,
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
-                b.machines_speed[5],
-                b.machines_speed[6],
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m2down.machines_speed[2],
+                m2down.machines_speed[3],
+                m2down.machines_speed[4],
+                m2down.machines_speed[5],
+                m2down.machines_speed[6],
+                m2down.machines_speed[7],
+                m2down.machines_speed[8],
             ],
         }
     }
@@ -420,16 +420,16 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
     else if s.machines_state[1] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
+                m1down.machines_speed[0],
                 0,
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
-                b.machines_speed[5],
-                b.machines_speed[6],
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m1down.machines_speed[1],
+                m1down.machines_speed[2],
+                m1down.machines_speed[3],
+                m1down.machines_speed[4],
+                m1down.machines_speed[5],
+                m1down.machines_speed[6],
+                m1down.machines_speed[7],
+                m1down.machines_speed[8],
             ],
         }
     }
@@ -438,15 +438,15 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
         return {
             machines_speed: [
                 0,
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
-                b.machines_speed[5],
-                b.machines_speed[6],
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m0down.machines_speed[0],
+                m0down.machines_speed[1],
+                m0down.machines_speed[2],
+                m0down.machines_speed[3],
+                m0down.machines_speed[4],
+                m0down.machines_speed[5],
+                m0down.machines_speed[6],
+                m0down.machines_speed[7],
+                m0down.machines_speed[8],
             ],
         }
     }
