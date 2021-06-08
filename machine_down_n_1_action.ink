@@ -3,15 +3,15 @@ using Number
 using Math
 
 ## define constants, part of sim config 
-const number_of_iterations = 1000
+const number_of_iterations = 480
 ## the below control frequency does not apply to control type 1 and will be ignored
-const control_frequency = 1 # in seconds (s)
+const control_frequency = 3 # in seconds (s)
 
 ## Downtime event config 
 ## a random interval_downtime_event is generated in the range [interval_downtime_event_mean - interval_downtime_event_dev, interval_downtime_event_mean + interval_downtime_event_dev]
 ## a random downtime duration is generated in the range [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean + downtime_event_duration_std]
-const interval_downtime_event_mean = 100  # seconds (s) 
-const interval_downtime_event_dev = 20 #  seconds (s) 
+const interval_downtime_event_mean = 60  # seconds (s) 
+const interval_downtime_event_dev = 15 #  seconds (s) 
 const downtime_event_duration_mean = 10  # seconds (s),  
 const downtime_event_duration_dev = 3  # seconds (s)
 ## The following indicate possibility of multiple machines going down in parallel and at overlapping times
@@ -527,7 +527,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 9 Out` {
                 scenario {
-                    control_type : 1, # control type allows downtime
+                    control_type : 0, # control type allows downtime
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -561,7 +561,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 8 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -595,7 +595,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 7 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -629,7 +629,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 6 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -663,7 +663,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 5 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -697,7 +697,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 4 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -731,7 +731,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 3 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -765,7 +765,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 2 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -799,7 +799,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 1 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -833,7 +833,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 0 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,

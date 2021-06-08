@@ -3,15 +3,15 @@ using Number
 using Math
 
 ## define constants, part of sim config 
-const number_of_iterations = 1000
+const number_of_iterations = 480
 ## the below control frequency does not apply to control type 1 and will be ignored
-const control_frequency = 1 # in seconds (s)
+const control_frequency = 3 # in seconds (s)
 
 ## Downtime event config 
 ## a random interval_downtime_event is generated in the range [interval_downtime_event_mean - interval_downtime_event_dev, interval_downtime_event_mean + interval_downtime_event_dev]
 ## a random downtime duration is generated in the range [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean + downtime_event_duration_std]
-const interval_downtime_event_mean = 100  # seconds (s) 
-const interval_downtime_event_dev = 20 #  seconds (s) 
+const interval_downtime_event_mean = 60  # seconds (s) 
+const interval_downtime_event_dev = 15 #  seconds (s) 
 const downtime_event_duration_mean = 10  # seconds (s),  
 const downtime_event_duration_dev = 3  # seconds (s)
 ## The following indicate possibility of multiple machines going down in parallel and at overlapping times
@@ -132,6 +132,7 @@ type SimConfig {
     number_parallel_downtime_events : number,
     layout_configuration : number, 
     down_machine_index: number,
+    buffer_size_IC: number[9]
 }
 
 function ExpertActionExceptMachine9(a: MachineAction): SimAction {
@@ -830,7 +831,7 @@ graph (input: ObservationState): SimAction {
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 500000
+                NoProgressIterationLimit: 20000000
             }
             source Simulator
             reward Reward
@@ -848,11 +849,15 @@ graph (input: ObservationState): SimAction {
                     layout_configuration : layout_configuration,
                     down_machine_index: -1,
                 }
+
+                training {
+                    LessonRewardThreshold: 478
+                }
             }
             
             lesson `Randomize 1 Machine down` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -897,7 +902,7 @@ graph (input: ObservationState): SimAction {
             
             lesson `Randomize 1 Machine down` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -942,7 +947,7 @@ graph (input: ObservationState): SimAction {
             
             lesson `Randomize 1 Machine down` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -965,7 +970,7 @@ graph (input: ObservationState): SimAction {
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 500000
+                NoProgressIterationLimit: 20000000
             }
             source Simulator
             reward Reward
@@ -987,7 +992,7 @@ graph (input: ObservationState): SimAction {
             
             lesson `Randomize 1 Machine down` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -1010,7 +1015,7 @@ graph (input: ObservationState): SimAction {
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 500000
+                NoProgressIterationLimit: 20000000
             }
             source Simulator
             reward Reward
@@ -1032,7 +1037,7 @@ graph (input: ObservationState): SimAction {
             
             lesson `Randomize 1 Machine down` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -1055,7 +1060,7 @@ graph (input: ObservationState): SimAction {
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 500000
+                NoProgressIterationLimit: 20000000
             }
             source Simulator
             reward Reward
@@ -1077,7 +1082,7 @@ graph (input: ObservationState): SimAction {
             
             lesson `Randomize 1 Machine down` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -1100,7 +1105,7 @@ graph (input: ObservationState): SimAction {
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 500000
+                NoProgressIterationLimit: 20000000
             }
             source Simulator
             reward Reward
@@ -1122,7 +1127,7 @@ graph (input: ObservationState): SimAction {
             
             lesson `Randomize 1 Machine down` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -1145,7 +1150,7 @@ graph (input: ObservationState): SimAction {
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 500000
+                NoProgressIterationLimit: 20000000
             }
             source Simulator
             reward Reward
@@ -1167,7 +1172,7 @@ graph (input: ObservationState): SimAction {
             
             lesson `Randomize 1 Machine down` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -1190,7 +1195,7 @@ graph (input: ObservationState): SimAction {
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 500000
+                NoProgressIterationLimit: 20000000
             }
             source Simulator
             reward Reward
@@ -1212,7 +1217,7 @@ graph (input: ObservationState): SimAction {
             
             lesson `Randomize 1 Machine down` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -1235,7 +1240,7 @@ graph (input: ObservationState): SimAction {
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 500000
+                NoProgressIterationLimit: 20000000
             }
             source Simulator
             reward Reward
@@ -1257,7 +1262,7 @@ graph (input: ObservationState): SimAction {
             
             lesson `Randomize 1 Machine down` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
