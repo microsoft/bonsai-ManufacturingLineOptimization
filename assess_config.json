@@ -3,10 +3,10 @@
   "context": {},
   "episodeConfigurations": [
     {
-      "control_type": -1,
-      "control_frequency": 1,
-      "interval_downtime_event_mean": 100,
-      "interval_downtime_event_dev": 20,
+      "control_type": 0,
+      "control_frequency": 3,
+      "interval_downtime_event_mean": 60,
+      "interval_downtime_event_dev": 15,
       "downtime_event_duration_mean": 10,
       "downtime_event_duration_dev": 3,
       "number_parallel_downtime_events": 1,
