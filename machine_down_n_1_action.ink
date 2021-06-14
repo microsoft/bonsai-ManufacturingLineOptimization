@@ -480,8 +480,6 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
@@ -514,8 +512,6 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
@@ -548,8 +544,6 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
@@ -582,8 +576,6 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
@@ -616,8 +608,6 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
@@ -650,8 +640,6 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
@@ -684,8 +672,6 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
@@ -718,8 +704,6 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
@@ -752,8 +736,6 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
@@ -786,8 +768,6 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
@@ -820,8 +800,6 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
