@@ -1,4 +1,5 @@
 inkling "2.0"
+inkling "2.0"
 using Number
 using Math
 
@@ -831,29 +832,11 @@ graph (input: ObservationState): SimAction {
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 20000000
+                NoProgressIterationLimit: 500000
             }
             source Simulator
             reward Reward
             action ExpertActionExceptMachine0
-
-            lesson `No machines down` {
-                scenario {
-                    control_type : -1,
-                    control_frequency : control_frequency, 
-                    interval_downtime_event_mean : interval_downtime_event_mean,  
-                    interval_downtime_event_dev : interval_downtime_event_dev,
-                    downtime_event_duration_mean : downtime_event_duration_mean,   
-                    downtime_event_duration_dev : downtime_event_duration_dev,  
-                    number_parallel_downtime_events : number_parallel_downtime_events,
-                    layout_configuration : layout_configuration,
-                    down_machine_index: -1,
-                }
-
-                training {
-                    LessonRewardThreshold: 478
-                }
-            }
             
             lesson `Randomize 1 Machine down` {
                 scenario {
@@ -875,8 +858,6 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
@@ -885,20 +866,7 @@ graph (input: ObservationState): SimAction {
             source Simulator
             reward Reward
             action ExpertActionExceptMachine1
-            
-            lesson `No machines down` {
-                scenario {
-                    control_type : -1,
-                    control_frequency : control_frequency, 
-                    interval_downtime_event_mean : interval_downtime_event_mean,  
-                    interval_downtime_event_dev : interval_downtime_event_dev,
-                    downtime_event_duration_mean : downtime_event_duration_mean,   
-                    downtime_event_duration_dev : downtime_event_duration_dev,  
-                    number_parallel_downtime_events : number_parallel_downtime_events,
-                    layout_configuration : layout_configuration,
-                    down_machine_index: -1,
-                }
-            }
+        
             
             lesson `Randomize 1 Machine down` {
                 scenario {
@@ -920,8 +888,6 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
@@ -930,20 +896,6 @@ graph (input: ObservationState): SimAction {
             source Simulator
             reward Reward
             action ExpertActionExceptMachine2
-            
-            lesson `No machines down` {
-                scenario {
-                    control_type : -1,
-                    control_frequency : control_frequency, 
-                    interval_downtime_event_mean : interval_downtime_event_mean,  
-                    interval_downtime_event_dev : interval_downtime_event_dev,
-                    downtime_event_duration_mean : downtime_event_duration_mean,   
-                    downtime_event_duration_dev : downtime_event_duration_dev,  
-                    number_parallel_downtime_events : number_parallel_downtime_events,
-                    layout_configuration : layout_configuration,
-                    down_machine_index: -1,
-                }
-            }
             
             lesson `Randomize 1 Machine down` {
                 scenario {
@@ -965,32 +917,16 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 20000000
+                NoProgressIterationLimit: 500000
             }
             source Simulator
             reward Reward
             action ExpertActionExceptMachine3
             
-            lesson `No machines down` {
-                scenario {
-                    control_type : -1,
-                    control_frequency : control_frequency, 
-                    interval_downtime_event_mean : interval_downtime_event_mean,  
-                    interval_downtime_event_dev : interval_downtime_event_dev,
-                    downtime_event_duration_mean : downtime_event_duration_mean,   
-                    downtime_event_duration_dev : downtime_event_duration_dev,  
-                    number_parallel_downtime_events : number_parallel_downtime_events,
-                    layout_configuration : layout_configuration,
-                    down_machine_index: -1,
-                }
-            }
-            
-            lesson `Randomize 1 Machine down` {
+            lesson `Randomize 1 Machine Down` {
                 scenario {
                     control_type : 0,
                     control_frequency : control_frequency, 
@@ -1010,32 +946,16 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 20000000
+                NoProgressIterationLimit: 500000
             }
             source Simulator
             reward Reward
             action ExpertActionExceptMachine4
             
-            lesson `No machines down` {
-                scenario {
-                    control_type : -1,
-                    control_frequency : control_frequency, 
-                    interval_downtime_event_mean : interval_downtime_event_mean,  
-                    interval_downtime_event_dev : interval_downtime_event_dev,
-                    downtime_event_duration_mean : downtime_event_duration_mean,   
-                    downtime_event_duration_dev : downtime_event_duration_dev,  
-                    number_parallel_downtime_events : number_parallel_downtime_events,
-                    layout_configuration : layout_configuration,
-                    down_machine_index: -1,
-                }
-            }
-            
-            lesson `Randomize 1 Machine down` {
+            lesson `Randomize 1 Machine Down` {
                 scenario {
                     control_type : 0,
                     control_frequency : control_frequency, 
@@ -1055,32 +975,16 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 20000000
+                NoProgressIterationLimit: 500000
             }
             source Simulator
             reward Reward
             action ExpertActionExceptMachine5
 
-            lesson `No machines down` {
-                scenario {
-                    control_type : -1,
-                    control_frequency : control_frequency, 
-                    interval_downtime_event_mean : interval_downtime_event_mean,  
-                    interval_downtime_event_dev : interval_downtime_event_dev,
-                    downtime_event_duration_mean : downtime_event_duration_mean,   
-                    downtime_event_duration_dev : downtime_event_duration_dev,  
-                    number_parallel_downtime_events : number_parallel_downtime_events,
-                    layout_configuration : layout_configuration,
-                    down_machine_index: -1,
-                }
-            }
-            
-            lesson `Randomize 1 Machine down` {
+            lesson `Randomize 1 Machine Down` {
                 scenario {
                     control_type : 0,
                     control_frequency : control_frequency, 
@@ -1100,34 +1004,18 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 20000000
+                NoProgressIterationLimit: 500000
             }
             source Simulator
             reward Reward
             action ExpertActionExceptMachine6
 
-            lesson `No machines down` {
+            lesson `Randomize 1 Machine Down` {
                 scenario {
                     control_type : -1,
-                    control_frequency : control_frequency, 
-                    interval_downtime_event_mean : interval_downtime_event_mean,  
-                    interval_downtime_event_dev : interval_downtime_event_dev,
-                    downtime_event_duration_mean : downtime_event_duration_mean,   
-                    downtime_event_duration_dev : downtime_event_duration_dev,  
-                    number_parallel_downtime_events : number_parallel_downtime_events,
-                    layout_configuration : layout_configuration,
-                    down_machine_index: -1,
-                }
-            }
-            
-            lesson `Randomize 1 Machine down` {
-                scenario {
-                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -1145,32 +1033,16 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 20000000
+                NoProgressIterationLimit: 500000
             }
             source Simulator
             reward Reward
             action ExpertActionExceptMachine7
 
-            lesson `No machines down` {
-                scenario {
-                    control_type : -1,
-                    control_frequency : control_frequency, 
-                    interval_downtime_event_mean : interval_downtime_event_mean,  
-                    interval_downtime_event_dev : interval_downtime_event_dev,
-                    downtime_event_duration_mean : downtime_event_duration_mean,   
-                    downtime_event_duration_dev : downtime_event_duration_dev,  
-                    number_parallel_downtime_events : number_parallel_downtime_events,
-                    layout_configuration : layout_configuration,
-                    down_machine_index: -1,
-                }
-            }
-            
-            lesson `Randomize 1 Machine down` {
+            lesson `Randomize 1 Machine Down` {
                 scenario {
                     control_type : 0,
                     control_frequency : control_frequency, 
@@ -1190,32 +1062,16 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 20000000
+                NoProgressIterationLimit: 500000
             }
             source Simulator
             reward Reward
             action ExpertActionExceptMachine8
 
-            lesson `No machines down` {
-                scenario {
-                    control_type : -1,
-                    control_frequency : control_frequency, 
-                    interval_downtime_event_mean : interval_downtime_event_mean,  
-                    interval_downtime_event_dev : interval_downtime_event_dev,
-                    downtime_event_duration_mean : downtime_event_duration_mean,   
-                    downtime_event_duration_dev : downtime_event_duration_dev,  
-                    number_parallel_downtime_events : number_parallel_downtime_events,
-                    layout_configuration : layout_configuration,
-                    down_machine_index: -1,
-                }
-            }
-            
-            lesson `Randomize 1 Machine down` {
+            lesson `Randomize 1 Machine Down` {
                 scenario {
                     control_type : 0,
                     control_frequency : control_frequency, 
@@ -1235,32 +1091,16 @@ graph (input: ObservationState): SimAction {
         curriculum {
             algorithm {
                 Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
             }
             training {
                 EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 20000000
+                NoProgressIterationLimit: 500000
             }
             source Simulator
             reward Reward
             action ExpertActionExceptMachine9
 
-            lesson `No machines down` {
-                scenario {
-                    control_type : -1,
-                    control_frequency : control_frequency, 
-                    interval_downtime_event_mean : interval_downtime_event_mean,  
-                    interval_downtime_event_dev : interval_downtime_event_dev,
-                    downtime_event_duration_mean : downtime_event_duration_mean,   
-                    downtime_event_duration_dev : downtime_event_duration_dev,  
-                    number_parallel_downtime_events : number_parallel_downtime_events,
-                    layout_configuration : layout_configuration,
-                    down_machine_index: -1,
-                }
-            }
-            
-            lesson `Randomize 1 Machine down` {
+            lesson `Randomize 1 Machine Down` {
                 scenario {
                     control_type : 0,
                     control_frequency : control_frequency, 
