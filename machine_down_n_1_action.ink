@@ -3,15 +3,15 @@ using Number
 using Math
 
 ## define constants, part of sim config 
-const number_of_iterations = 1000
+const number_of_iterations = 480
 ## the below control frequency does not apply to control type 1 and will be ignored
-const control_frequency = 1 # in seconds (s)
+const control_frequency = 3 # in seconds (s)
 
 ## Downtime event config 
 ## a random interval_downtime_event is generated in the range [interval_downtime_event_mean - interval_downtime_event_dev, interval_downtime_event_mean + interval_downtime_event_dev]
 ## a random downtime duration is generated in the range [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean + downtime_event_duration_std]
-const interval_downtime_event_mean = 100  # seconds (s) 
-const interval_downtime_event_dev = 20 #  seconds (s) 
+const interval_downtime_event_mean = 60  # seconds (s) 
+const interval_downtime_event_dev = 15 #  seconds (s) 
 const downtime_event_duration_mean = 10  # seconds (s),  
 const downtime_event_duration_dev = 3  # seconds (s)
 ## The following indicate possibility of multiple machines going down in parallel and at overlapping times
@@ -90,7 +90,7 @@ type SimConfig {
     down_machine_index: number,
 }
 
-function TransformAction10Down(a: MachineActionMinusOne): SimAction {
+function TransformAction9Down(a: MachineActionMinusOne): SimAction {
     return {
         machines_speed: [
             a.machines_speed[0],
@@ -107,23 +107,6 @@ function TransformAction10Down(a: MachineActionMinusOne): SimAction {
     }
 }
 
-function TransformAction9Down(a: MachineActionMinusOne): SimAction {
-    return {
-        machines_speed: [
-            a.machines_speed[0],
-            a.machines_speed[1],
-            a.machines_speed[2],
-            a.machines_speed[3],
-            a.machines_speed[4],
-            a.machines_speed[5],
-            a.machines_speed[6],
-            a.machines_speed[7],
-            0,
-            a.machines_speed[8]
-        ]
-    }
-}
-
 function TransformAction8Down(a: MachineActionMinusOne): SimAction {
     return {
         machines_speed: [
@@ -134,8 +117,8 @@ function TransformAction8Down(a: MachineActionMinusOne): SimAction {
             a.machines_speed[4],
             a.machines_speed[5],
             a.machines_speed[6],
-            0,
             a.machines_speed[7],
+            0,
             a.machines_speed[8]
         ]
     }
@@ -150,8 +133,8 @@ function TransformAction7Down(a: MachineActionMinusOne): SimAction {
             a.machines_speed[3],
             a.machines_speed[4],
             a.machines_speed[5],
-            0,
             a.machines_speed[6],
+            0,
             a.machines_speed[7],
             a.machines_speed[8]
         ]
@@ -166,8 +149,8 @@ function TransformAction6Down(a: MachineActionMinusOne): SimAction {
             a.machines_speed[2],
             a.machines_speed[3],
             a.machines_speed[4],
-            0,
             a.machines_speed[5],
+            0,
             a.machines_speed[6],
             a.machines_speed[7],
             a.machines_speed[8]
@@ -182,8 +165,8 @@ function TransformAction5Down(a: MachineActionMinusOne): SimAction {
             a.machines_speed[1],
             a.machines_speed[2],
             a.machines_speed[3],
-            0,
             a.machines_speed[4],
+            0,
             a.machines_speed[5],
             a.machines_speed[6],
             a.machines_speed[7],
@@ -198,8 +181,8 @@ function TransformAction4Down(a: MachineActionMinusOne): SimAction {
             a.machines_speed[0],
             a.machines_speed[1],
             a.machines_speed[2],
-            0,
             a.machines_speed[3],
+            0,
             a.machines_speed[4],
             a.machines_speed[5],
             a.machines_speed[6],
@@ -214,6 +197,23 @@ function TransformAction3Down(a: MachineActionMinusOne): SimAction {
         machines_speed: [
             a.machines_speed[0],
             a.machines_speed[1],
+            a.machines_speed[2],
+            0,
+            a.machines_speed[3],
+            a.machines_speed[4],
+            a.machines_speed[5],
+            a.machines_speed[6],
+            a.machines_speed[7],
+            a.machines_speed[8]
+        ]
+    }
+}
+
+function TransformAction2Down(a: MachineActionMinusOne): SimAction {
+    return {
+        machines_speed: [
+            a.machines_speed[0],
+            a.machines_speed[1],
             0,
             a.machines_speed[2],
             a.machines_speed[3],
@@ -226,7 +226,7 @@ function TransformAction3Down(a: MachineActionMinusOne): SimAction {
     }
 }
 
-function TransformAction2Down(a: MachineActionMinusOne): SimAction {
+function TransformAction1Down(a: MachineActionMinusOne): SimAction {
     return {
         machines_speed: [
             a.machines_speed[0],
@@ -243,7 +243,7 @@ function TransformAction2Down(a: MachineActionMinusOne): SimAction {
     }
 }
 
-function TransformAction1Down(a: MachineActionMinusOne): SimAction {
+function TransformAction0Down(a: MachineActionMinusOne): SimAction {
     return {
         machines_speed: [
             0,
@@ -275,180 +275,178 @@ function Terminal(sim_obervation: SimState){
     return sim_obervation.machines_state_sum <7
 }
 
-simulator Simulator(action: SimAction, config: SimConfig): SimState {
-    #package "MFGLineSingle"
-}
 
-function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAction {
+
+function pad(s: ObservationState, a: SimAction, m9down: MachineActionMinusOne, m8down: MachineActionMinusOne, m7down: MachineActionMinusOne, m6down: MachineActionMinusOne, m5down: MachineActionMinusOne, m4down: MachineActionMinusOne, m3down: MachineActionMinusOne, m2down: MachineActionMinusOne, m1down: MachineActionMinusOne, m0down: MachineActionMinusOne): SimAction {
     
-    if s.machines_state[9] != 0 {
+    if s.machines_state[9] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
-                a.machines_speed[5],
-                a.machines_speed[6],
-                a.machines_speed[7],
-                a.machines_speed[8],
+                m9down.machines_speed[0],
+                m9down.machines_speed[1],
+                m9down.machines_speed[2],
+                m9down.machines_speed[3],
+                m9down.machines_speed[4],
+                m9down.machines_speed[5],
+                m9down.machines_speed[6],
+                m9down.machines_speed[7],
+                m9down.machines_speed[8],
                 0,
             ],
         }
     }
     
-    else if s.machines_state[8] != 0 {
+    else if s.machines_state[8] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
-                b.machines_speed[5],
-                b.machines_speed[6],
-                b.machines_speed[7],
+                m8down.machines_speed[0],
+                m8down.machines_speed[1],
+                m8down.machines_speed[2],
+                m8down.machines_speed[3],
+                m8down.machines_speed[4],
+                m8down.machines_speed[5],
+                m8down.machines_speed[6],
+                m8down.machines_speed[7],
                 0,
-                b.machines_speed[8],
+                m8down.machines_speed[8],
 
             ],
         }
     }
     
-    else if s.machines_state[7] != 0 {
+    else if s.machines_state[7] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
-                b.machines_speed[5],
-                b.machines_speed[6],
+                m7down.machines_speed[0],
+                m7down.machines_speed[1],
+                m7down.machines_speed[2],
+                m7down.machines_speed[3],
+                m7down.machines_speed[4],
+                m7down.machines_speed[5],
+                m7down.machines_speed[6],
                 0,
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m7down.machines_speed[7],
+                m7down.machines_speed[8],
             ],
         }
     }
     
-    else if s.machines_state[6] != 0 {
+    else if s.machines_state[6] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
-                b.machines_speed[5],
+                m6down.machines_speed[0],
+                m6down.machines_speed[1],
+                m6down.machines_speed[2],
+                m6down.machines_speed[3],
+                m6down.machines_speed[4],
+                m6down.machines_speed[5],
                 0,
-                b.machines_speed[6],
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m6down.machines_speed[6],
+                m6down.machines_speed[7],
+                m6down.machines_speed[8],
             ],
         }
     }
     
-    else if s.machines_state[5] != 0 {
+    else if s.machines_state[5] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
+                m5down.machines_speed[0],
+                m5down.machines_speed[1],
+                m5down.machines_speed[2],
+                m5down.machines_speed[3],
+                m5down.machines_speed[4],
                 0,
-                b.machines_speed[5],
-                b.machines_speed[6],
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m5down.machines_speed[5],
+                m5down.machines_speed[6],
+                m5down.machines_speed[7],
+                m5down.machines_speed[8],
             ],
         }
     }
 
     
-    else if s.machines_state[4] != 0 {
+    else if s.machines_state[4] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
+                m4down.machines_speed[0],
+                m4down.machines_speed[1],
+                m4down.machines_speed[2],
+                m4down.machines_speed[3],
                 0,
-                b.machines_speed[4],
-                b.machines_speed[5],
-                b.machines_speed[6],
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m4down.machines_speed[4],
+                m4down.machines_speed[5],
+                m4down.machines_speed[6],
+                m4down.machines_speed[7],
+                m4down.machines_speed[8],
             ],
         }
     }
 
-    else if s.machines_state[3] != 0 {
+    else if s.machines_state[3] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
+                m3down.machines_speed[0],
+                m3down.machines_speed[1],
+                m3down.machines_speed[2],
                 0,
-                b.machines_speed[3],
-                b.machines_speed[4],
-                b.machines_speed[5],
-                b.machines_speed[6],
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m3down.machines_speed[3],
+                m3down.machines_speed[4],
+                m3down.machines_speed[5],
+                m3down.machines_speed[6],
+                m3down.machines_speed[7],
+                m3down.machines_speed[8],
             ],
         }
     }
 
-    else if s.machines_state[2] != 0 {
+    else if s.machines_state[2] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
-                b.machines_speed[1],
+                m2down.machines_speed[0],
+                m2down.machines_speed[1],
                 0,
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
-                b.machines_speed[5],
-                b.machines_speed[6],
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m2down.machines_speed[2],
+                m2down.machines_speed[3],
+                m2down.machines_speed[4],
+                m2down.machines_speed[5],
+                m2down.machines_speed[6],
+                m2down.machines_speed[7],
+                m2down.machines_speed[8],
             ],
         }
     }
 
-    else if s.machines_state[1] != 0 {
+    else if s.machines_state[1] == -1 {
         return {
             machines_speed: [
-                b.machines_speed[0],
+                m1down.machines_speed[0],
                 0,
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
-                b.machines_speed[5],
-                b.machines_speed[6],
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m1down.machines_speed[1],
+                m1down.machines_speed[2],
+                m1down.machines_speed[3],
+                m1down.machines_speed[4],
+                m1down.machines_speed[5],
+                m1down.machines_speed[6],
+                m1down.machines_speed[7],
+                m1down.machines_speed[8],
             ],
         }
     }
 
-    else if s.machines_state[0] != 0 {
+    else if s.machines_state[0] == -1 {
         return {
             machines_speed: [
                 0,
-                b.machines_speed[0],
-                b.machines_speed[1],
-                b.machines_speed[2],
-                b.machines_speed[3],
-                b.machines_speed[4],
-                b.machines_speed[5],
-                b.machines_speed[6],
-                b.machines_speed[7],
-                b.machines_speed[8],
+                m0down.machines_speed[0],
+                m0down.machines_speed[1],
+                m0down.machines_speed[2],
+                m0down.machines_speed[3],
+                m0down.machines_speed[4],
+                m0down.machines_speed[5],
+                m0down.machines_speed[6],
+                m0down.machines_speed[7],
+                m0down.machines_speed[8],
             ],
         }
     }
@@ -470,7 +468,10 @@ function pad(s: ObservationState, a: SimAction, b: MachineActionMinusOne): SimAc
             ],
         }        
     }
+}
 
+simulator Simulator(action: SimAction, config: SimConfig): SimState {
+    package "MFGLineDoubleWork"
 }
 
 graph (input: ObservationState): SimAction {
@@ -502,41 +503,13 @@ graph (input: ObservationState): SimAction {
                     layout_configuration : layout_configuration,
                     down_machine_index: -1 # allows parallel downtime events
                 }
-            }
-        }
-    }
-
-    concept Machine10Down(input): MachineActionMinusOne {
-        curriculum {
-            algorithm {
-                Algorithm: "SAC",
-                #BatchSize: 8000,
-                #PolicyLearningRate: 0.001
-            }
-            training {
-                EpisodeIterationLimit: number_of_iterations,
-                NoProgressIterationLimit: 500000
-            }
-            source Simulator
-            reward Reward
-            action TransformAction10Down
-
-            lesson `Take Machine 10 Out` {
-                scenario {
-                    control_type : 1, # control type allows downtime
-                    control_frequency : control_frequency, 
-                    interval_downtime_event_mean : interval_downtime_event_mean,  
-                    interval_downtime_event_dev : interval_downtime_event_dev,
-                    downtime_event_duration_mean : downtime_event_duration_mean,   
-                    downtime_event_duration_dev : downtime_event_duration_dev,  
-                    number_parallel_downtime_events : number_parallel_downtime_events,
-                    layout_configuration : layout_configuration,
-                    down_machine_index: 9, # zero index machine
+                training {
+                    LessonAssessmentWindow: 1,
                 }
             }
         }
     }
-    
+
     concept Machine9Down(input): MachineActionMinusOne {
         curriculum {
             algorithm {
@@ -554,7 +527,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 9 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0, # control type allows downtime
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -562,7 +535,10 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 8,
+                    down_machine_index: 9, # zero index machine
+                }
+                training {
+                    LessonAssessmentWindow: 1,
                 }
             }
         }
@@ -585,7 +561,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 8 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -593,7 +569,10 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 7,
+                    down_machine_index: 8,
+                }
+                training {
+                    LessonAssessmentWindow: 1,
                 }
             }
         }
@@ -616,7 +595,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 7 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -624,7 +603,10 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 6,
+                    down_machine_index: 7,
+                }
+                training {
+                    LessonAssessmentWindow: 1,
                 }
             }
         }
@@ -647,7 +629,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 6 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -655,7 +637,10 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 5,
+                    down_machine_index: 6,
+                }
+                training {
+                    LessonAssessmentWindow: 1,
                 }
             }
         }
@@ -678,7 +663,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 5 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -686,12 +671,15 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 4,
+                    down_machine_index: 5,
+                }
+                training {
+                    LessonAssessmentWindow: 1,
                 }
             }
         }
     }
-
+    
     concept Machine4Down(input): MachineActionMinusOne {
         curriculum {
             algorithm {
@@ -709,7 +697,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 4 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -717,12 +705,15 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 3,
+                    down_machine_index: 4,
+                }
+                training {
+                    LessonAssessmentWindow: 1,
                 }
             }
         }
     }
-    
+
     concept Machine3Down(input): MachineActionMinusOne {
         curriculum {
             algorithm {
@@ -740,7 +731,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 3 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -748,12 +739,15 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 2,
+                    down_machine_index: 3,
+                }
+                training {
+                    LessonAssessmentWindow: 1,
                 }
             }
         }
     }
-
+    
     concept Machine2Down(input): MachineActionMinusOne {
         curriculum {
             algorithm {
@@ -771,7 +765,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 2 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -779,7 +773,10 @@ graph (input: ObservationState): SimAction {
                     downtime_event_duration_dev : downtime_event_duration_dev,  
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
-                    down_machine_index: 1,
+                    down_machine_index: 2,
+                }
+                training {
+                    LessonAssessmentWindow: 1,
                 }
             }
         }
@@ -802,7 +799,41 @@ graph (input: ObservationState): SimAction {
 
             lesson `Take Machine 1 Out` {
                 scenario {
-                    control_type : 1,
+                    control_type : 0,
+                    control_frequency : control_frequency, 
+                    interval_downtime_event_mean : interval_downtime_event_mean,  
+                    interval_downtime_event_dev : interval_downtime_event_dev,
+                    downtime_event_duration_mean : downtime_event_duration_mean,   
+                    downtime_event_duration_dev : downtime_event_duration_dev,  
+                    number_parallel_downtime_events : number_parallel_downtime_events,
+                    layout_configuration : layout_configuration,
+                    down_machine_index: 1,
+                }
+                training {
+                    LessonAssessmentWindow: 1,
+                }
+            }
+        }
+    }
+
+    concept Machine0Down(input): MachineActionMinusOne {
+        curriculum {
+            algorithm {
+                Algorithm: "SAC",
+                #BatchSize: 8000,
+                #PolicyLearningRate: 0.001
+            }
+            training {
+                EpisodeIterationLimit: number_of_iterations,
+                NoProgressIterationLimit: 500000
+            }
+            source Simulator
+            reward Reward
+            action TransformAction0Down
+
+            lesson `Take Machine 0 Out` {
+                scenario {
+                    control_type : 0,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  
                     interval_downtime_event_dev : interval_downtime_event_dev,
@@ -812,11 +843,14 @@ graph (input: ObservationState): SimAction {
                     layout_configuration : layout_configuration,
                     down_machine_index: 0,
                 }
+                training {
+                    LessonAssessmentWindow: 1,
+                }
             }
         }
     }
 
-    concept Padding(input, AllMachines, Machine10Down, Machine9Down, Machine8Down, Machine7Down, Machine6Down, Machine5Down, Machine4Down, Machine3Down, Machine2Down, Machine1Down): SimAction {
+    concept Padding(input, AllMachines, Machine9Down, Machine8Down, Machine7Down, Machine6Down, Machine5Down, Machine4Down, Machine3Down, Machine2Down, Machine1Down, Machine0Down): SimAction {
         programmed pad
     }
 

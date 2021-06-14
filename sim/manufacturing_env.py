@@ -342,6 +342,7 @@ class DES(General):
             else:
                 self.down_machine = machines_list[self.down_machine_index] # [AJ]: Added by Amir
                 self.random_down_machine = self.down_machine # [AJ]: Added by Amir
+            self.is_control_downtime_event = 1
             self.is_control_frequency_event = 0
             print(
                 f'................ now machine {self.random_down_machine} goes down at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
@@ -819,10 +820,10 @@ class DES(General):
                   'sink_throughput_delta': sinks_throughput_delta,
                   'sink_throughput_delta_sum': sum(sinks_throughput_delta),
                   'sink_throughput_absolute_sum': sum(sinks_throughput_abs),
-                  'conveyor_infeed_m1_prox_empty': conveyor_infeed_m1_prox_empty,
-                  'conveyor_infeed_m2_prox_empty': conveyor_infeed_m2_prox_empty,
-                  'conveyor_discharge_p1_prox_full': conveyor_discharge_p1_prox_full,
-                  'conveyor_discharge_p2_prox_full': conveyor_discharge_p2_prox_full,
+                  'conveyor_infeed_m1_prox_empty': [int(val) for val in conveyor_infeed_m1_prox_empty],
+                  'conveyor_infeed_m2_prox_empty': [int(val) for val in conveyor_infeed_m2_prox_empty],
+                  'conveyor_discharge_p1_prox_full': [int(val) for val in conveyor_discharge_p1_prox_full],
+                  'conveyor_discharge_p2_prox_full': [int(val) for val in conveyor_discharge_p2_prox_full],
                   'illegal_machine_actions': illegal_machine_actions,
                   # [AJ]: Comment the following since there is no illegal conveyo action                  
                 #   'illegal_conveyor_actions': illegal_conveyor_actions,

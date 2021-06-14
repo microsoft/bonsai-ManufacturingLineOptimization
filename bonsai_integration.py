@@ -13,7 +13,7 @@ Usage:
 import simpy
 from sim.line_config import adj
 from sim import manufacturing_env as MLS
-from policies import random_policy, brain_policy
+from policies import random_policy, brain_policy, max_policy
 import datetime
 import json
 import os
@@ -326,7 +326,7 @@ def env_setup(env_file: str = ".env"):
 def test_policy(
     render=False,
     num_episodes: int = 2,
-    num_iterations: int = 1000,
+    num_iterations: int = 480,
     log_iterations: bool = False,
     policy=random_policy,
     policy_name: str = "test_policy",
@@ -623,6 +623,10 @@ if __name__ == "__main__":
     group.add_argument(
         "--test-random", action="store_true",
     )
+    
+    group.add_argument(
+        "--test-max", action="store_true",
+    )
 
     group.add_argument(
         "--test-exported",
@@ -638,7 +642,7 @@ if __name__ == "__main__":
         type=int,
         metavar="EPISODE_ITERATIONS",
         help="Episode iteration limit when running local test.",
-        default=200,
+        default=480,
     )
 
     parser.add_argument(
@@ -653,6 +657,10 @@ if __name__ == "__main__":
     if args.test_random:
         test_policy(
             render=args.render, log_iterations=args.log_iterations, policy=random_policy
+        )
+    elif args.test_max:
+        test_policy(
+            render=args.render, log_iterations=args.log_iterations, policy=max_policy
         )
     elif args.test_exported:
         port = args.test_exported
