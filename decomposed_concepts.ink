@@ -1,5 +1,4 @@
 inkling "2.0"
-inkling "2.0"
 using Number
 using Math
 
