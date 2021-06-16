@@ -328,4 +328,4 @@ Typical training curve so far has been flat for all concepts
 | Experiment | sink_throughput_absolute_sum | env_time | amt of downtime |
 | ----- | ----- | ----- | ----- |
 | all actions 100, 1 random machine down with fixed control freq | 139200 | 1437 | 2698 |
-| multi-concept brain, n-1 action | N/A | 1437 | N/A |
+| multi-concept brain, n-1 action | 138220 | 1437 | 993 |
