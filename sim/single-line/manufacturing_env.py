@@ -1,5 +1,4 @@
-from .line_config import adj, con_balance, con_join
-# from .line_config import adj # [AJ]: For single line
+from .line_config import adj # [AJ]: For single line
 import json
 import os
 import time
@@ -49,16 +48,11 @@ class General:
         adj)
     number_of_machines = len(machines)   # number of General machines
     number_of_conveyors = len(conveyors)
-    machine_infeed_buffer = 100 # [AJ]: Number of cans that can be in the infeed buffer
-    machine_discharge_buffer = 100 # [AJ]: Number of cans that can be in the discharge buffer
-    conveyor_capacity = 1000  # in cans # [AJ]: Number of cans that the conveyor can carry
+    machine_infeed_buffer = 100 # [AJ]: Number of cans that can be in the infeed buffer - not used at all
+    machine_discharge_buffer = 100 # [AJ]: Number of cans that can be in the discharge buffer - not used at all
     # every conveyor is divided into 10 sections. For approximate and connection purpose
-    num_conveyor_bins = 10
-    machine_min_speed = 10  # cans/second
-    machine_max_speed = 100  # cans/second
     conveyor_min_speed = 10
     conveyor_max_speed = 100
-    # [AJ]: Added to set up the conveyor to always run at max speed
     conveyor_speed = conveyor_max_speed    
     # warmup_time = 100  # seconds(s)
     # downtime_event_prob = 0.1 # probability applied every "downtime-even_gen_mean" to create downtime on a random machine
@@ -79,21 +73,25 @@ class General:
     layout_configuration = 1
     # granularity of simulation updates. Larger values make simulation less accurate. Recommended value: 1.
     simulation_time_step = 1
-    # [AJ]: The following is added by Amir
-    down_machine_index = -1 # [AJ]: From 0 to 9 to refer to the down machine, -1 for no downtime/random parallel downtime
-
-
+    down_machine_index = -1 # [AJ]: From 0 to 9 to refer to the down machine, -1 for random machine downtime
+    initial_bin_capacity = 30 # [AJ]: Initial capacity of the bin (from 0 to 100)
+    machine_BF_buffer = 100 # [AJ]: The buffer size before machine
+    machine_AF_buffer = 100 # [AJ]: The buffer size after machine
+    prox_lower_limit = 100 # [AJ]: Threshold to turn on/off the prox
+    prox_upper_limit = 5 # [AJ]: Threshold to turn on/off the prox
+    machine_initial_speed = 100 # [AJ]: Initial speed of the machine
+    conveyor_capacity = 1000  # in cans
+    num_conveyor_bins = 10 # Number of bins per conveyor
+    machine_min_speed = 10  # cans/second
+    machine_max_speed = 100  # cans/second
 
 class Machine(General):
     '''
     This class represents a General machine, i.e. its states and function
-
     '''
 
     def __init__(self, id, speed):
-        super().__init__()
-        self.min_speed = General.machine_min_speed
-        self.max_speed = General.machine_max_speed
+        super().__init__()      
         self.id = id
         self._speed = speed
         self._state = 'idle' if speed == 0 else 'active'
@@ -109,9 +107,9 @@ class Machine(General):
 
     @speed.setter
     def speed(self, value):
-        if not (self.min_speed <= value <= self.max_speed or value == 0):
+        if not (self.machine_min_speed <= value <= self.machine_max_speed or value == 0):
             raise ValueError(
-                f'speed must be 0 or between {self.min_speed} and {self.max_speed}')
+                f'speed must be 0 or between {self.machine_min_speed} and {self.machine_max_speed}')
         if self.state == "down":
             self._speed = 0
             print('Illegal action: machine is down, machine speed will be kept zero')
@@ -138,7 +136,7 @@ class Machine(General):
 
 class Conveyor(General):
 
-    def __init__(self, id, speed, number_of_bins, env):
+    def __init__(self, id, speed, env):
         super().__init__()
         self.min_speed = General.conveyor_min_speed
         self.max_speed = General.conveyor_max_speed
@@ -147,14 +145,10 @@ class Conveyor(General):
         self._speed = speed
         self.id = id
         self._state = 'idle' if self._speed == 0 else 'active'
-        self.capcity = General.conveyor_capacity
-        self.number_of_bins = General.num_conveyor_bins
-        # self.number_of_bins*[bin_capacity]
-        self.bins_capacity = self.capcity/self.number_of_bins
+        self.bins_capacity = self.conveyor_capacity / self.num_conveyor_bins
         # each bin is a container and has a capacity and initial value
-        for i in range(0, self.number_of_bins):
-            # setattr(self, "bin" + str(i), simpy.Container(env, init = self.bins_capacity/2,  capacity = self.bins_capacity))
-            setattr(self, "bin" + str(i), self.bins_capacity/2)
+        for i in range(0, self.num_conveyor_bins):
+            setattr(self, "bin" + str(i), self.initial_bin_capacity)
 
     @property
     def speed(self):
@@ -229,13 +223,9 @@ class DES(General):
         # note -1: as number of conveyors are one less than total number of machines
         id = 0
         for conveyor in General.conveyors:
-            # [AJ]: Comment the following
-            # setattr(self, conveyor,  Conveyor(id = id, speed = General.conveyor_min_speed, number_of_bins = General.num_conveyor_bins, env = self.env))
             # [AJ]: Set the conveyor speed at the general conveyor speed which is the max speed
-            setattr(self, conveyor,  Conveyor(id = id, speed = General.conveyor_speed, number_of_bins = General.num_conveyor_bins, env = self.env))
+            setattr(self, conveyor,  Conveyor(id = id, speed = General.conveyor_speed, env = self.env))
             #print(getattr(self, conveyor))
-            # [AJ]: Comment the following
-            # self.components_speed[conveyor] = General.conveyor_min_speed
             # [AJ]: Set the component speed at the general conveyor speed which is the max speed
             self.components_speed[conveyor] = General.conveyor_speed
 
@@ -246,9 +236,9 @@ class DES(General):
         id = 0
         for machine in General.machines:
             setattr(self, machine,  Machine(
-                id=id, speed=General.machine_min_speed))
+                id=id, speed=self.machine_initial_speed)) # [AJ]: Added by Amir   
             # print(getattr(self, machine))
-            self.components_speed[machine] = General.machine_min_speed
+            self.components_speed[machine] = self.machine_initial_speed
             id += 1
 
     def _initialize_sink(self):
@@ -375,8 +365,8 @@ class DES(General):
         self.plc_control_machine_speed()
         self.update_machine_adjacent_buffers()
         self.update_conveyors_buffers()
-        # [AJ]: Comment following to only consider single line without conveyor balancing load between two lines       
-        self.update_conveyor_junctions()
+        # [AJ]: Comment following if you want to only consider single line without conveyor balancing load between two lines       
+        # self.update_conveyor_junctions()
         self.update_sinks_product_accumulation()
 
     def update_sinks_product_accumulation(self):
@@ -385,10 +375,14 @@ class DES(General):
         '''
         # update machine infeed and discharge buffers according to machine speed
         for machine in adj.keys():
+            # [AJ]: From line_config.py, adj is a dictionary
+            # [AJ]: The machine is the key and before/after conveyors are the values
+            # [AJ]: First value is infeed and second value is discharge
             adj_conveyors = adj[machine]
             infeed = adj_conveyors[0]
             discharge = adj_conveyors[1]
             # amount of cans going from one side to the other side
+            # [AJ]: delta is speed (cans per minutes) * minute
             delta = getattr(eval('self.' + machine), 'speed') * \
                 self.simulation_time_step
 
@@ -439,16 +433,6 @@ class DES(General):
             setattr(eval('self.' + machine), 'speed', updated_speed)
             print(eval('self.' + machine))
 
-    # def update_conveyors_speed(self):
-    #     '''
-    #     update the speed of the conveyors using brain actions that has written in components_speed[machine] dictionary
-    #     '''
-    #     for conveyor in General.conveyors:
-    #         # print(f'now at {self.env.now} s updating conveyor speed')
-    #         updated_speed = self.components_speed[conveyor]
-    #         setattr(eval('self.' + conveyor), 'speed', updated_speed)
-    #         # print(eval('self.' + conveyor))
-
     def update_machine_adjacent_buffers(self):
         '''
         For each machine, we will look at the adj matrix and update number of cans in their buffers. If the buffer is full, we need to shut down the machine.
@@ -459,34 +443,36 @@ class DES(General):
             infeed = adj_conveyors[0]
             discharge = adj_conveyors[1]
             # amount of cans going from one side to the other side
+            # [AJ]: amount of cans generated based on speed (cans per minute) and simulation time
             delta = getattr(eval('self.' + machine), 'speed') * \
                 self.simulation_time_step
-            if 'source' not in infeed:
-
+            if 'source' not in infeed:  
+                # [AJ]: Get the can level of the last bin in the conveyor            
                 level = getattr(getattr(self, infeed), "bin" +
-                                str(General.num_conveyor_bins-1))
-                level -= delta
-                if level <= 0:
-                    level = 0
-                    # TODO: prox empty machine speed = 0
+                                str(self.num_conveyor_bins-1)) # [AJ]: Added by Amir                            
+                level -= delta # [AJ]: Subtract from source since the source is outputing cans and so its level is decreased
+                if level <= self.prox_lower_limit: # [AJ]: Changed by Amir from 0 to self.prox_lower_limit
+                    level = self.prox_lower_limit # [AJ]: Changed by Amir from 0 to self.prox_lower_limit
+                    # TODO: prox empty machine speed = 0                   
                 setattr(eval('self.' + infeed), "bin" +
-                        str(General.num_conveyor_bins-1), level)
+                        str(self.num_conveyor_bins-1), level) # [AJ]: Added by Amir                                           
 
             if 'sink' not in discharge:
                 # now check buffer full  ....................................TODO:
+                # [AJ]: Get the can level of the first bin in the conveyor
                 level = getattr(getattr(self, discharge), "bin" + str(0))
                 capacity = getattr(getattr(self, discharge), "bins_capacity")
 
-                level += delta
+                level += delta # [AJ]: Add to the sink since the sink is receiving cans and so its level is increased
 
-                if level >= capacity:
-                    level = capacity
+                if level >= self.prox_upper_limit: # [AJ]: Changed by Amir from capacity to self.prox_upper_limit
+                    level = self.prox_upper_limit # [AJ]: Changed by Amir from capacity to self.prox_upper_limit
                     # TODO: trigger discharge prox full
                 setattr(eval('self.' + discharge), "bin" + str(0), level)
 
     def update_conveyors_buffers(self):
         for conveyor in General.conveyors:
-            for bin_num in range(1, General.num_conveyor_bins):
+            for bin_num in range(1, self.num_conveyor_bins): # [AJ]: Added by Amir
                 delta2 = getattr(eval('self.' + conveyor),
                                  'speed') * self.simulation_time_step
                 bin_level = getattr(getattr(self, conveyor),
@@ -513,71 +499,71 @@ class DES(General):
                 setattr(eval('self.' + conveyor), "bin" +
                         str(bin_num - 1), previous_bin_level)
 
-    # [AJ]: Comment since there is no conveyor balancing between two lines
-    def update_conveyor_junctions(self):
-        '''
-        Rules for the junctions: mainly balancing the load between lines.
-        If a junction bin gets full, it can push cans to the neighbor conveyor.
-        '''
-        for junction in con_balance:    # balancing load between two line
-            conveyor1 = junction[0]
-            conveyor2 = junction[1]
-            join_bin = junction[2]
-            bin_1_level = getattr(
-                getattr(self, conveyor1), "bin" + str(join_bin))
-            bin_1_capacity = getattr(getattr(self, conveyor1), "bins_capacity")
+    # [AJ]: Comment if single line since there is no conveyor balancing between two lines
+    # def update_conveyor_junctions(self):
+    #     '''
+    #     Rules for the junctions: mainly balancing the load between lines.
+    #     If a junction bin gets full, it can push cans to the neighbor conveyor.
+    #     '''
+    #     for junction in con_balance:    # balancing load between two line
+    #         conveyor1 = junction[0]
+    #         conveyor2 = junction[1]
+    #         join_bin = junction[2]
+    #         bin_1_level = getattr(
+    #             getattr(self, conveyor1), "bin" + str(join_bin))
+    #         bin_1_capacity = getattr(getattr(self, conveyor1), "bins_capacity")
 
-            bin_2_level = getattr(
-                getattr(self, conveyor2), "bin" + str(join_bin))
-            bin_2_capacity = getattr(getattr(self, conveyor2), "bins_capacity")
+    #         bin_2_level = getattr(
+    #             getattr(self, conveyor2), "bin" + str(join_bin))
+    #         bin_2_capacity = getattr(getattr(self, conveyor2), "bins_capacity")
 
-            if bin_1_level < bin_1_capacity and bin_2_level < bin_2_capacity:
-                # don't do any thing if both conveyors are operating below the capacity
-                pass
-            elif bin_1_level == bin_1_capacity and bin_2_level < bin_2_capacity:
-                # push cans from bin_1 to bin_2
-                delta = min(getattr(eval('self.' + conveyor1), 'speed')
-                            * self.simulation_time_step, bin_2_capacity-bin_2_level)
-                setattr(eval('self.' + conveyor2), "bin" +
-                        str(join_bin), delta + bin_2_level)
-                setattr(eval('self.' + conveyor1), "bin" +
-                        str(join_bin), bin_1_level - delta)
+    #         if bin_1_level < bin_1_capacity and bin_2_level < bin_2_capacity:
+    #             # don't do any thing if both conveyors are operating below the capacity
+    #             pass
+    #         elif bin_1_level == bin_1_capacity and bin_2_level < bin_2_capacity:
+    #             # push cans from bin_1 to bin_2
+    #             delta = min(getattr(eval('self.' + conveyor1), 'speed')
+    #                         * self.simulation_time_step, bin_2_capacity-bin_2_level)
+    #             setattr(eval('self.' + conveyor2), "bin" +
+    #                     str(join_bin), delta + bin_2_level)
+    #             setattr(eval('self.' + conveyor1), "bin" +
+    #                     str(join_bin), bin_1_level - delta)
 
-            elif bin_2_level == bin_2_capacity and bin_1_level < bin_1_capacity:
-                # do the opposite
-                delta = min(getattr(eval('self.' + conveyor2), 'speed')
-                            * self.simulation_time_step, bin_1_capacity-bin_1_level)
-                setattr(eval('self.' + conveyor1), "bin" +
-                        str(join_bin), delta + bin_1_level)
-                setattr(eval('self.' + conveyor2), "bin" +
-                        str(join_bin), bin_2_level - delta)
-            else:
-                # bin_2.level == bin_2.capacity and bin_2.level == bin_2.capcity:
-                # do nothing
-                pass
+    #         elif bin_2_level == bin_2_capacity and bin_1_level < bin_1_capacity:
+    #             # do the opposite
+    #             delta = min(getattr(eval('self.' + conveyor2), 'speed')
+    #                         * self.simulation_time_step, bin_1_capacity-bin_1_level)
+    #             setattr(eval('self.' + conveyor1), "bin" +
+    #                     str(join_bin), delta + bin_1_level)
+    #             setattr(eval('self.' + conveyor2), "bin" +
+    #                     str(join_bin), bin_2_level - delta)
+    #         else:
+    #             # bin_2.level == bin_2.capacity and bin_2.level == bin_2.capacity:
+    #             # do nothing
+    #             pass
 
-        for junction in con_join:
-            conveyor1 = junction[0]
-            conveyor2 = junction[1]
-            join_bin = junction[2]
-            bin_1_level = getattr(getattr(self, conveyor1),
-                                  "bin" + str(General.num_conveyor_bins-1))
-            bin_1_capacity = getattr(getattr(self, conveyor1), "bins_capacity")
+    #     for junction in con_join:
+    #         conveyor1 = junction[0]
+    #         conveyor2 = junction[1]
+    #         join_bin = junction[2]
+    #         bin_1_level = getattr(getattr(self, conveyor1),
+    #                               "bin" + str(self.num_conveyor_bins-1)) # [AJ]: Added by Amir                            
+    #         bin_1_capacity = getattr(getattr(self, conveyor1), "bins_capacity")
 
-            bin_2_level = getattr(
-                getattr(self, conveyor2), "bin" + str(join_bin))
-            bin_2_capacity = getattr(getattr(self, conveyor2), "bins_capacity")
-            if bin_2_level < bin_2_capacity:
-                # always add from first one to the second one if there is room
-                delta = min(getattr(eval('self.' + conveyor1), 'speed')
-                            * self.simulation_time_step, bin_2_capacity-bin_2_level)
+    #         bin_2_level = getattr(
+    #             getattr(self, conveyor2), "bin" + str(join_bin))
+    #         bin_2_capacity = getattr(getattr(self, conveyor2), "bins_capacity")
+    #         if bin_2_level < bin_2_capacity:
+    #             # always add from first one to the second one if there is room
+    #             delta = min(getattr(eval('self.' + conveyor1), 'speed')
+    #                         * self.simulation_time_step, bin_2_capacity-bin_2_level)
 
-                setattr(eval('self.' + conveyor1), "bin" +
-                        str(join_bin), bin_1_level - delta)
-                setattr(eval('self.' + conveyor2), "bin" +
-                        str(join_bin), bin_2_level + delta)
-            else:
-                pass
+    #             setattr(eval('self.' + conveyor1), "bin" +
+    #                     str(join_bin), bin_1_level - delta)
+    #             setattr(eval('self.' + conveyor2), "bin" +
+    #                     str(join_bin), bin_2_level + delta)
+    #         else:
+    #             pass
 
     def plc_control_machine_speed(self):
         '''
@@ -590,18 +576,18 @@ class DES(General):
             discharge = adj_conveyors[1]
             if 'source' not in infeed:
                 level = getattr(getattr(self, infeed), "bin" +
-                                str(General.num_conveyor_bins-1))
-                if level == 0:
+                                str(self.num_conveyor_bins-1)) # [AJ]: Added by Amir  - Get the level of last bin for infeed        
+                if level < self.prox_lower_limit: # [AJ]: Added by Amir
                     print(
                         f'stopping machine {machine} as infeed prox is empty, i.e the whole conveyor is empty')
                     setattr(eval('self.' + machine), "speed", 0)
                     print(eval('self.' + machine))
 
             if 'sink' not in discharge:
-                level = getattr(getattr(self, discharge), "bin" + str(0))
+                level = getattr(getattr(self, discharge), "bin" + str(0)) # Get the level of first bin for discharge
                 capacity = getattr(getattr(self, discharge), "bins_capacity")
 
-                if level == capacity:
+                if level >= self.prox_upper_limit: # [AJ]: Added by Amir
                     print(
                         f'stopping machine {machine} as discharge prox is full, i.e. the whole conveyor is full')
                     setattr(eval('self.' + machine), "speed", 0)
@@ -612,22 +598,12 @@ class DES(General):
         We will compare brain action (component action) with actual speed. If different then brain action was illegal.
         '''
         illegal_machine_actions = []
-        # [AJ]: Comment the following as there is no illegal conveyor's actions
-        # illegal_conveyor_actions = []
 
         for machine in General.machines:
             speed = getattr(eval('self.' + machine), 'speed')
             illegal_machine_actions.append(
                 int(speed != self.components_speed[machine]))
 
-        # [AJ]: Comment the following
-        # [AJ]: Brain is not supposed to decide on conveyors' speeds
-        # for conveyor in General.conveyors:
-        #     speed = getattr(eval('self.' + conveyor),'speed')
-        #     illegal_conveyor_actions.append(int(speed != self.components_speed[conveyor]))
-
-        # [AJ]: Comment the following
-        # return illegal_machine_actions, illegal_conveyor_actions
         return illegal_machine_actions
 
     def calculate_downtime_remaining_time(self):
@@ -673,9 +649,6 @@ class DES(General):
 
         # using brain actions
         self.update_machines_speed()
-        # [AJ]: Comment the following because brain is not supposed to determine coneyors speeds
-        # using brain actions 
-        # self.update_conveyors_speed()
 
         print('Simulation time at step:', self.env.now)
 
@@ -734,6 +707,7 @@ class DES(General):
         conveyors_state = []
         for conveyor in General.conveyors:
             # [AJ]: Used to double check the following since conveyors' speed must be constant
+            # [AJ]: Machine speed and state should always remain the same
             conveyors_speed.append(getattr(eval('self.' + conveyor), 'speed'))
             conveyors_state.append(getattr(eval('self.' + conveyor), 'state'))
 
@@ -753,21 +727,28 @@ class DES(General):
             buffer = []
             buffer_full = []
             bin_capacity = getattr(getattr(self, conveyor), "bins_capacity")
-            for bin_num in range(0, General.num_conveyor_bins):
+            # [AJ]: For each bin, it checks whether the bin is full or not
+            # [AJ]: Full refers to bin capacity (conveyor capacity / number of bins)
+            for bin_num in range(0, self.num_conveyor_bins): # [AJ]: Added by Amir
                 buffer.append(
                     getattr(getattr(self, conveyor), "bin" + str(bin_num)))
                 buffer_full.append(
-                    int(getattr(getattr(self, conveyor), "bin" + str(bin_num)) == bin_capacity))
-
+                    int(getattr(getattr(self, conveyor), "bin" + str(bin_num)) == bin_capacity)) # [AJ]: Check whether each bin reaches bin capacity or not
+            # [AJ]: The following is added by Amir
+            # The infeed sensor next to machine
             conveyor_infeed_m1_prox_empty.append(int(getattr(
-                getattr(self, conveyor), "bin" + str(General.num_conveyor_bins-1))) == 0)
+                getattr(self, conveyor), "bin" + str(self.num_conveyor_bins-1))) <= self.prox_lower_limit)
+            # The second infeed sensor next to machine
             conveyor_infeed_m2_prox_empty.append(int(getattr(
-                getattr(self, conveyor), "bin" + str(General.num_conveyor_bins-2))) == 0)
-
+                getattr(self, conveyor), "bin" + str(self.num_conveyor_bins-2))) <= self.prox_upper_limit)
+            
+            # [AJ]: The following is added by Amir
+            # The discharge sensor next to machine
             conveyor_discharge_p1_prox_full.append(
-                int(getattr(getattr(self, conveyor), "bin" + str(0))) == bin_capacity)
+                int(getattr(getattr(self, conveyor), "bin" + str(0))) >= self.prox_lower_limit)
+            # The second discharge sensor next to machine
             conveyor_discharge_p2_prox_full.append(
-                int(getattr(getattr(self, conveyor), "bin" + str(1))) == bin_capacity)
+                int(getattr(getattr(self, conveyor), "bin" + str(1))) >= self.prox_upper_limit)            
 
             conveyor_buffers.append(buffer)
             conveyor_buffers_full.append(buffer_full)
@@ -800,7 +781,6 @@ class DES(General):
         
         ## illegal actions: 7
         # [AJ]: Comment following since there is no illegal conveyor actions
-        # illegal_machine_actions, illegal_conveyor_actions = self.check_illegal_actions()
         illegal_machine_actions = self.check_illegal_actions()
 
         # downtime remaining time: 8
@@ -825,8 +805,6 @@ class DES(General):
                   'conveyor_discharge_p1_prox_full': [int(val) for val in conveyor_discharge_p1_prox_full],
                   'conveyor_discharge_p2_prox_full': [int(val) for val in conveyor_discharge_p2_prox_full],
                   'illegal_machine_actions': illegal_machine_actions,
-                  # [AJ]: Comment the following since there is no illegal conveyo action                  
-                #   'illegal_conveyor_actions': illegal_conveyor_actions,
                   'remaining_downtime_machines': remaining_downtime_machines,
                   'control_delta_t': control_delta_t,
                   'env_time': self.env.now

@@ -29,8 +29,17 @@ const number_parallel_downtime_events = 1
 ## Currently only 1 configuration exists 
 const layout_configuration = 1 
 
-# Specify the down machine
-const down_machine_index = 5 # It can be from 0 to 9
+const down_machine_index = 5 # It can be from -1 to 9
+const initial_bin_capacity = 50
+const machine_min_speed = 10
+const machine_max_speed = 100
+const machine_BF_buffer = machine_max_speed * downtime_event_duration_mean + (10 - downtime_event_duration_mean) * machine_min_speed
+const machine_AF_buffer = machine_max_speed * downtime_event_duration_mean + (10 - downtime_event_duration_mean) * machine_min_speed
+const prox_upper_limit = 100
+const prox_lower_limit = 5
+const num_conveyor_bins = 10
+const conveyor_capacity = num_conveyor_bins * machine_BF_buffer
+const machine_initial_speed = 100
 
 
 type SimState {
@@ -46,8 +55,6 @@ type SimState {
     conveyor_discharge_p1_prox_full: number[9],
     conveyor_discharge_p2_prox_full: number[9],
     illegal_machine_actions: number[10],
-    # [AJ]: Comment the following because brain is not taking action for conveyors
-    # illegal_conveyor_actions: number[9],
     remaining_downtime_machines: number[10],
     control_delta_t: number,
     env_time: number,
@@ -57,8 +64,6 @@ type SimState {
 type ObservationState{
     machines_speed: number[10], 
     machines_state: number[10],
-    # [AJ]: Comment the following as conveyors's speed is always the same
-    # conveyors_speed: number[9],
     sink_machines_rate_sum: number,
     sink_throughput_delta_sum: number,
     conveyor_infeed_m1_prox_empty: number[9],
@@ -73,9 +78,6 @@ type ObservationState{
 # multiarm bandit actions. 
 type SimAction{
     machines_speed: number<0,10,20,30,100,>[10],
-    # machines_speed: number<10..100 step 10>[10],
-    # [AJ]: Comment the following as brain's job is not to decide on conveyors' speeds
-    # conveyors_speed: number<0,10,20,30,100,>[5]
 }
 
 
@@ -89,6 +91,16 @@ type SimConfig {
     number_parallel_downtime_events : number_parallel_downtime_events,
     layout_configuration : layout_configuration, 
     down_machine_index: down_machine_index,
+    initial_bin_capacity: initial_bin_capacity,
+    conveyor_capacity: conveyor_capacity,
+    machine_min_speed: machine_min_speed,
+    machine_max_speed: machine_max_speed,
+    machine_BF_buffer: machine_BF_buffer,
+    machine_AF_buffer: machine_AF_buffer,
+    prox_upper_limit: prox_upper_limit,
+    prox_lower_limit: prox_lower_limit,
+    num_conveyor_bins: num_conveyor_bins,
+    machine_initial_speed: machine_initial_speed,
 }
 
 
@@ -139,6 +151,16 @@ graph (input: ObservationState): SimAction {
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
                     down_machine_index: down_machine_index,
+                    initial_bin_capacity: initial_bin_capacity,
+                    conveyor_capacity: conveyor_capacity,
+                    machine_min_speed: machine_min_speed,
+                    machine_max_speed: machine_max_speed,
+                    machine_BF_buffer: machine_BF_buffer,
+                    machine_AF_buffer: machine_AF_buffer,
+                    prox_upper_limit: prox_upper_limit,
+                    prox_lower_limit: prox_lower_limit,
+                    num_conveyor_bins: num_conveyor_bins,
+                    machine_initial_speed: machine_initial_speed,
                 }
             }
         }

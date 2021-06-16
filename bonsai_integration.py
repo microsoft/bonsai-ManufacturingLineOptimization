@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# coding=utf-8
 
 """
 MSFT Bonsai SDK3 Template for Simulator Integration using Python
@@ -56,13 +57,24 @@ default_config = {
     "downtime_event_duration_dev": 3,
     "number_parallel_downtime_events": 1,
     "layout_configuration": 1,
-    "down_machine_index": 0, # [AJ]: Added by Amir
+    # The following is added by Amir
+    "down_machine_index": 0, 
+    "initial_bin_capacity": 50,
+    "conveyor_capacity": 1000,
+    "machine_min_speed": 5,
+    "machine_max_speed": 100,
+    "machine_BF_buffer": 100,
+    "machine_AF_buffer": 100,
+    "prox_upper_limit": 100,
+    "prox_lower_limit": 5,
+    "num_conveyor_bins": 10,
+    "machine_initial_speed": 100,
 }
-
 
 def ensure_log_dir(log_full_path):
     """
     Ensure the directory for logs exists — create if needed.
+    
     """
     print(f"logfile: {log_full_path}")
     logs_directory = pathlib.Path(log_full_path).parent.absolute()
@@ -157,7 +169,7 @@ class TemplateSimulatorSession:
         if config is None:
             config = default_config
 
-        print('--------------------------------------resetting new episode-------------------------------')
+        print('-----------------------------------resetting new episode-------------------------------')
         print(config)
         # Re-intializing the simulator to make sure all the processes are killed.
         ENV = simpy.Environment()
@@ -179,10 +191,29 @@ class TemplateSimulatorSession:
             config["number_parallel_downtime_events"]
         self.simulator.layout_configuration = \
             config["layout_configuration"]
-        # [AJ]: Following is added by Amir
         self.simulator.down_machine_index = \
-            config.get("down_machine_index", -1)
-
+            config["down_machine_index"]
+        self.simulator.initial_bin_capacity = \
+            config["initial_bin_capacity"]
+        self.simulator.conveyor_capacity = \
+            config["conveyor_capacity"]
+        self.simulator.machine_min_speed = \
+            config["machine_min_speed"]
+        self.simulator.machine_max_speed = \
+            config["machine_max_speed"]
+        self.simulator.machine_BF_buffer = \
+            config["machine_BF_buffer"]
+        self.simulator.machine_AF_buffer = \
+            config["machine_AF_buffer"]
+        self.simulator.prox_upper_limit = \
+            config["prox_upper_limit"]
+        self.simulator.prox_lower_limit = \
+            config["prox_lower_limit"]                        
+        self.simulator.num_conveyor_bins = \
+            config["num_conveyor_bins"]
+        self.simulator.machine_initial_speed = \
+            config["machine_initial_speed"]
+    
         # Reset the simulator to create new processes
         self.simulator.reset()
         self.config = config
