@@ -14,7 +14,7 @@ Maximize production in a manufacturing line.
 | ---------------------- | ------------------------------------------------------------ | ----- |
 | Objective              | maximize product production     |   Example: For a can manufacturing line, the goal is to maximize can production                        |
 | Constraints            |   NA |
-| Observations           | Conveyors speed, machines speed, machines_state infeed and discharge proxes, sink_machines_rate, sink_throughput_delta_sum, illegal_machine_actions, illegal_conveyor_actions, remaining_downtime_machines, control_delta_t | Proxes are sensors that yield a binary value. When product accumulates on the conveyor and covers the location of the prox sensor, its value becomes 1, otherwise it's value is zero, illegal actions happen with machines are in down or idle mode but brain sends a nonzero action, which will be ignored by the simulator but will return a flag to inform brain, remaining_downtime informs brain about remaining downtime for each machine. Active or idle machines yield zero for the their remaining downtime. sink_throughput_delta_sum is the amount of productions(throughput) between control actions, machine state -1 means down, 0 means idle, 1 means active |
+| Observations           | Conveyors speed, machines speed, machines_state infeed and discharge proxes, sink_machines_rate, sink_throughput_delta_sum, illegal_machine_actions, illegal_conveyor_actions, remaining_downtime_machines, control_delta_t | Proxes are sensors that yield a binary value. When the accumulated product on the conveyor exceeds a threshold and covers the location of the prox sensor, its value becomes 1, otherwise it's value is zero, illegal actions happen with machines are in down or idle mode but brain sends a nonzero action, which will be ignored by the simulator but will return a flag to inform brain, remaining_downtime informs brain about remaining downtime for each machine. Active or idle machines yield zero for the their remaining downtime. sink_throughput_delta_sum is the amount of productions (throughput) between two consecutive iterations, machine state -1 means down, 0 means idle, 1 means active |
 | Actions                |  Machine Speeds | Speeds are processed in cans/min units|
 | Control Frequency      | Fixed 3 min, episode length of 480 | Fixed, event driven, or mix of both fixed and event driven control  |
 | Episode configurations | control_type (fixed, event driven, or mix of both), control_frequency (for fixed and mix), inter_downtime_event_mean (average time between downtime events),inter_downtime_event_dev, downtime_event_duration_mean, downtime_event_duration_dev, number_parallel_downtime_events, layout_configuration, down_machine_index | Note: currently only one default layout is supported. down_machine_index can be anywhere from 0-9 or -1 for random |
@@ -34,7 +34,7 @@ approach 4: multi concept, state/action space reduction
 
 ![](img/n-1-action-multi-concept.jpg)
 
-Each concept learns on an isolated configuration where a specific machine is down. The action type has `n-1` machine speeds to control and a programmed concept pads the missing machine speed with a zero based on the machine state.
+Each concept learns on an isolated configuration where a specific machine is down. The action type has `n-1` machine speeds corresponding to the `n-1` running machines and a programmed concept pads the missing machine speed (the down machine speed) with a zero based on the machine state.
 
 ```javascript
 
@@ -80,7 +80,7 @@ The downside of this approach is that it is not easily scalable to higher dimens
 
 ![](img/decomposed-multi-concept.jpg)
 
-Each concept focuses on observations and actions related to a specific machine category such as "Source/Sink", "Connected", "In/Out". The state and action space dimensions get reduced per concept because we think about what goes in and out of the machine, with any additional machines connected via conveyors through either a load balancer or joiner.
+Each concept focuses on observations and actions related to a specific machine category such as "Source/Sink", "Connected", "In/Out". The state and action space dimensions get reduced per concept because we consider information about each machine plus what goes in and out of the machine, with any additional machines connected via conveyors through either a load balancer or joiner.
 
 > Maybe in the future, concepts could be re-used and imported because the categories all look 'similar'. Today they need to be re-trained.
 
@@ -88,7 +88,7 @@ Each concept focuses on observations and actions related to a specific machine c
 
 <img src="img/in-out.jpg" alt="drawing" width="300"/>
 
-Machine 3 is an example of a typical machine with one input and one output, where machines are connected on both sides of the machine with a conveyor belt.
+Machine 3 is an example of a typical machine with one input and one output, where two machines are connected on both sides of it with a conveyor belt. Therefore, the action and state spaces consist of relevant information about machine 3 plus machines 2 and 4 as the input and output of machine 3. 
 
 ```javascript
 function decompose3(s: ObservationState): MachineState {
@@ -182,7 +182,7 @@ function decompose0(s: ObservationState): MachineStateSourceSink {
 
 <img src="img/connector.jpg" alt="drawing" width="300"/>
 
-Certain machines can be connected as a 'joiner' or 'load balancer' where it may be beneficial to divert the flow to a different line for various reasons. There are buffer capacities of the conveyors and it is useful for a concept to know what the other conveyors are doing in order to adjust machine speeds. 
+Certain machines can be connected as a 'joiner' or 'load balancer' where it may be beneficial to divert the flow to a different line for various reasons. There are buffer capacities of the conveyors and it is useful for a concept to learn from the status of other relevant conveyors to adjust machine speeds. 
 
 ```javascript
 function decompose7(s: ObservationState): MachineStateConnect {
@@ -278,9 +278,9 @@ def max_policy(state):
     }
     return action
 ```
-> The amt of downtime below is the sum of the machine states, so higher is better 
+> The amount of downtime below is the sum of the machine states, so higher is better 
 
-| Experiment | sink_throughput_absolute_sum | env_time | amt of downtime |
+| Experiment | sink_throughput_absolute_sum | env_time | amount of downtime |
 | ----- | ----- | ----- | ----- |
 | all machines up with fixed control freq | 143600 | 1437 | 2920 |
 | 1 random machine down with fixed control freq | 139200 | 1437 | 2698 |
@@ -302,7 +302,7 @@ def max_policy(state):
 | Terminal               | None |   N/A    |
 | Action                 |   machines_speed[10]   |   number<0,10,20,30,100,>[10] cans/min    |
 | Reward or Goal         |   sink_throughput_delta_sum/(100*control_delta_t)    |   Incremental throughput cans/min  |
-| Episode configurations |       control freq = 3 min, control_type = 0, down_machine_index = -1      |    down_machine_index = -1 means random, other specify [0, 9]   |
+| Episode configurations |       control freq = 3 min, control_type = 0, down_machine_index = -1      |    down_machine_index = -1 means random, otherwise specify [0, 9]   |
 
 ## Results
 
@@ -314,7 +314,7 @@ Typical training curve of concepts
 Machine 5 is different because if this machine is down, then no throughput is allowed since it is right before the sink.
 ![](img/n-1-m5-down.jpg)
 
-| Experiment | sink_throughput_absolute_sum | env_time | amt of downtime |
+| Experiment | sink_throughput_absolute_sum | env_time | amount of downtime |
 | ----- | ----- | ----- | ----- |
 | all actions 100, 1 random machine down with fixed control freq | 139200 | 1437 | 2698 |
 | multi-concept brain, decomposed | 106780 | 1437 | 2830 |
@@ -325,7 +325,7 @@ Machine 5 is different because if this machine is down, then no throughput is al
 Typical training curve so far has been flat for all concepts
 ![](img/decompose-concept.jpg)
 
-| Experiment | sink_throughput_absolute_sum | env_time | amt of downtime |
+| Experiment | sink_throughput_absolute_sum | env_time | amount of downtime |
 | ----- | ----- | ----- | ----- |
 | all actions 100, 1 random machine down with fixed control freq | 139200 | 1437 | 2698 |
 | multi-concept brain, n-1 action | 138220 | 1437 | 993 |
