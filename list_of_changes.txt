@@ -1,0 +1,5 @@
+List of changes:
+1. added down_machine_index to configuration in json file
+2. updated line_configy.py for single line
+3. updated manufacturing_env.py for single line
+4. updated policies for max policy

@@ -13,7 +13,7 @@ Usage:
 import simpy
 from sim.line_config import adj
 from sim import manufacturing_env as MLS
-from policies import random_policy, brain_policy
+from policies import random_policy, brain_policy, max_policy
 import datetime
 import json
 import os
@@ -123,6 +123,11 @@ class TemplateSimulatorSession:
         sim_states = self.simulator.get_states()
         # Add an extra field needed for go-to-point experiments
 
+        # print(sim_states)
+        print(sim_states['conveyor_buffers'][0])
+        print(sim_states['conveyor_buffers'][1])
+        print(sim_states['conveyor_buffers'][2])       
+
         if self.render:
             pass
 
@@ -181,7 +186,7 @@ class TemplateSimulatorSession:
             config["layout_configuration"]
         # [AJ]: Following is added by Amir
         self.simulator.down_machine_index = \
-            config.get("down_machine_index", -1)
+            config["down_machine_index"]
 
         # Reset the simulator to create new processes
         self.simulator.reset()
@@ -325,10 +330,10 @@ def env_setup(env_file: str = ".env"):
 
 def test_policy(
     render=False,
-    num_episodes: int = 2,
-    num_iterations: int = 1000,
+    num_episodes: int = 1,
+    num_iterations: int = 10,
     log_iterations: bool = False,
-    policy=random_policy,
+    policy=max_policy,
     policy_name: str = "test_policy",
     scenario_file: str = "assess_config.json",
     exported_brain_url: str = "http://localhost:5000"
@@ -652,7 +657,7 @@ if __name__ == "__main__":
 
     if args.test_random:
         test_policy(
-            render=args.render, log_iterations=args.log_iterations, policy=random_policy
+            render=args.render, log_iterations=args.log_iterations, policy=max_policy
         )
     elif args.test_exported:
         port = args.test_exported

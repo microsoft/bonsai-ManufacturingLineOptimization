@@ -10,7 +10,8 @@
       "downtime_event_duration_mean": 10,
       "downtime_event_duration_dev": 3,
       "number_parallel_downtime_events": 1,
-      "layout_configuration": 1
+      "layout_configuration": 1,
+      "down_machine_index": 0
     },
     {
       "control_type": -1,
@@ -20,7 +21,8 @@
       "downtime_event_duration_mean": 10,
       "downtime_event_duration_dev": 3,
       "number_parallel_downtime_events": 1,
-      "layout_configuration": 1
+      "layout_configuration": 1,
+      "down_machine_index": 0
     },
     {
       "control_type": 2,
@@ -30,7 +32,8 @@
       "downtime_event_duration_mean": 10,
       "downtime_event_duration_dev": 3,
       "number_parallel_downtime_events": 1,
-      "layout_configuration": 1
+      "layout_configuration": 1,
+      "down_machine_index": 0
     }
   ]
 }
