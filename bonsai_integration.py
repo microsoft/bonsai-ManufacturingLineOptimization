@@ -12,9 +12,9 @@ Usage:
 """
 
 import simpy
-from sim.line_config import adj
+from sim.line_config import adj, adj_conv
 from sim import manufacturing_env as MLS
-from policies import random_policy, brain_policy
+from policies import random_policy, brain_policy, max_policy, down_policy
 import datetime
 import json
 import os
@@ -42,14 +42,14 @@ import threading
 
 # import manufacturing line sim (MLS)
 # import adj dict to match actions
-MACHINES, CONVEYORS, _, _ = MLS.get_machines_conveyors_sources_sets(adj)
+MACHINES, CONVEYORS, _, _ = MLS.get_machines_conveyors_sources_sets(adj, adj_conv)
 ENV = simpy.Environment()
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 LOG_PATH = "logs"
 default_config = {
-    "control_type": 1,
+    "control_type": -1,
     "control_frequency": 1,
     "interval_downtime_event_mean": 100,
     "interval_downtime_event_dev": 20,
@@ -58,8 +58,8 @@ default_config = {
     "number_parallel_downtime_events": 1,
     "layout_configuration": 1,
     # The following is added by Amir
-    "down_machine_index": 0, 
-    "initial_bin_capacity": 50,
+    "down_machine_index": 2, 
+    "initial_bin_capacity": 0,
     "conveyor_capacity": 1000,
     "machine_min_speed": 5,
     "machine_max_speed": 100,
@@ -69,6 +69,10 @@ default_config = {
     "prox_lower_limit": 5,
     "num_conveyor_bins": 10,
     "machine_initial_speed": 100,
+    "infeedProx_index1": 1,
+    "infeedProx_index2": 2, 
+    "dischargeProx_index1": 0, 
+    "dischargeProx_index2": 1
 }
 
 def ensure_log_dir(log_full_path):
@@ -135,6 +139,13 @@ class TemplateSimulatorSession:
         sim_states = self.simulator.get_states()
         # Add an extra field needed for go-to-point experiments
 
+        print('Status of Conveyor Buffers')
+        print('cpnveyor 0', sim_states['conveyor_buffers'][0])
+        print('cpnveyor 1', sim_states['conveyor_buffers'][1])
+        print('cpnveyor 2', sim_states['conveyor_buffers'][2]) 
+        print('cpnveyor 3', sim_states['conveyor_buffers'][3])   
+        print('cpnveyor 4', sim_states['conveyor_buffers'][4])         
+
         if self.render:
             pass
 
@@ -155,15 +166,7 @@ class TemplateSimulatorSession:
 
         Parameters
         ----------
-        config : Dict, optional. The following keys are supported:
-            - cart_mass   # (kg)
-            - pole_mass   # (kg)
-            - pole_length  # (m)
-            - initial_cart_position  # (m)
-            - initial_cart_velocity  # (m/s)
-            - initial_pole_angle  # (rad)
-            - initial_angular_velocity  # (rad/s)
-            - target_pole_position  # (m)
+        config : Dict, optional.
         """
         # Reset the sim, passing fields from config
         if config is None:
@@ -213,7 +216,15 @@ class TemplateSimulatorSession:
             config["num_conveyor_bins"]
         self.simulator.machine_initial_speed = \
             config["machine_initial_speed"]
-    
+        self.simulator.infeedProx_index1 = \
+            config["infeedProx_index1"]
+        self.simulator.infeedProx_index2 = \
+            config["infeedProx_index2"]
+        self.simulator.dischargeProx_index1 = \
+            config["dischargeProx_index1"]
+        self.simulator.dischargeProx_index2 = \
+            config["dischargeProx_index2"]
+
         # Reset the simulator to create new processes
         self.simulator.reset()
         self.config = config
@@ -284,23 +295,16 @@ class TemplateSimulatorSession:
             An action to take to modulate environment.
         """
         machines_speed_list = action['machines_speed']
-        # [AJ]: Comment the follwoing since we don't consider conveyors speeds as brain's actions
-        # conveyors_speed_list = action['conveyors_speed']
         
         # take speed arrays and assign them into sim_action dictionary
         sim_action = {}
         index = 0
-        print(MACHINES)
-        print(CONVEYORS)
+        # print(MACHINES)
+        # print(CONVEYORS)
         for machine in MACHINES:
             sim_action[machine] = machines_speed_list[index]
             index += 1
 
-        # [AJ]: Comment the follwoing since we don't consider conveyors speeds as brain's actions
-        # index = 0 
-        # for conveyor in CONVEYORS:
-        #     sim_action[conveyor] = conveyors_speed_list[index]
-        #     index += 1 
         print('sim action is:\n', sim_action)
         self.simulator.step(brain_actions=sim_action)
 
@@ -356,10 +360,10 @@ def env_setup(env_file: str = ".env"):
 
 def test_policy(
     render=False,
-    num_episodes: int = 2,
-    num_iterations: int = 1000,
+    num_episodes: int = 1,
+    num_iterations: int = 10,
     log_iterations: bool = False,
-    policy=random_policy,
+    policy=max_policy,
     policy_name: str = "test_policy",
     scenario_file: str = "assess_config.json",
     exported_brain_url: str = "http://localhost:5000"
@@ -387,7 +391,8 @@ def test_policy(
     for episode in range(1, num_episodes):
         iteration = 1
         terminal = False
-        sim_state = sim.episode_start(config=scenario_configs[episode-1])
+        sim_state = sim.episode_start(config=default_config)
+        # sim_state = sim.episode_start(config=scenario_configs[episode-1])
         sim_state = sim.get_state()
         if log_iterations:
             action = policy(sim_state)
@@ -683,7 +688,7 @@ if __name__ == "__main__":
 
     if args.test_random:
         test_policy(
-            render=args.render, log_iterations=args.log_iterations, policy=random_policy
+            render=args.render, log_iterations=args.log_iterations, policy=max_policy
         )
     elif args.test_exported:
         port = args.test_exported

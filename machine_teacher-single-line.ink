@@ -40,6 +40,10 @@ const prox_lower_limit = 5
 const num_conveyor_bins = 10
 const conveyor_capacity = num_conveyor_bins * machine_BF_buffer
 const machine_initial_speed = 100
+const infeedProx_index1 = 1
+const infeedProx_index2 = 2
+const dischargeProx_index1 = 0
+const dischargeProx_index2 = 1
 
 type SimState {
     machines_speed: number[6], 
@@ -98,6 +102,10 @@ type SimConfig {
     prox_lower_limit: prox_lower_limit,
     num_conveyor_bins: num_conveyor_bins,
     machine_initial_speed: machine_initial_speed,
+    infeedProx_index1: infeedProx_index1,
+    infeedProx_index2: infeedProx_index2, 
+    dischargeProx_index1: dischargeProx_index1, 
+    dischargeProx_index2: dischargeProx_index2,
 }
 
 
