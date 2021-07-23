@@ -51,6 +51,7 @@ type SimState {
     machines_state: number[6],
     machines_state_sum: number,
     conveyors_speed: number[5],
+    conveyor_buffers: number[5],
     sink_machines_rate_sum: number,  # rate of production in the last simulation step 
     sink_throughput_delta_sum: number,  # amount of product produced between the controls 
     sink_throughput_absolute_sum: number, # absolute sum of all the productions at eny iteration

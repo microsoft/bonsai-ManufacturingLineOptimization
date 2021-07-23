@@ -36,6 +36,7 @@ from microsoft_bonsai_api.simulator.generated.models import (
 from azure.core.exceptions import HttpResponseError
 from functools import partial
 import threading
+import pdb
 # from threading import Lock
 # # from queue import Queue
 # lock = Lock()
@@ -49,7 +50,7 @@ ENV = simpy.Environment()
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 LOG_PATH = "logs"
 default_config = {
-    "control_type": -1,
+    "control_type": 0,
     "control_frequency": 1,
     "interval_downtime_event_mean": 100,
     "interval_downtime_event_dev": 20,
@@ -59,13 +60,13 @@ default_config = {
     "layout_configuration": 1,
     # The following is added by Amir
     "down_machine_index": 2, 
-    "initial_bin_level": 0,
+    "initial_bin_level": 50,
     "bin_maximum_capacity": 100,
     "conveyor_capacity": 1000,
-    "machine_min_speed": 5,
+    "machine_min_speed": 10,
     "machine_max_speed": 100,
-    "machine_BF_buffer": 100,
-    "machine_AF_buffer": 100,
+    "machine_BF_buffer": 1000,
+    "machine_AF_buffer": 1000,
     "prox_upper_limit": 100,
     "prox_lower_limit": 5,
     "num_conveyor_bins": 10,
@@ -141,11 +142,11 @@ class TemplateSimulatorSession:
         # Add an extra field needed for go-to-point experiments
 
         print('Status of Conveyor Buffers')
-        print('cpnveyor 0', sim_states['conveyor_buffers'][0])
-        print('cpnveyor 1', sim_states['conveyor_buffers'][1])
-        print('cpnveyor 2', sim_states['conveyor_buffers'][2]) 
-        print('cpnveyor 3', sim_states['conveyor_buffers'][3])   
-        print('cpnveyor 4', sim_states['conveyor_buffers'][4])         
+        print('conveyor 0', sim_states['conveyor_buffers'][0])
+        print('conveyor 1', sim_states['conveyor_buffers'][1])
+        print('conveyor 2', sim_states['conveyor_buffers'][2]) 
+        print('conveyor 3', sim_states['conveyor_buffers'][3])   
+        print('conveyor 4', sim_states['conveyor_buffers'][4])         
 
         if self.render:
             pass
@@ -178,58 +179,9 @@ class TemplateSimulatorSession:
         # Re-intializing the simulator to make sure all the processes are killed.
         ENV = simpy.Environment()
         self.simulator = MLS.DES(ENV)
-        # overwrite some parameters with that of config:
-        self.simulator.control_type = \
-            config["control_type"]
-        self.simulator.control_frequency = \
-            config["control_frequency"]
-        self.simulator.interval_downtime_event_mean = \
-            config["interval_downtime_event_mean"]
-        self.simulator.interval_downtime_event_dev = \
-            config["interval_downtime_event_dev"]
-        self.simulator.downtime_event_duration_mean = \
-            config["downtime_event_duration_mean"]
-        self.simulator.downtime_event_duration_dev = \
-            config["downtime_event_duration_dev"]
-        self.simulator.number_parallel_downtime_events = \
-            config["number_parallel_downtime_events"]
-        self.simulator.layout_configuration = \
-            config["layout_configuration"]
-        self.simulator.down_machine_index = \
-            config["down_machine_index"]
-        self.simulator.initial_bin_level = \
-            config["initial_bin_level"]
-        self.simulator.conveyor_capacity = \
-            config["conveyor_capacity"]
-        self.simulator.machine_min_speed = \
-            config["machine_min_speed"]
-        self.simulator.machine_max_speed = \
-            config["machine_max_speed"]
-        self.simulator.machine_BF_buffer = \
-            config["machine_BF_buffer"]
-        self.simulator.machine_AF_buffer = \
-            config["machine_AF_buffer"]
-        self.simulator.prox_upper_limit = \
-            config["prox_upper_limit"]
-        self.simulator.prox_lower_limit = \
-            config["prox_lower_limit"]                        
-        self.simulator.num_conveyor_bins = \
-            config["num_conveyor_bins"]
-        self.simulator.machine_initial_speed = \
-            config["machine_initial_speed"]
-        self.simulator.infeedProx_index1 = \
-            config["infeedProx_index1"]
-        self.simulator.infeedProx_index2 = \
-            config["infeedProx_index2"]
-        self.simulator.dischargeProx_index1 = \
-            config["dischargeProx_index1"]
-        self.simulator.dischargeProx_index2 = \
-            config["dischargeProx_index2"]
-        self.simulator.bin_maximum_capacity = \
-            config["bin_maximum_capacity"]                       
 
         # Reset the simulator to create new processes
-        self.simulator.reset()
+        self.simulator.reset(config)
         self.config = config
 
         if self.render:
@@ -363,7 +315,7 @@ def env_setup(env_file: str = ".env"):
 
 def test_policy(
     render=False,
-    num_episodes: int = 1,
+    num_episodes: int = 2,
     num_iterations: int = 10,
     log_iterations: bool = False,
     policy=max_policy,
@@ -382,7 +334,7 @@ def test_policy(
     with open(scenario_file) as fname:
         assess_info = json.load(fname)
     scenario_configs = assess_info['episodeConfigurations']
-    num_episodes = len(scenario_configs)+1
+    num_episodes = len(scenario_configs)
 
     current_time = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     log_file_name = current_time + "_" + policy_name + "_log.csv"
