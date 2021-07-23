@@ -225,7 +225,7 @@ class TemplateSimulatorSession:
             config["dischargeProx_index1"]
         self.simulator.dischargeProx_index2 = \
             config["dischargeProx_index2"]
-        self.simulator["bin_maximum_capacity"] = \
+        self.simulator.bin_maximum_capacity = \
             config["bin_maximum_capacity"]                       
 
         # Reset the simulator to create new processes
