@@ -50,7 +50,7 @@ class General:
     number_of_machines = len(machines) # number of General machines
     number_of_conveyors = len(conveyors) # number of conveyors
     conveyor_min_speed = 10
-    conveyor_max_speed = 100
+    conveyor_max_speed = 1000
     conveyor_speed = conveyor_max_speed    
     # warmup_time = 100  # seconds(s)
     # downtime_event_prob = 0.1 # probability applied every "downtime-even_gen_mean" to create downtime on a random machine
@@ -72,7 +72,9 @@ class General:
     # granularity of simulation updates. Larger values make simulation less accurate. Recommended value: 1.
     simulation_time_step = 1
     down_machine_index = -1 # [AJ]: From 0 to 5 to refer to the specific down machine, -1 for random down machine
-    initial_bin_capacity = 0 # [AJ]: Initial capacity of the bin (from 0 to 100)
+    # change to initial bin level
+    initial_bin_level = 0 # [AJ]: Initial capacity of the bin (from 0 to 100)
+    bin_maximum_capacity = 100 # [AJ]: Maximum capacity of each bin
     machine_BF_buffer = 100 # [AJ]: The buffer size before machine
     machine_AF_buffer = 100 # [AJ]: The buffer size after machine
     prox_lower_limit = 5 # [AJ]: Threshold to turn on/off the prox - infeed
@@ -150,7 +152,7 @@ class Conveyor(General):
         self.bins_capacity = self.conveyor_capacity / self.num_conveyor_bins
         # each bin is a container and has a capacity and initial value
         for i in range(0, self.num_conveyor_bins):
-            setattr(self, "bin" + str(i), self.initial_bin_capacity)
+            setattr(self, "bin" + str(i), self.initial_bin_level)
 
     @property
     def speed(self):
@@ -651,6 +653,7 @@ class DES(General):
                     getattr(getattr(self, conveyor), "bin" + str(bin_num)))
                 buffer_full.append(
                     int(getattr(getattr(self, conveyor), "bin" + str(bin_num)) == bin_capacity)) # [AJ]: Check whether each bin reaches bin capacity or not
+
             # [AJ]: The following is added by Amir
             # The infeed sensor next to machine
             conveyor_infeed_m1_prox_empty.append(int(getattr(

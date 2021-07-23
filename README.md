@@ -23,6 +23,13 @@ approach 2: event driven with no illegal actions.
 approach 3: multi concept, equipment down concepts 
 approach 4: Action space reduction 
 
+## Background about manufacturing line
+
+The line consists of a fixed number of machines that are connected through conveyors. The products (i.e., cans) enter the line through the source that is located at the left most side of the line, move from one machine to another machine until they reach the sink at the rightmost end of the line where all the product would be accumulated. There are sensors (proxes) located at certain points along the conveyor that assess the status of products (i.e., cans) accumulation on the conveyor. The prox that is located at the right end of conveyor (prior to next machine) is called the Infeed prox and the prox that is located at the left end of conveyor (after the previous machine) is called the Discharge prox. The Infeed prox decides whether there are enough products (i.e., cans) on the conveyor that can be fed into the next machine to determine whether it is worth keeping the machine ON. If there are not enough products (i.e., cans) available that can be fed into the next machine, then the Infeed prox would decide to shut down the machine simply because the conveyor is under-loaded.
+In contrary, the Discharge prox decides whether there are too many products (i.e., cans) on the conveyor such that the previous machine would not find enough space on the conveyor to generate new products (i.e., cans). Therefore, the Discharge prox would decide to shut down the machine simply because the conveyor is over-loaded.
+
+Each conveyor consists of 10 bins - indexed from 0 to 9 - and the products (i.e., cans) are accumulated from the right end of conveyor (bin index 9) until it reaches to the left end of conveyor (bin index 0). In the following, the process of how products (i.e., cans) are moved from one machine to another machine is explained.
+
 
 ### Detailed overview of the solution
 

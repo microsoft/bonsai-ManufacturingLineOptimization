@@ -8,7 +8,7 @@ const number_of_iterations = 1000
 ## control_type:  0: control at fixed time frequency 
 ## control type:  1: event driven, i.e. when a downtime occurs
 ## control type:  2: both at fixed control frequency and downtime
-const control_type = 1
+const control_type = 0 # 0 or -1 for this project
 ## the below control frequency does not apply to control type 1 and will be ignored
 const control_frequency = 1 # in seconds (s)
 
@@ -29,8 +29,9 @@ const number_parallel_downtime_events = 1
 ## Currently only 1 configuration exists 
 const layout_configuration = 1 
 
-const down_machine_index = 5 # It can be from -1 to 5
-const initial_bin_capacity = 50
+const down_machine_index = 5 # It can be from -1 for random machine down or 0 to 5 for specific down machine
+const initial_bin_level = 50
+const bin_maximum_capacity = 100
 const machine_min_speed = 10
 const machine_max_speed = 100
 const machine_BF_buffer = machine_max_speed * downtime_event_duration_mean + (10 - downtime_event_duration_mean) * machine_min_speed
@@ -92,7 +93,8 @@ type SimConfig {
     number_parallel_downtime_events : number_parallel_downtime_events,
     layout_configuration : layout_configuration, 
     down_machine_index: down_machine_index,
-    initial_bin_capacity: initial_bin_capacity,
+    initial_bin_level: initial_bin_level,
+    bin_maximum_capacity: bin_maximum_capacity,
     conveyor_capacity: conveyor_capacity,
     machine_min_speed: machine_min_speed,
     machine_max_speed: machine_max_speed,
@@ -156,7 +158,8 @@ graph (input: ObservationState): SimAction {
                     number_parallel_downtime_events : number_parallel_downtime_events,
                     layout_configuration : layout_configuration,
                     down_machine_index: down_machine_index,
-                    initial_bin_capacity: initial_bin_capacity,
+                    initial_bin_level: initial_bin_level,
+                    bin_maximum_capacity: bin_maximum_capacity,
                     conveyor_capacity: conveyor_capacity,
                     machine_min_speed: machine_min_speed,
                     machine_max_speed: machine_max_speed,
@@ -166,6 +169,10 @@ graph (input: ObservationState): SimAction {
                     prox_lower_limit: prox_lower_limit,
                     num_conveyor_bins: num_conveyor_bins,
                     machine_initial_speed: machine_initial_speed,
+                    infeedProx_index1: infeedProx_index1,
+                    infeedProx_index2: infeedProx_index2, 
+                    dischargeProx_index1: dischargeProx_index1, 
+                    dischargeProx_index2: dischargeProx_index2,
                 }
             }
         }

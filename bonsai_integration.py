@@ -59,7 +59,8 @@ default_config = {
     "layout_configuration": 1,
     # The following is added by Amir
     "down_machine_index": 2, 
-    "initial_bin_capacity": 0,
+    "initial_bin_level": 0,
+    "bin_maximum_capacity": 100,
     "conveyor_capacity": 1000,
     "machine_min_speed": 5,
     "machine_max_speed": 100,
@@ -196,8 +197,8 @@ class TemplateSimulatorSession:
             config["layout_configuration"]
         self.simulator.down_machine_index = \
             config["down_machine_index"]
-        self.simulator.initial_bin_capacity = \
-            config["initial_bin_capacity"]
+        self.simulator.initial_bin_level = \
+            config["initial_bin_level"]
         self.simulator.conveyor_capacity = \
             config["conveyor_capacity"]
         self.simulator.machine_min_speed = \
@@ -224,6 +225,8 @@ class TemplateSimulatorSession:
             config["dischargeProx_index1"]
         self.simulator.dischargeProx_index2 = \
             config["dischargeProx_index2"]
+        self.simulator["bin_maximum_capacity"] = \
+            config["bin_maximum_capacity"]                       
 
         # Reset the simulator to create new processes
         self.simulator.reset()
