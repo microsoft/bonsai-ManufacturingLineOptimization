@@ -62,15 +62,15 @@ default_config = {
     "down_machine_index": 2, 
     "initial_bin_level": 50,
     "bin_maximum_capacity": 100,
+    "num_conveyor_bins": 10,
     "conveyor_capacity": 1000,
     "machine_min_speed": 10,
     "machine_max_speed": 100,
-    "machine_BF_buffer": 1000,
-    "machine_AF_buffer": 1000,
+    "machine_initial_speed": 100,
+    # "machine_BF_buffer": 1000,
+    # "machine_AF_buffer": 1000,
     "prox_upper_limit": 100,
     "prox_lower_limit": 5,
-    "num_conveyor_bins": 10,
-    "machine_initial_speed": 100,
     "infeedProx_index1": 1,
     "infeedProx_index2": 2, 
     "dischargeProx_index1": 0, 
@@ -142,11 +142,11 @@ class TemplateSimulatorSession:
         # Add an extra field needed for go-to-point experiments
 
         print('Status of Conveyor Buffers')
-        print('conveyor 0', sim_states['conveyor_buffers'][0])
-        print('conveyor 1', sim_states['conveyor_buffers'][1])
-        print('conveyor 2', sim_states['conveyor_buffers'][2]) 
-        print('conveyor 3', sim_states['conveyor_buffers'][3])   
-        print('conveyor 4', sim_states['conveyor_buffers'][4])         
+        print('conveyor 0 is', sim_states['conveyor_buffers'][0])
+        print('conveyor 1 is', sim_states['conveyor_buffers'][1])
+        print('conveyor 2 is', sim_states['conveyor_buffers'][2]) 
+        print('conveyor 3 is', sim_states['conveyor_buffers'][3])   
+        print('conveyor 4 is', sim_states['conveyor_buffers'][4])         
 
         if self.render:
             pass

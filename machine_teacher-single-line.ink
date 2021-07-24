@@ -32,15 +32,15 @@ const layout_configuration = 1
 const down_machine_index = 5 # It can be from -1 for random machine down or 0 to 5 for specific down machine
 const initial_bin_level = 50
 const bin_maximum_capacity = 100
+const num_conveyor_bins = 10
+const conveyor_capacity = num_conveyor_bins * bin_maximum_capacity
 const machine_min_speed = 10
 const machine_max_speed = 100
-const machine_BF_buffer = machine_max_speed * downtime_event_duration_mean + (10 - downtime_event_duration_mean) * machine_min_speed
-const machine_AF_buffer = machine_max_speed * downtime_event_duration_mean + (10 - downtime_event_duration_mean) * machine_min_speed
+const machine_initial_speed = 100
+# const machine_BF_buffer = machine_max_speed * downtime_event_duration_mean + (10 - downtime_event_duration_mean) * machine_min_speed
+# const machine_AF_buffer = machine_max_speed * downtime_event_duration_mean + (10 - downtime_event_duration_mean) * machine_min_speed
 const prox_upper_limit = 100
 const prox_lower_limit = 5
-const num_conveyor_bins = 10
-const conveyor_capacity = num_conveyor_bins * machine_BF_buffer
-const machine_initial_speed = 100
 const infeedProx_index1 = 1
 const infeedProx_index2 = 2
 const dischargeProx_index1 = 0
@@ -96,15 +96,15 @@ type SimConfig {
     down_machine_index: down_machine_index,
     initial_bin_level: initial_bin_level,
     bin_maximum_capacity: bin_maximum_capacity,
+    num_conveyor_bins: num_conveyor_bins,
     conveyor_capacity: conveyor_capacity,
     machine_min_speed: machine_min_speed,
     machine_max_speed: machine_max_speed,
-    machine_BF_buffer: machine_BF_buffer,
-    machine_AF_buffer: machine_AF_buffer,
+    machine_initial_speed: machine_initial_speed,
+    # machine_BF_buffer: machine_BF_buffer,
+    # machine_AF_buffer: machine_AF_buffer,
     prox_upper_limit: prox_upper_limit,
     prox_lower_limit: prox_lower_limit,
-    num_conveyor_bins: num_conveyor_bins,
-    machine_initial_speed: machine_initial_speed,
     infeedProx_index1: infeedProx_index1,
     infeedProx_index2: infeedProx_index2, 
     dischargeProx_index1: dischargeProx_index1, 
@@ -161,15 +161,15 @@ graph (input: ObservationState): SimAction {
                     down_machine_index: down_machine_index,
                     initial_bin_level: initial_bin_level,
                     bin_maximum_capacity: bin_maximum_capacity,
+                    num_conveyor_bins: num_conveyor_bins,
                     conveyor_capacity: conveyor_capacity,
                     machine_min_speed: machine_min_speed,
                     machine_max_speed: machine_max_speed,
-                    machine_BF_buffer: machine_BF_buffer,
-                    machine_AF_buffer: machine_AF_buffer,
+                    machine_initial_speed: machine_initial_speed,
+                    # machine_BF_buffer: machine_BF_buffer,
+                    # machine_AF_buffer: machine_AF_buffer,
                     prox_upper_limit: prox_upper_limit,
                     prox_lower_limit: prox_lower_limit,
-                    num_conveyor_bins: num_conveyor_bins,
-                    machine_initial_speed: machine_initial_speed,
                     infeedProx_index1: infeedProx_index1,
                     infeedProx_index2: infeedProx_index2, 
                     dischargeProx_index1: dischargeProx_index1, 
