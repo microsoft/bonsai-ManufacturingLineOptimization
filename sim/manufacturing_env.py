@@ -14,6 +14,7 @@ from networkx.generators import line
 import pandas as pd
 import threading
 from threading import Lock
+import pdb
 # from queue import Queue
 lock = Lock()
 
@@ -72,18 +73,17 @@ class General:
     # granularity of simulation updates. Larger values make simulation less accurate. Recommended value: 1.
     simulation_time_step = 1
     down_machine_index = -1 # [AJ]: From 0 to 5 to refer to the specific down machine, -1 for random down machine
-    # change to initial bin level
     initial_bin_level = 0 # [AJ]: Initial capacity of the bin (from 0 to 100)
     bin_maximum_capacity = 100 # [AJ]: Maximum capacity of each bin
-    machine_BF_buffer = 100 # [AJ]: The buffer size before machine
-    machine_AF_buffer = 100 # [AJ]: The buffer size after machine
+    num_conveyor_bins = 10 # Number of bins per conveyor
+    conveyor_capacity = bin_maximum_capacity * num_conveyor_bins  # in cans
+    # machine_BF_buffer = 100 # [AJ]: The buffer size before machine
+    # machine_AF_buffer = 100 # [AJ]: The buffer size after machine
     prox_lower_limit = 5 # [AJ]: Threshold to turn on/off the prox - infeed
     prox_upper_limit = 100 # [AJ]: Threshold to turn on/off the prox - discharge
-    machine_initial_speed = 100 # [AJ]: Initial speed of the machine
-    conveyor_capacity = 1000  # in cans
-    num_conveyor_bins = 10 # Number of bins per conveyor
     machine_min_speed = 10  # cans/second
     machine_max_speed = 100  # cans/second
+    machine_initial_speed = 100 # [AJ]: Initial speed of the machine
     infeedProx_index1 = 1 # bin index for location of first infeed sensor
     infeedProx_index2 = 2 # bin index for location of second infeed sensor
     dischargeProx_index1 = 0 # bin index for location of first discharge sensor
@@ -474,7 +474,6 @@ class DES(General):
                 # [AJ]: get the level of previous bin
                 previous_bin_level = getattr(getattr(self, conveyor),
                                 "bin" + str(bin_num-1))                                                 
-                # tmp = min(capacity - bin_level, previous_bin_level) 
                 tmp = min(capacity - bin_level, 0)
                 bin_level += tmp # [AJ]: if exceeds bin capacity, subtract from current bin 
                 previous_bin_level -= tmp # [AJ]: add to previous bin from current bin
@@ -554,12 +553,67 @@ class DES(General):
 
         return remaining_downtime_machines, delta_t
 
-    def reset(self):
+    def reset(self, config):
         # self.episode_end = False
+        # overwrite some parameters with that of config:
+        General.control_type = \
+            config["control_type"]
+        General.control_frequency = \
+            config["control_frequency"]
+        General.interval_downtime_event_mean = \
+            config["interval_downtime_event_mean"]
+        General.interval_downtime_event_dev = \
+            config["interval_downtime_event_dev"]
+        General.downtime_event_duration_mean = \
+            config["downtime_event_duration_mean"]
+        General.downtime_event_duration_dev = \
+            config["downtime_event_duration_dev"]
+        General.number_parallel_downtime_events = \
+            config["number_parallel_downtime_events"]
+        General.layout_configuration = \
+            config["layout_configuration"]
+        General.down_machine_index = \
+            config["down_machine_index"]
+        General.initial_bin_level = \
+            config["initial_bin_level"]
+        General.bin_maximum_capacity = \
+            config["bin_maximum_capacity"]               
+        General.num_conveyor_bins = \
+            config["num_conveyor_bins"]           
+        General.conveyor_capacity = \
+            config["conveyor_capacity"]
+        General.machine_min_speed = \
+            config["machine_min_speed"]
+        General.machine_max_speed = \
+            config["machine_max_speed"]
+        General.machine_initial_speed = \
+            config["machine_initial_speed"]            
+        # General.machine_BF_buffer = \
+        #     config["machine_BF_buffer"]
+        # General.machine_AF_buffer = \
+        #     config["machine_AF_buffer"]
+        General.prox_upper_limit = \
+            config["prox_upper_limit"]
+        General.prox_lower_limit = \
+            config["prox_lower_limit"]                        
+        General.infeedProx_index1 = \
+            config["infeedProx_index1"]
+        General.infeedProx_index2 = \
+            config["infeedProx_index2"]
+        General.dischargeProx_index1 = \
+            config["dischargeProx_index1"]
+        General.dischargeProx_index2 = \
+            config["dischargeProx_index2"]                    
+
+        self._initialize_machines()
+        self._initialize_sink()
+        self._initialize_conveyor_buffers()
+        self._initialize_downtime_tracker()
+
         self.processes_generator()
 
     def step(self, brain_actions):
-
+        
         # update the speed dictionary for those comming from the brain
         for key in list(brain_actions.keys()):
             self.components_speed[key] = brain_actions[key]
@@ -803,7 +857,34 @@ class DES(General):
 if __name__ == "__main__":
     env = simpy.Environment()
     my_env = DES(env)
-    my_env.reset()
+    default_config = {
+        "control_type": 0,
+        "control_frequency": 1,
+        "interval_downtime_event_mean": 100,
+        "interval_downtime_event_dev": 20,
+        "downtime_event_duration_mean": 10,
+        "downtime_event_duration_dev": 3,
+        "number_parallel_downtime_events": 1,
+        "layout_configuration": 1,
+        # The following is added by Amir
+        "down_machine_index": 2, 
+        "initial_bin_level": 50,
+        "bin_maximum_capacity": 100,
+        "conveyor_capacity": 1000,
+        "machine_min_speed": 10,
+        "machine_max_speed": 100,
+        "machine_BF_buffer": 1000,
+        "machine_AF_buffer": 1000,
+        "prox_upper_limit": 100,
+        "prox_lower_limit": 5,
+        "num_conveyor_bins": 10,
+        "machine_initial_speed": 100,
+        "infeedProx_index1": 1,
+        "infeedProx_index2": 2, 
+        "dischargeProx_index1": 0, 
+        "dischargeProx_index2": 1
+    }
+    my_env.reset(default_config)
     my_env.render()
     # my_env.animation_concurrent_run()
     # rendering.join()
