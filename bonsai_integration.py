@@ -50,7 +50,7 @@ ENV = simpy.Environment()
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 LOG_PATH = "logs"
 default_config = {
-    "control_type": 0,
+    "control_type": -1,
     "control_frequency": 1,
     "interval_downtime_event_mean": 100,
     "interval_downtime_event_dev": 20,
@@ -60,7 +60,7 @@ default_config = {
     "layout_configuration": 1,
     # The following is added by Amir
     "down_machine_index": 2, 
-    "initial_bin_level": 50,
+    "initial_bin_level": 10,
     "bin_maximum_capacity": 100,
     "num_conveyor_bins": 10,
     "conveyor_capacity": 1000,
@@ -318,7 +318,7 @@ def test_policy(
     num_episodes: int = 2,
     num_iterations: int = 10,
     log_iterations: bool = False,
-    policy=max_policy,
+    policy=down_policy,
     policy_name: str = "test_policy",
     scenario_file: str = "assess_config.json",
     exported_brain_url: str = "http://localhost:5000"
@@ -643,7 +643,7 @@ if __name__ == "__main__":
 
     if args.test_random:
         test_policy(
-            render=args.render, log_iterations=args.log_iterations, policy=max_policy
+            render=args.render, log_iterations=args.log_iterations, policy=down_policy
         )
     elif args.test_exported:
         port = args.test_exported
