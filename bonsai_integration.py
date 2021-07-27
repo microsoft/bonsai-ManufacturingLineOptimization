@@ -316,7 +316,7 @@ def env_setup(env_file: str = ".env"):
 def test_policy(
     render=False,
     num_episodes: int = 2,
-    num_iterations: int = 10,
+    num_iterations: int = 1000,
     log_iterations: bool = False,
     policy=max_policy,
     policy_name: str = "test_policy",
