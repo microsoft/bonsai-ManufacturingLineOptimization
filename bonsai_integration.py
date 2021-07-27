@@ -60,7 +60,7 @@ default_config = {
     "layout_configuration": 1,
     # The following is added by Amir
     "down_machine_index": 2, 
-    "initial_bin_level": 10,
+    "initial_bin_level": 80,
     "bin_maximum_capacity": 100,
     "num_conveyor_bins": 10,
     "conveyor_capacity": 1000,
@@ -141,12 +141,13 @@ class TemplateSimulatorSession:
         sim_states = self.simulator.get_states()
         # Add an extra field needed for go-to-point experiments
 
-        print('Status of Conveyor Buffers')
+        print('Summary Status of Conveyor Buffers is')
         print('conveyor 0 is', sim_states['conveyor_buffers'][0])
         print('conveyor 1 is', sim_states['conveyor_buffers'][1])
         print('conveyor 2 is', sim_states['conveyor_buffers'][2]) 
         print('conveyor 3 is', sim_states['conveyor_buffers'][3])   
-        print('conveyor 4 is', sim_states['conveyor_buffers'][4])         
+        print('conveyor 4 is', sim_states['conveyor_buffers'][4])  
+        print('actual machine speeds are', sim_states['actual_speeds'])       
 
         if self.render:
             pass
@@ -316,7 +317,7 @@ def env_setup(env_file: str = ".env"):
 def test_policy(
     render=False,
     num_episodes: int = 2,
-    num_iterations: int = 10,
+    num_iterations: int = 20,
     log_iterations: bool = False,
     policy=down_policy,
     policy_name: str = "test_policy",
@@ -362,6 +363,7 @@ def test_policy(
             sim_state = sim.get_state()
             if log_iterations:
                 sim.log_iterations(sim_state, action, episode, iteration)
+            print('------------------------------------------------------')
             print(f"Running iteration #{iteration} for episode #{episode}")
             #print(f"Observations: {sim_state}")
             iteration += 1
