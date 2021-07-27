@@ -49,6 +49,7 @@ const dischargeProx_index2 = 1
 type SimState {
     machines_speed: number[6], 
     machines_state: number[6],
+    actual_speeds: number[6],
     machines_state_sum: number,
     conveyors_speed: number[5],
     conveyor_buffers: number[10][5],
@@ -66,7 +67,8 @@ type SimState {
 }
 
 type ObservationState{
-    machines_speed: number[6], 
+    machines_speed: number[6],
+    actual_speeds: number[6], 
     machines_state: number[6],
     sink_machines_rate_sum: number,
     sink_throughput_delta_sum: number,

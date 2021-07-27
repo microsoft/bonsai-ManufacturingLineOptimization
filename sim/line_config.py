@@ -3,6 +3,7 @@ source: Input to all machines with infinite number of cans
 Example configs
 Serial:
 source1 -> m0 --c0 -- m1 --c1 --- m2 ---c2 --m3 --c3 --m4 --c4 --m5 --sink
+
 '''
 ## Define the adjacent conveyors for each machine and the adjacent machines for each conveyor. All machines should be listed as adj dictionary keys 
 

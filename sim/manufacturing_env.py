@@ -207,6 +207,8 @@ class DES(General):
         super().__init__()
         self.env = env
         self.components_speed = {}
+        self.conveyor_initial_level = General.initial_bin_level * General.num_conveyor_bins
+        self.all_conveyor_levels = [self.conveyor_initial_level] * General.number_of_conveyors
         self._initialize_conveyor_buffers()
         self._initialize_machines()
         self._initialize_sink()
@@ -364,8 +366,9 @@ class DES(General):
         # self.update_conveyors_speed()
 
         # enforcing PLC rules to prevent jamming. This may ignore brain actions if buffers are full.
+        self.get_conveyor_level()
         self.plc_control_machine_speed()
-        self.update_machine_adjacent_buffers()
+        self.accumulate_conveyor_bins()
         self.update_sinks_product_accumulation()
 
     def update_sinks_product_accumulation(self):
@@ -431,11 +434,26 @@ class DES(General):
             setattr(eval('self.' + machine), 'speed', updated_speed)
             print(eval('self.' + machine))
 
-    def update_machine_adjacent_buffers(self):
-        '''
-        For each machine, we will look at the adj matrix and update number of cans in their buffers. If the buffer is full, we need to shut down the machine.
-        '''
+    def get_conveyor_level(self):
+
+        self.all_conveyor_levels = []
         for conveyor in adj_conv.keys():
+            conveyor_level = 0
+
+            for bin_num in range(General.num_conveyor_bins-1, -1, -1):
+                bin_level = getattr(getattr(self, conveyor), 
+                                "bin" + str(bin_num))
+                conveyor_level += bin_level # [AJ]: total number of cans in the conveyor
+            self.all_conveyor_levels.append(conveyor_level) # [AJ]: array that contains the total level of all conveyors
+
+    def accumulate_conveyor_bins(self):
+        
+        index = 0
+        for conveyor in adj_conv.keys():
+            capacity = getattr(getattr(self, conveyor), "bins_capacity") # [AJ]: maximum capacity of the bin
+            current_conveyor_level = self.all_conveyor_levels[index] # [AJ]: current conveyor level
+            print('original current_conveyor_level is', current_conveyor_level)
+
             adj_machines = adj_conv[conveyor] # [AJ]: the machines corresponding to each conveyor
             previous_machine = adj_machines[0] # [AJ]: the machine before the conveyor
             next_machine = adj_machines[1] # [AJ]: the machine after the conveyor
@@ -446,47 +464,35 @@ class DES(General):
             # [AJ]: amount of cans processed by the machine after the conveyor - output from the conveyor
             delta_next = getattr(eval('self.' + next_machine), 'speed') * \
                 self.simulation_time_step
-            capacity = getattr(getattr(self, conveyor), "bins_capacity") # [AJ]: maximum capacity of the bin
 
-            # [AJ]: determine the speed of the previous machine
-            # previous_machine_speed = getattr(eval('self.' + previous_machine), 'speed')
-            # print('previous machine speed is', previous_machine_speed)
+            current_conveyor_level += delta_previous # [AJ]: addition of cans receiving from machine before the conveyor 
+            print('current_conveyor_level after addition is', current_conveyor_level)
+            current_conveyor_level -= delta_next # [AJ]: subtraction of cans passing to the machine after the conveyor
+            print('current_conveyor_level after subtraction is', current_conveyor_level)
+            current_conveyor_level = max(0, current_conveyor_level)
 
-            # [AJ]: determine the speed of the next machine
-            # next_machine_speed = getattr(eval('self.' + next_machine), 'speed')
-            # print('next machine speed is', next_machine_speed)
-         
-            # [AJ]: get the level of last bin of conveyor
-            last_bin_level = getattr(getattr(self, conveyor), "bin" +
-                                str(General.num_conveyor_bins-1)) 
-            # [AJ]: last bin passes cans to the machine after the conveyor
-            last_bin_level -= min(delta_next, last_bin_level)
-            last_bin_level += delta_previous
-            # [AJ]: update the level of last bin of conveyor
-            setattr(eval('self.' + conveyor), "bin" +
-                        str(General.num_conveyor_bins-1), last_bin_level)
-            
-            for bin_num in range(General.num_conveyor_bins-1, 0, -1): 
-                
-                # [AJ]: get the level of current bin
-                bin_level = getattr(getattr(self, conveyor), 
-                                "bin" + str(bin_num)) 
-                # [AJ]: get the level of previous bin
-                previous_bin_level = getattr(getattr(self, conveyor),
-                                "bin" + str(bin_num-1))                                                 
-                tmp = min(capacity - bin_level, 0)
-                bin_level += tmp # [AJ]: if exceeds bin capacity, subtract from current bin 
-                previous_bin_level -= tmp # [AJ]: add to previous bin from current bin
+            for bin_num in range(General.num_conveyor_bins-1, -1, -1): # [AJ]: accumulate cans in the conveyor from last bin to first bin
+                setattr(eval('self.' + conveyor), "bin" +
+                        str(bin_num), 0) # [AJ]: set the level of the bin to 0
+                bin_level = min(current_conveyor_level, capacity)
                 setattr(eval('self.' + conveyor), "bin" +
                         str(bin_num), bin_level)
-                setattr(eval('self.' + conveyor), "bin" +
-                        str(bin_num-1), previous_bin_level)                        
+                new_bin_level = getattr(getattr(self, conveyor), 
+                                "bin" + str(bin_num)) # [AJ]: get the level of the conveyor bin
+                print('for bin number', bin_num)
+                print('the new bin level is', new_bin_level)
+
+                current_conveyor_level -= new_bin_level 
+                if current_conveyor_level <= 0:
+                    current_conveyor_level = 0
+            index += 1
 
     def plc_control_machine_speed(self):
         '''
         rule1: machine should stop, i.e. speed = 0, if its discharge prox is full
         rule2: machine should stop, i.e. speed = 0, if its infeed prox is empty
         '''
+        index = 0
         for machine in adj.keys():
             adj_conveyors = adj[machine]
             infeed = adj_conveyors[0] # [AJ]: conveyor before the machine
@@ -509,6 +515,25 @@ class DES(General):
                         f'stopping machine {machine} as discharge prox is full, i.e. the whole conveyor is full')
                     setattr(eval('self.' + machine), "speed", 0)
                     print(eval('self.' + machine))
+    
+    def actual_machine_speeds(self):
+        index = 0
+        actual_speeds = []
+        for machine in General.machines:
+            speed = getattr(eval('self.' + machine), 'speed') # [AJ]: actual speed of the machine
+            if 'source' not in adj[machine][0]: # [AJ]: if not the first machine in the line
+                current_conveyor_level = self.all_conveyor_levels[index] # [AJ]: current conveyor level
+                if speed == 0:
+                    actual_speeds.append(0)
+                elif speed <= current_conveyor_level:
+                    actual_speeds.append(speed)
+                elif speed > current_conveyor_level:
+                    actual_speeds.append(current_conveyor_level)
+                index += 1
+            else: # [AJ]: if the first machine in the line
+                actual_speeds.append(speed)
+
+        return actual_speeds
 
     def check_illegal_actions(self):
         '''
@@ -611,6 +636,10 @@ class DES(General):
         self._initialize_downtime_tracker()
 
         self.processes_generator()
+
+        self.get_conveyor_level()
+        self.accumulate_conveyor_bins()
+
 
     def step(self, brain_actions):
         
@@ -760,6 +789,9 @@ class DES(General):
         # downtime remaining time: 8
         remaining_downtime_machines, downtime_event_delta_t = self.calculate_downtime_remaining_time()
 
+        ## actual speeds: 9
+        actual_speeds = self.actual_machine_speeds()
+
         control_delta_t = self.calculate_control_frequency_delta_time()
 
         states = {'machines_speed': machines_speed,
@@ -779,9 +811,11 @@ class DES(General):
                   'conveyor_discharge_p1_prox_full': [int(val) for val in conveyor_discharge_p1_prox_full],
                   'conveyor_discharge_p2_prox_full': [int(val) for val in conveyor_discharge_p2_prox_full],
                   'illegal_machine_actions': illegal_machine_actions,
+                  'actual_speeds': actual_speeds,
                   'remaining_downtime_machines': remaining_downtime_machines,
                   'control_delta_t': control_delta_t,
-                  'env_time': self.env.now
+                  'env_time': self.env.now,
+                  'all_conveyor_levels': self.all_conveyor_levels,
                   }
 
         return states
