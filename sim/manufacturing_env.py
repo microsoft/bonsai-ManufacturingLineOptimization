@@ -510,7 +510,7 @@ class DES(General):
                 level = getattr(getattr(self, discharge), "bin" + str(self.dischargeProx_index1)) # [AJ}: get the level of first bin for discharge
                 capacity = getattr(getattr(self, discharge), "bins_capacity")
 
-                if level >= self.prox_upper_limit: # [AJ]: Added by Amir
+                if level >= self.prox_lower_limit: # [AJ]: Added by Amir
                     print(
                         f'stopping machine {machine} as discharge prox is full, i.e. the whole conveyor is full')
                     setattr(eval('self.' + machine), "speed", 0)
