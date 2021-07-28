@@ -60,7 +60,7 @@ default_config = {
     "layout_configuration": 1,
     # The following is added by Amir
     "down_machine_index": 2, 
-    "initial_bin_level": 30,
+    "initial_bin_level": 80,
     "bin_maximum_capacity": 100,
     "num_conveyor_bins": 10,
     "conveyor_capacity": 1000,
@@ -147,7 +147,9 @@ class TemplateSimulatorSession:
         print('conveyor 2 is', sim_states['conveyor_buffers'][2]) 
         print('conveyor 3 is', sim_states['conveyor_buffers'][3])   
         print('conveyor 4 is', sim_states['conveyor_buffers'][4])  
-        print('actual machine speeds are', sim_states['actual_speeds'])       
+        print('actual machine speeds are', sim_states['machines_speed']) 
+        print('actual machine speeds are', sim_states['actual_speeds']) 
+
 
         if self.render:
             pass
@@ -317,7 +319,7 @@ def env_setup(env_file: str = ".env"):
 def test_policy(
     render=False,
     num_episodes: int = 2,
-    num_iterations: int = 1000,
+    num_iterations: int = 20,
     log_iterations: bool = False,
     policy=down_policy,
     policy_name: str = "test_policy",

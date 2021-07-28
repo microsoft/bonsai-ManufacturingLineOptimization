@@ -365,9 +365,10 @@ class DES(General):
         # # using brain actions
         # self.update_conveyors_speed()
 
-        # enforcing PLC rules to prevent jamming. This may ignore brain actions if buffers are full.
         self.get_conveyor_level()
+        # enforcing PLC rules to prevent jamming. This may ignore brain actions if buffers are full.
         self.plc_control_machine_speed()
+        self.actual_machine_speeds()
         self.accumulate_conveyor_bins()
         self.update_sinks_product_accumulation()
 
@@ -428,6 +429,7 @@ class DES(General):
         '''
         update the speed of the machine using brain actions that has written in components_speed[machine] dictionary
         '''
+
         for machine in General.machines:
             # print(f'now at {self.env.now} s updating machine speed')
             updated_speed = self.components_speed[machine]
@@ -435,6 +437,9 @@ class DES(General):
             print(eval('self.' + machine))
 
     def get_conveyor_level(self):
+        '''
+        get the total number of cans that exist in the conveyor at each iteration
+        '''      
 
         self.all_conveyor_levels = []
         for conveyor in adj_conv.keys():
@@ -452,7 +457,7 @@ class DES(General):
         for conveyor in adj_conv.keys():
             capacity = getattr(getattr(self, conveyor), "bins_capacity") # [AJ]: maximum capacity of the bin
             current_conveyor_level = self.all_conveyor_levels[index] # [AJ]: current conveyor level
-            print('original current_conveyor_level is', current_conveyor_level)
+            # print('original current_conveyor_level is', current_conveyor_level)
 
             adj_machines = adj_conv[conveyor] # [AJ]: the machines corresponding to each conveyor
             previous_machine = adj_machines[0] # [AJ]: the machine before the conveyor
@@ -461,14 +466,18 @@ class DES(General):
             # [AJ]: amount of cans processed by the machine before the conveyor - input to the conveyor
             delta_previous = getattr(eval('self.' + previous_machine), 'speed') * \
                 self.simulation_time_step
+            # print('previous machine speed is', getattr(eval('self.' + previous_machine), 'speed'))
+            # print('previous delta is', delta_previous)
             # [AJ]: amount of cans processed by the machine after the conveyor - output from the conveyor
             delta_next = getattr(eval('self.' + next_machine), 'speed') * \
                 self.simulation_time_step
+            # print('next machine speed is', getattr(eval('self.' + next_machine), 'speed'))
+            # print('next delta is', delta_next)
 
             current_conveyor_level += delta_previous # [AJ]: addition of cans receiving from machine before the conveyor 
-            print('current_conveyor_level after addition is', current_conveyor_level)
+            # print('current_conveyor_level after addition is', current_conveyor_level)
             current_conveyor_level -= delta_next # [AJ]: subtraction of cans passing to the machine after the conveyor
-            print('current_conveyor_level after subtraction is', current_conveyor_level)
+            # print('current_conveyor_level after subtraction is', current_conveyor_level)
             current_conveyor_level = max(0, current_conveyor_level)
 
             for bin_num in range(General.num_conveyor_bins-1, -1, -1): # [AJ]: accumulate cans in the conveyor from last bin to first bin
@@ -479,8 +488,8 @@ class DES(General):
                         str(bin_num), bin_level)
                 new_bin_level = getattr(getattr(self, conveyor), 
                                 "bin" + str(bin_num)) # [AJ]: get the level of the conveyor bin
-                print('for bin number', bin_num)
-                print('the new bin level is', new_bin_level)
+                # print('for bin number', bin_num)
+                # print('the new bin level is', new_bin_level)
 
                 current_conveyor_level -= new_bin_level 
                 if current_conveyor_level <= 0:
@@ -492,7 +501,6 @@ class DES(General):
         rule1: machine should stop, i.e. speed = 0, if its discharge prox is full
         rule2: machine should stop, i.e. speed = 0, if its infeed prox is empty
         '''
-        index = 0
         for machine in adj.keys():
             adj_conveyors = adj[machine]
             infeed = adj_conveyors[0] # [AJ]: conveyor before the machine
@@ -518,22 +526,36 @@ class DES(General):
     
     def actual_machine_speeds(self):
         index = 0
-        actual_speeds = []
+        self.actual_speeds = {}
         for machine in General.machines:
-            speed = getattr(eval('self.' + machine), 'speed') # [AJ]: actual speed of the machine
-            if 'source' not in adj[machine][0]: # [AJ]: if not the first machine in the line
-                current_conveyor_level = self.all_conveyor_levels[index] # [AJ]: current conveyor level
+            speed = getattr(eval('self.' + machine), 'speed') # [AJ]: brain choice of speed for the machine
+            if 'source' not in adj[machine][0] and 'sink' not in adj[machine][1]: # [AJ]: if not the first machine and the last machine in the line
+                past_conveyor_level = self.all_conveyor_levels[index] # [AJ]: past conveyor level
+                next_conveyor_left_capacity = General.conveyor_capacity - self.all_conveyor_levels[index+1] # [AJ]: remaining empty space of next coveyor
+                tmp = min(past_conveyor_level, next_conveyor_left_capacity)
                 if speed == 0:
-                    actual_speeds.append(0)
-                elif speed <= current_conveyor_level:
-                    actual_speeds.append(speed)
-                elif speed > current_conveyor_level:
-                    actual_speeds.append(current_conveyor_level)
+                    self.actual_speeds[machine] = 0
+                elif speed <= tmp:
+                    self.actual_speeds[machine] = speed
+                elif speed > tmp:
+                    self.actual_speeds[machine] = tmp
+                setattr(eval('self.' + machine), 'speed', self.actual_speeds[machine])
                 index += 1
-            else: # [AJ]: if the first machine in the line
-                actual_speeds.append(speed)
-
-        return actual_speeds
+            elif 'source' in adj[machine][0]: # [AJ]: if the first machine in the line
+                if speed == 0:
+                    self.actual_speeds[machine] = 0
+                else:
+                    tmp1 = min(speed, General.conveyor_capacity - self.all_conveyor_levels[0])
+                    self.actual_speeds[machine] = tmp1
+                setattr(eval('self.' + machine), 'speed', self.actual_speeds[machine])
+            elif 'sink' in adj[machine][1]: # [AJ]: if the last machine in the line
+                if speed == 0:
+                    self.actual_speeds[machine] = 0
+                else:
+                    tmp2 = min(speed, self.all_conveyor_levels[4])
+                    self.actual_speeds[machine] = tmp2
+                setattr(eval('self.' + machine), 'speed', self.actual_speeds[machine])
+        return self.actual_speeds
 
     def check_illegal_actions(self):
         '''
@@ -647,7 +669,7 @@ class DES(General):
         for key in list(brain_actions.keys()):
             self.components_speed[key] = brain_actions[key]
         # # update line using self.component_speed
-        # self.update_line()
+        # self.update_line()        
 
         # using brain actions
         self.update_machines_speed()
