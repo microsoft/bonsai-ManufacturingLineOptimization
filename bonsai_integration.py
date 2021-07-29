@@ -148,7 +148,7 @@ class TemplateSimulatorSession:
         print('conveyor 3 is', sim_states['conveyor_buffers'][3])   
         print('conveyor 4 is', sim_states['conveyor_buffers'][4])  
         print('actual machine speeds are', sim_states['machines_speed']) 
-        print('actual machine speeds are', sim_states['actual_speeds']) 
+        print('brain speeds are', sim_states['brain_speed'])
 
 
         if self.render:
