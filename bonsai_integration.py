@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# coding=utf-8
 
 """
 MSFT Bonsai SDK3 Template for Simulator Integration using Python
@@ -10,6 +11,10 @@ Usage:
     Then connect your registered simulator to a Brain via UI, or using the CLI: `bonsai simulator unmanaged connect -b <brain-name> -a <train-or-assess> -c  --simulator-name 
 """
 
+import simpy
+from sim.line_config import adj, adj_conv
+from sim import manufacturing_env as MLS
+from policies import random_policy, brain_policy, max_policy, down_policy
 import datetime
 import json
 import os
@@ -30,35 +35,53 @@ from microsoft_bonsai_api.simulator.generated.models import (
 )
 from azure.core.exceptions import HttpResponseError
 from functools import partial
+import threading
+import pdb
+# from threading import Lock
+# # from queue import Queue
+# lock = Lock()
 
-from policies import random_policy, brain_policy
 # import manufacturing line sim (MLS)
-from sim import manufacturing_env as MLS
-# import adj dict to match actions 
-from sim.line_config import adj
-import simpy 
-MACHINES, CONVEYORS, _, _ = MLS.get_machines_conveyors_sources_sets(adj)
+# import adj dict to match actions
+MACHINES, CONVEYORS, _, _ = MLS.get_machines_conveyors_sources_sets(adj, adj_conv)
 ENV = simpy.Environment()
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 LOG_PATH = "logs"
 default_config = {
-    "control_type": 1,
-    "control_frequency": 1, 
-    "interval_downtime_event_mean": 100,  
+    "control_type": 0,
+    "control_frequency": 10,
+    "interval_downtime_event_mean": 100,
     "interval_downtime_event_dev": 20,
-    "downtime_event_duration_mean": 10,   
-    "downtime_event_duration_dev": 3,  
+    "downtime_event_duration_mean": 10,
+    "downtime_event_duration_dev": 3,
     "number_parallel_downtime_events": 1,
     "layout_configuration": 1,
+    "down_machine_index": 2, 
+    "initial_bin_level": 20,
+    "bin_maximum_capacity": 100,
+    "num_conveyor_bins": 10,
+    "conveyor_capacity": 1000,
+    "machine_min_speed": 10,
+    "machine_max_speed": 100,
+    "machine_initial_speed": 100,
+    # "machine_BF_buffer": 1000,
+    # "machine_AF_buffer": 1000,
+    "infeed_prox_upper_limit": 100,
+    "infeed_prox_lower_limit": 5,
+    "discharge_prox_upper_limit": 100,
+    "discharge_prox_lower_limit": 5,
+    "infeedProx_index1": 1,
+    "infeedProx_index2": 2, 
+    "dischargeProx_index1": 0, 
+    "dischargeProx_index2": 1
 }
-
-
 
 def ensure_log_dir(log_full_path):
     """
     Ensure the directory for logs exists — create if needed.
+    
     """
     print(f"logfile: {log_full_path}")
     logs_directory = pathlib.Path(log_full_path).parent.absolute()
@@ -119,8 +142,18 @@ class TemplateSimulatorSession:
         sim_states = self.simulator.get_states()
         # Add an extra field needed for go-to-point experiments
 
+        print('Summary Status of Conveyor Buffers is')
+        print('conveyor 0 is', sim_states['conveyor_buffers'][0])
+        print('conveyor 1 is', sim_states['conveyor_buffers'][1])
+        print('conveyor 2 is', sim_states['conveyor_buffers'][2]) 
+        print('conveyor 3 is', sim_states['conveyor_buffers'][3])   
+        print('conveyor 4 is', sim_states['conveyor_buffers'][4])  
+        print('actual machine speeds are', sim_states['machines_speed']) 
+        print('brain speeds are', sim_states['brain_speed'])
+
+
         if self.render:
-            pass 
+            pass
 
         return sim_states
 
@@ -139,45 +172,24 @@ class TemplateSimulatorSession:
 
         Parameters
         ----------
-        config : Dict, optional. The following keys are supported:
-            - cart_mass   # (kg)
-            - pole_mass   # (kg)
-            - pole_length  # (m)
-            - initial_cart_position  # (m)
-            - initial_cart_velocity  # (m/s)
-            - initial_pole_angle  # (rad)
-            - initial_angular_velocity  # (rad/s)
-            - target_pole_position  # (m)
+        config : Dict, optional.
         """
-        ## Reset the sim, passing fields from config
+        # Reset the sim, passing fields from config
         if config is None:
             config = default_config
 
-        print('--------------------------------------resetting new episode-------------------------------')
-        ## Re-intializing the simulator to make sure all the processes are killed. 
+        print('-----------------------------------resetting new episode-------------------------------')
+        print(config)
+        # Re-intializing the simulator to make sure all the processes are killed.
         ENV = simpy.Environment()
         self.simulator = MLS.DES(ENV)
-        ## overwrite some parameters with that of config:
-        self.simulator.control_type = \
-             config["control_type"]
-        self.simulator.control_frequency = \
-             config["control_frequency"]
-        self.simulator.interval_downtime_event_mean = \
-             config["interval_downtime_event_mean"]  
-        self.simulator.interval_downtime_event_dev = \
-             config["interval_downtime_event_dev"]
-        self.simulator.downtime_event_duration_mean = \
-             config["downtime_event_duration_mean"]   
-        self.simulator.downtime_event_duration_dev = \
-             config["downtime_event_duration_dev"]  
-        self.simulator.number_parallel_downtime_events = \
-             config["number_parallel_downtime_events"]
-        self.simulator.layout_configuration = \
-             config["layout_configuration"]
-        
-        # Reset the simulator to create new processes 
-        self.simulator.reset()
+
+        # Reset the simulator to create new processes
+        self.simulator.reset(config)
         self.config = config
+
+        if self.render:
+            self.simulator.render()
 
     def log_iterations(
         self,
@@ -202,14 +214,14 @@ class TemplateSimulatorSession:
         def add_prefixes(d, prefix: str):
             return {f"{prefix}_{k}": v for k, v in d.items()}
 
-        ## Custom way to turn lists into strings for logging
+        # Custom way to turn lists into strings for logging
         log_state = state.copy()
         log_action = action.copy()
 
         for key, value in log_state.items():
             if type(value) == list:
                 log_state[key] = str(log_state[key])
-        
+
         for key, value in log_action.items():
             if type(value) == list:
                 log_action[key] = str(log_action[key])
@@ -219,7 +231,7 @@ class TemplateSimulatorSession:
 
         config = add_prefixes(self.config, "config")
         data = {**log_state, **log_action, **config}
-        
+
         data["episode"] = episode
         data["iteration"] = iteration
         log_df = pd.DataFrame(data, index=[0])
@@ -242,25 +254,20 @@ class TemplateSimulatorSession:
             An action to take to modulate environment.
         """
         machines_speed_list = action['machines_speed']
-        conveyors_speed_list = action['conveyors_speed']
-
+        
         # take speed arrays and assign them into sim_action dictionary
         sim_action = {}
-        index = 0 
-        print(MACHINES)
-        print(CONVEYORS)
+        index = 0
+        # print(MACHINES)
+        # print(CONVEYORS)
         for machine in MACHINES:
             sim_action[machine] = machines_speed_list[index]
-            index += 1 
-        
-        index = 0 
-        for conveyor in CONVEYORS:
-            sim_action[conveyor] = conveyors_speed_list[index]
-            index += 1 
-        print('sim action is:\n', sim_action)
-        self.simulator.step(brain_actions = sim_action)
+            index += 1
 
-    # hkh commented until we add rendering 
+        print('sim action is:\n', sim_action)
+        self.simulator.step(brain_actions=sim_action)
+
+    # hkh commented until we add rendering
     #     if self.render:
     #         self.sim_render()
 
@@ -308,15 +315,17 @@ def env_setup(env_file: str = ".env"):
     return workspace, access_key
 
 # Manual test policy loop
+
+
 def test_policy(
     render=False,
     num_episodes: int = 2,
-    num_iterations: int = 1000,
+    num_iterations: int = 20,
     log_iterations: bool = False,
-    policy=random_policy,
-    policy_name: str="test_policy",
-    scenario_file: str="assess_config.json",
-    exported_brain_url: str="http://localhost:5000"
+    policy=down_policy,
+    policy_name: str = "test_policy",
+    scenario_file: str = "assess_config.json",
+    exported_brain_url: str = "http://localhost:5000"
 ):
     """Test a policy using random actions over a fixed number of episodes
     Parameters
@@ -324,12 +333,12 @@ def test_policy(
     num_episodes : int, optional
         number of iterations to run, by default 10
     """
-    
+
     # Use custom assessment scenario configs
     with open(scenario_file) as fname:
         assess_info = json.load(fname)
     scenario_configs = assess_info['episodeConfigurations']
-    num_episodes = len(scenario_configs)+1
+    num_episodes = len(scenario_configs)
 
     current_time = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     log_file_name = current_time + "_" + policy_name + "_log.csv"
@@ -341,7 +350,8 @@ def test_policy(
     for episode in range(1, num_episodes):
         iteration = 1
         terminal = False
-        sim_state = sim.episode_start(config=scenario_configs[episode-1])
+        sim_state = sim.episode_start(config=default_config)
+        # sim_state = sim.episode_start(config=scenario_configs[episode-1])
         sim_state = sim.get_state()
         if log_iterations:
             action = policy(sim_state)
@@ -356,12 +366,14 @@ def test_policy(
             sim_state = sim.get_state()
             if log_iterations:
                 sim.log_iterations(sim_state, action, episode, iteration)
+            print('------------------------------------------------------')
             print(f"Running iteration #{iteration} for episode #{episode}")
             #print(f"Observations: {sim_state}")
             iteration += 1
             terminal = iteration >= num_iterations+2 or sim.halted()
 
     return sim
+
 
 def main(
     render: bool = False,
@@ -441,12 +453,14 @@ def main(
 
         try:
             print(
-                "config: {}, {}".format(config_client.server, config_client.workspace)
+                "config: {}, {}".format(
+                    config_client.server, config_client.workspace)
             )
             registered_session: SimulatorSessionResponse = client.session.create(
                 workspace_name=config_client.workspace, body=registration_info
             )
-            print("Registered simulator. {}".format(registered_session.session_id))
+            print("Registered simulator. {}".format(
+                registered_session.session_id))
 
             return registered_session, 1
         except HttpResponseError as ex:
@@ -464,7 +478,8 @@ def main(
             )
             raise ex
 
-    registered_session, sequence_id = CreateSession(registration_info, config_client)
+    registered_session, sequence_id = CreateSession(
+        registration_info, config_client)
     episode = 0
     iteration = 0
 
@@ -483,7 +498,8 @@ def main(
                 )
                 sequence_id = event.sequence_id
                 print(
-                    "[{}] Last Event: {}".format(time.strftime("%H:%M:%S"), event.type)
+                    "[{}] Last Event: {}".format(
+                        time.strftime("%H:%M:%S"), event.type)
                 )
             except HttpResponseError as ex:
                 print(
@@ -517,7 +533,7 @@ def main(
                 episode += 1
             elif event.type == "EpisodeStep":
                 sim.episode_step(event.episode_step.action)
-                iteration +=1
+                iteration += 1
                 if sim.log_data:
                     sim.log_iterations(
                         episode=episode,
@@ -560,7 +576,8 @@ if __name__ == "__main__":
 
     import argparse
 
-    parser = argparse.ArgumentParser(description="Bonsai and Simulator Integration...")
+    parser = argparse.ArgumentParser(
+        description="Bonsai and Simulator Integration...")
     parser.add_argument(
         "--render", action="store_true", default=False, help="Render training episodes",
     )
@@ -631,7 +648,7 @@ if __name__ == "__main__":
 
     if args.test_random:
         test_policy(
-            render=args.render, log_iterations=args.log_iterations, policy=random_policy
+            render=args.render, log_iterations=args.log_iterations, policy=down_policy
         )
     elif args.test_exported:
         port = args.test_exported
@@ -658,4 +675,3 @@ if __name__ == "__main__":
             workspace=args.workspace,
             accesskey=args.accesskey,
         )
-
