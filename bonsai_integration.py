@@ -50,17 +50,16 @@ ENV = simpy.Environment()
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 LOG_PATH = "logs"
 default_config = {
-    "control_type": -1,
-    "control_frequency": 1,
+    "control_type": 0,
+    "control_frequency": 10,
     "interval_downtime_event_mean": 100,
     "interval_downtime_event_dev": 20,
     "downtime_event_duration_mean": 10,
     "downtime_event_duration_dev": 3,
     "number_parallel_downtime_events": 1,
     "layout_configuration": 1,
-    # The following is added by Amir
     "down_machine_index": 2, 
-    "initial_bin_level": 80,
+    "initial_bin_level": 20,
     "bin_maximum_capacity": 100,
     "num_conveyor_bins": 10,
     "conveyor_capacity": 1000,
@@ -69,8 +68,10 @@ default_config = {
     "machine_initial_speed": 100,
     # "machine_BF_buffer": 1000,
     # "machine_AF_buffer": 1000,
-    "prox_upper_limit": 100,
-    "prox_lower_limit": 5,
+    "infeed_prox_upper_limit": 100,
+    "infeed_prox_lower_limit": 5,
+    "discharge_prox_upper_limit": 100,
+    "discharge_prox_lower_limit": 5,
     "infeedProx_index1": 1,
     "infeedProx_index2": 2, 
     "dischargeProx_index1": 0, 

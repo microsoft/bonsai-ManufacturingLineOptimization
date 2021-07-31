@@ -39,8 +39,10 @@ const machine_max_speed = 100
 const machine_initial_speed = 100
 # const machine_BF_buffer = machine_max_speed * downtime_event_duration_mean + (10 - downtime_event_duration_mean) * machine_min_speed
 # const machine_AF_buffer = machine_max_speed * downtime_event_duration_mean + (10 - downtime_event_duration_mean) * machine_min_speed
-const prox_upper_limit = 100
-const prox_lower_limit = 5
+const infeed_prox_upper_limit = 100
+const infeed_prox_lower_limit = 5
+const discharge_prox_upper_limit = 100
+const discharge_prox_lower_limit = 5
 const infeedProx_index1 = 1
 const infeedProx_index2 = 2
 const dischargeProx_index1 = 0
@@ -107,8 +109,10 @@ type SimConfig {
     machine_initial_speed: machine_initial_speed,
     # machine_BF_buffer: machine_BF_buffer,
     # machine_AF_buffer: machine_AF_buffer,
-    prox_upper_limit: prox_upper_limit,
-    prox_lower_limit: prox_lower_limit,
+    infeed_prox_upper_limit: infeed_prox_upper_limit,
+    infeed_prox_lower_limit: infeed_prox_lower_limit,
+    discharge_prox_upper_limit: discharge_prox_upper_limit,
+    discharge_prox_lower_limit: discharge_prox_lower_limit,
     infeedProx_index1: infeedProx_index1,
     infeedProx_index2: infeedProx_index2, 
     dischargeProx_index1: dischargeProx_index1, 
@@ -172,8 +176,10 @@ graph (input: ObservationState): SimAction {
                     machine_initial_speed: machine_initial_speed,
                     # machine_BF_buffer: machine_BF_buffer,
                     # machine_AF_buffer: machine_AF_buffer,
-                    prox_upper_limit: prox_upper_limit,
-                    prox_lower_limit: prox_lower_limit,
+                    infeed_prox_upper_limit: infeed_prox_upper_limit,
+                    infeed_prox_lower_limit: infeed_prox_lower_limit,
+                    discharge_prox_upper_limit: discharge_prox_upper_limit,
+                    discharge_prox_lower_limit: discharge_prox_lower_limit,
                     infeedProx_index1: infeedProx_index1,
                     infeedProx_index2: infeedProx_index2, 
                     dischargeProx_index1: dischargeProx_index1, 

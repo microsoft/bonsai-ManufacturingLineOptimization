@@ -79,8 +79,10 @@ class General:
     conveyor_capacity = bin_maximum_capacity * num_conveyor_bins  # in cans
     # machine_BF_buffer = 100 # [AJ]: The buffer size before machine
     # machine_AF_buffer = 100 # [AJ]: The buffer size after machine
-    prox_lower_limit = 5 # [AJ]: Threshold to turn on/off the prox - infeed
-    prox_upper_limit = 100 # [AJ]: Threshold to turn on/off the prox - discharge
+    infeed_prox_upper_limit = 100 # [AJ]: Threshold to turn on/off the prox - infeed
+    infeed_prox_lower_limit =  5 # # [AJ]: Threshold to turn on/off the prox - infeed
+    discharge_prox_upper_limit = 100 # [AJ]: Threshold to turn on/off the prox - discharge
+    discharge_prox_lower_limit = 5 # [AJ]: Threshold to turn on/off the prox - discharge
     machine_min_speed = 10  # cans/second
     machine_max_speed = 100  # cans/second
     machine_initial_speed = 100 # [AJ]: Initial speed of the machine
@@ -88,6 +90,7 @@ class General:
     infeedProx_index2 = 2 # bin index for location of second infeed sensor
     dischargeProx_index1 = 0 # bin index for location of first discharge sensor
     dischargeProx_index2 = 1 # bin index for location of second discharge sensor
+    startup_time = 20 # time it takes to reach the desired speed
 
 class Machine(General):
     '''
@@ -357,7 +360,19 @@ class DES(General):
             interval_downtime_event_duration = random.randint(self.interval_downtime_event_mean - self.interval_downtime_event_dev,
                                                               self.interval_downtime_event_mean + self.interval_downtime_event_dev)
             yield self.env.timeout(interval_downtime_event_duration)
+   
+    # def speed_update(self):
+    #     '''
+    #     Apply a linear delay to reach the desired speed.
+    #     '''
+    #     for machine in adj.keys():
+    #         machine_state = getattr(eval('self.' + machine), 'state')
+    #         if machine_state == 'idle' or machine_state == 'down':
+    #             machine_speed = getattr(eval('self.' + machine), 'speed')
+    #             updated_machine_speed = machine_speed / self.startup_time
+    #             setattr(eval('self.' + machine), 'speed', updated_machine_speed)
 
+    
     def update_line(self):
         # now moved to step
         # # using brain actions
@@ -508,7 +523,7 @@ class DES(General):
             if 'source' not in infeed: # [AJ]: if the machine is not the first machine in the line
                 level = getattr(getattr(self, infeed), "bin" +
                                 str(self.num_conveyor_bins-self.infeedProx_index1)) # [AJ]: get the level of last bin for infeed        
-                if level < self.prox_lower_limit: # [AJ]: Added by Amir
+                if level < self.infeed_prox_lower_limit: # [AJ]: Added by Amir
                     print(
                         f'stopping machine {machine} as infeed prox is empty, i.e the whole conveyor is empty')
                     setattr(eval('self.' + machine), "speed", 0)
@@ -518,7 +533,7 @@ class DES(General):
                 level = getattr(getattr(self, discharge), "bin" + str(self.dischargeProx_index1)) # [AJ}: get the level of first bin for discharge
                 capacity = getattr(getattr(self, discharge), "bins_capacity")
 
-                if level >= self.prox_lower_limit: # [AJ]: Added by Amir
+                if level >= self.discharge_prox_lower_limit: # [AJ]: Added by Amir
                     print(
                         f'stopping machine {machine} as discharge prox is full, i.e. the whole conveyor is full')
                     setattr(eval('self.' + machine), "speed", 0)
@@ -640,10 +655,14 @@ class DES(General):
         #     config["machine_BF_buffer"]
         # General.machine_AF_buffer = \
         #     config["machine_AF_buffer"]
-        General.prox_upper_limit = \
-            config["prox_upper_limit"]
-        General.prox_lower_limit = \
-            config["prox_lower_limit"]                        
+        General.infeed_prox_upper_limit = \
+            config["infeed_prox_upper_limit"]
+        General.infeed_prox_lower_limit = \
+            config["infeed_prox_lower_limit"]        
+        General.discharge_prox_upper_limit = \
+            config["discharge_prox_upper_limit"]
+        General.discharge_prox_lower_limit = \
+            config["discharge_prox_lower_limit"]                        
         General.infeedProx_index1 = \
             config["infeedProx_index1"]
         General.infeedProx_index2 = \
@@ -766,18 +785,18 @@ class DES(General):
             # [AJ]: The following is added by Amir
             # The infeed sensor next to machine
             conveyor_infeed_m1_prox_empty.append(int(getattr(
-                getattr(self, conveyor), "bin" + str(self.num_conveyor_bins-self.infeedProx_index1))) <= self.prox_lower_limit)
+                getattr(self, conveyor), "bin" + str(self.num_conveyor_bins-self.infeedProx_index1))) <= self.infeed_prox_lower_limit)
             # The second infeed sensor next to machine
             conveyor_infeed_m2_prox_empty.append(int(getattr(
-                getattr(self, conveyor), "bin" + str(self.num_conveyor_bins-self.infeedProx_index2))) <= self.prox_upper_limit)
-            
+                getattr(self, conveyor), "bin" + str(self.num_conveyor_bins-self.infeedProx_index2))) <= self.infeed_prox_upper_limit)
+
             # [AJ]: The following is added by Amir
             # The discharge sensor next to machine
             conveyor_discharge_p1_prox_full.append(
-                int(getattr(getattr(self, conveyor), "bin" + str(self.dischargeProx_index1))) >= self.prox_lower_limit)
+                int(getattr(getattr(self, conveyor), "bin" + str(self.dischargeProx_index1))) >= self.discharge_prox_lower_limit)
             # The second discharge sensor next to machine
             conveyor_discharge_p2_prox_full.append(
-                int(getattr(getattr(self, conveyor), "bin" + str(self.dischargeProx_index2))) >= self.prox_upper_limit)            
+                int(getattr(getattr(self, conveyor), "bin" + str(self.dischargeProx_index2))) >= self.discharge_prox_upper_limit)            
 
             conveyor_buffers.append(buffer)
             conveyor_buffers_full.append(buffer_full)
@@ -792,7 +811,7 @@ class DES(General):
             if 'sink' in discharge: # [AJ]: if the last machine in the line
                 sink_machines_rate.append(
                     getattr(eval('self.' + machine), 'speed'))
-                # print('sink_machines_rate is', sink_machines_rate)
+                print('sink_machines_rate is', sink_machines_rate)
 
         # sink inter-event product accumulation: 6
 
@@ -805,9 +824,9 @@ class DES(General):
             s = eval('self.' + sink)
             delta = s.count_history[-1] - s.count_history[-2]
             sinks_throughput_delta.append(delta)
-            # print('sinks_throughput_delta is', sinks_throughput_delta)
+            print('sinks_throughput_delta is', sinks_throughput_delta)
             sinks_throughput_abs.append(s.count_history[-1])
-            # print('sinks_throughput_abs is', sinks_throughput_abs)
+            print('sinks_throughput_abs is', sinks_throughput_abs)
 
         self.sinks_throughput_abs = sum(sinks_throughput_abs)
         # print('self.sinks_throughput_abs is', self.sinks_throughput_abs)
@@ -924,26 +943,27 @@ if __name__ == "__main__":
     my_env = DES(env)
     default_config = {
         "control_type": 0,
-        "control_frequency": 1,
+        "control_frequency": 10,
         "interval_downtime_event_mean": 100,
         "interval_downtime_event_dev": 20,
         "downtime_event_duration_mean": 10,
         "downtime_event_duration_dev": 3,
         "number_parallel_downtime_events": 1,
         "layout_configuration": 1,
-        # The following is added by Amir
         "down_machine_index": 2, 
-        "initial_bin_level": 50,
+        "initial_bin_level": 20,
         "bin_maximum_capacity": 100,
+        "num_conveyor_bins": 10,
         "conveyor_capacity": 1000,
         "machine_min_speed": 10,
         "machine_max_speed": 100,
-        "machine_BF_buffer": 1000,
-        "machine_AF_buffer": 1000,
-        "prox_upper_limit": 100,
-        "prox_lower_limit": 5,
-        "num_conveyor_bins": 10,
         "machine_initial_speed": 100,
+        # "machine_BF_buffer": 1000,
+        # "machine_AF_buffer": 1000,
+        "infeed_prox_upper_limit": 100,
+        "infeed_prox_lower_limit": 5,
+        "discharge_prox_upper_limit": 100,
+        "discharge_prox_lower_limit": 5,
         "infeedProx_index1": 1,
         "infeedProx_index2": 2, 
         "dischargeProx_index1": 0, 
