@@ -2,6 +2,7 @@
 
 ## Bussiness problem
 Train brain to control the speeds of the machine in a manufacturing line for maximum throughput.
+
 <img src="img\Manufactuing_line_layout.PNG" alt="drawing" width="900"/>
 
 ## Background about manufacturing line
@@ -14,9 +15,6 @@ Specifically, on each conveyor, there are two proxes on the Infeed side and ther
 For restarting the machine, the number of cans accumulated on the conveyor must fall below a certain threshold and therefore, both “Discharge Backup” prox and “Discharge Low” prox must be deactivated.
 
 Similarly, the two at the Infeed are called “Infeed Prime” and “Infeed Low”. The prox that is adjacent to the machine is the “Infeed Prime” prox and the other one is called the “Infeed Low”. When the conveyor is being depleted, at first the “Infeed Low” prox is activated and then as more cans are processed and the conveyor is further depleted, the “Infeed Prime” prox is activated. The machine is shut down when it activates the “Infeed Prime” prox. In other words, when the “Infeed Low” prox is activated, it is indicating that there are not enough cans on the conveyor and if you keep depleting the conveyor (or run the next machine at high speed), you will start underloading the conveyor. Eventually, the “Infeed Prime” will be activated and the next machine will be shut down. That is why we always want to keep the Infeed proxes to be full. The “Infeed Low” prox warns the machine that conveyor is being depleted and so the next machines need to start slowding down at a local level. For restarting the machine, the number of cans accumulated on the conveyor must exceed a certain threshold and therefore, both “Infeed Prime” prox and “Infeed Low” prox must be deactivated.
-
-
-![image](https://user-images.githubusercontent.com/61473760/127785065-355e407c-4008-48a7-9b95-eefc9c091afa.png)
 
 To model the conveyor, it is assumed that each conveyor consists of N bins - indexed from 0 to N-1 - and the accumulation of products (i.e., cans) on the conveyor happens from the right end of conveyor (bin index N-1) until it reaches to the left end of conveyor (bin index 0). In the following, the process of how products (i.e., cans) are moved along the conveyor from one machine to another machine is explained.
 
