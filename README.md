@@ -34,6 +34,8 @@ At time 2, the last bin (bin # 9) only passes 40 (out of its 100) cans to machin
 
 This process will keep running and if can accumulation reaches the first bin (bin # 0), then the Discharge prox after machine 1 will decide to shut down machine 1 since it assumes that the conveyor is over-loaded.
 
+<img src="img\Line_Proxes.png" alt="drawing" width="900"/>
+
 
 ## Objectives
 
@@ -57,9 +59,6 @@ approach 1: fixed time control frequency with illegal actions.
 approach 2: event driven with no illegal actions.
 approach 3: multi concept, equipment down concepts 
 approach 4: Action space reduction 
-
-
-<img src="img\Line_Proxes.png" alt="drawing" width="900"/>
 
 ### Detailed overview of the solution
 
