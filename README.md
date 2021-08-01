@@ -1,7 +1,7 @@
 # Train brain for an optimal control of a Manufacturing line 
 
 ## Bussiness problem
-Train brain to control machine and conveyor speed of a manufacturing line for maximum throughput.
+Train brain to control the speeds of the machine in a manufacturing line for maximum throughput.
 <img src="img\Manufactuing_line_layout.PNG" alt="drawing" width="900"/>
 
 ## Objectives
@@ -11,10 +11,10 @@ Maximize production in a manufacturing line.
 | ---------------------- | ------------------------------------------------------------ | ----- |
 | Objective              | maximize product production     |   Example: For a can manufacturing line, the goal is to maximize can production                        |
 | Constraints            |   NA |
-| Observations           | Conveyors speed, machines speed, machines_state infeed and discharge proxes, sink_machines_rate, sink_throughput_delta_sum, illegal_machine_actions, illegal_conveyor_actions, remaining_downtime_machines, control_delta_t | Proxes are sensors that yield a binary value. When product accumulates on the conveyor and covers the location of the prox sensor, its value becomes 1, otherwise it's value is zero, illegal actions happen with machines are in down or idle mode but brain sends a nonzero action, which will be ignored by the simulator but will return a flag to inform brain, remaining_downtime informs brain about remaining downtime for each machine. Active or idle machines yield zero for the their remaining downtime. sink_throughput_delta_sum is the amount of productions(throughput) between control actions, machine state -1 means down, 0 means idle, 1 means active|
-| Actions                |  Machines | Speeds are processed in cans/second units|
-| Control Frequency      | Fixed, event driven, or mix of both fixed and event driven control  | User can specify control frequency from inkling using |
-| Episode configurations | control_type (fixed, event driven, or mix of both), control_frequency (for fixed and mix), inter_downtime_event_mean (average time between downtime events),inter_downtime_event_dev, downtime_event_duration_mean, downtime_event_duration_dev, number_parallel_downtime_events, layout_configuration |Note: currently only one default layout is supported. |
+| Observations           | machines speed, machines_state, brain_speed, machines_state_sum, conveyors_speed, conveyor_buffers, sink_machines_rate_sum, sink_throughput_delta_sum, sink_throughput_absolute_sum, conveyor_infeed_m1_prox_empty, conveyor_infeed_m2_prox_empty, conveyor_discharge_p1_prox_full, conveyor_discharge_p2_prox_full, illegal_machine_actions, remaining_downtime_machines, control_delta_t, env_time | Machines speed is the actual speed that was used by the simulator to run the machine, whereas brain speed is the speed that was decided by the brain. Proxes are sensors that yield a binary value. When product accumulates on the conveyor and covers the location of the prox sensor, its value becomes 1, otherwise it's value is zero. Illegal actions happen when machines are in down or idle mode but brain sends a nonzero action, which will be ignored by the simulator but will return a flag to inform brain. remaining_downtime informs brain about remaining downtime for each machine, and active or idle machines yield zero for the their remaining downtime. sink_throughput_delta_sum is the amount of productions(throughput) between control actions, machine state -1 means down, 0 means idle, 1 means active |
+| Actions                | machines_speed | speeds are processed in cans/second units|
+| Control Frequency      | fixed, event driven, or mix of both fixed and event driven control  | User can specify control frequency from inkling using |
+| Episode configurations | control_type (fixed, event driven, or mix of both), control_frequency (for fixed and mix), inter_downtime_event_mean (average time between downtime events), inter_downtime_event_dev, downtime_event_duration_mean, downtime_event_duration_dev, number_parallel_downtime_events, layout_configuration, down_machine_index, initial_bin_level, bin_maximum_capacity, num_conveyor_bins, conveyor_capacity, machine_min_speed, machine_max_speed, machine_initial_speed, infeed_prox_upper_limit, infeed_prox_lower_limit, discharge_prox_upper_limit, discharge_prox_lower_limit, infeedProx_index1, infeedProx_index2, dischargeProx_index1, dischargeProx_index2 | Note: currently only one default layout is supported. |
 
 ## Solution approach
 4 solutions approaches are being tested. 
