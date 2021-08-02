@@ -62,12 +62,10 @@ approach 4: Action space reduction
 
 ### Detailed overview of the solution
 
-### TODO
-
 
 ## Brain experimental card 
-### TO be completed soon 
-,
+
+
 |                        | Definition                                                   | Notes |
 | ---------------------- | ------------------------------------------------------------ | ----- |
 | State                  |       |
@@ -81,8 +79,9 @@ approach 4: Action space reduction
 
 
 ## Results of brain training
+
 ### Create a new brain on bonsai platfrom  
-Use machine_teacher.ink that employs the following example configuration:
+Use machine_teacher.ink that employs the following example configuration.
 
 |   Episode configuration parameter                     | value                                                 | Notes |
 | ---------------------- | ------------------------------------------------------------ | ----- |
@@ -104,17 +103,11 @@ Add the simulator in the Web UI. To scale with multiple simulators, one can sele
    
 ### Train Brain
 
-<!-- <img src="img/.PNG" alt="drawing" width="900"/> -->
-
 
 ### Assess the results
 (see assessment section in the appendix for details of the process)
 
-#### Comparison with Benchmark 
-
-
-<!-- <img src="img/.PNG" alt="drawing" width="900"/> -->
-
+### Comparison with Benchmark 
 
 
 ### Assessment
