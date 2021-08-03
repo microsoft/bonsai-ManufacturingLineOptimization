@@ -4,21 +4,23 @@ using Math
 
 ## define constants, part of sim config 
 const number_of_iterations = 1000
+const simulation_time_step = 1 # unitless
+
 ## control type: -1: control at fixed time frequency but no downtime event 
 ## control_type:  0: control at fixed time frequency 
 ## control type:  1: event driven, i.e. when a downtime occurs
 ## control type:  2: both at fixed control frequency and downtime
 const control_type = 0 # 0 or -1 for this project
 ## the below control frequency does not apply to control type 1 and will be ignored
-const control_frequency = 1 # in seconds (s)
+const control_frequency = 1 # unitless
 
 ## Downtime event config 
 ## a random interval_downtime_event is generated in the range [interval_downtime_event_mean - interval_downtime_event_dev, interval_downtime_event_mean + interval_downtime_event_dev]
 ## a random downtime duration is generated in the range [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean + downtime_event_duration_std]
-const interval_downtime_event_mean = 100  # seconds (s) 
-const interval_downtime_event_dev = 20 #  seconds (s) 
-const downtime_event_duration_mean = 10  # seconds (s),  
-const downtime_event_duration_dev = 3  # seconds (s)
+const interval_downtime_event_mean = 100  # unitless
+const interval_downtime_event_dev = 20 # unitless
+const downtime_event_duration_mean = 10  # unitless 
+const downtime_event_duration_dev = 3  # unitless
 ## The following indicate possibility of multiple machines going down in parallel and at overlapping times
 ## 1 means 0 or 1 machine may go down at any point in time
 ## 2 means: 0, or 1 or 2 machines may go down at any point in time
@@ -49,12 +51,12 @@ const dischargeProx_index1 = 0
 const dischargeProx_index2 = 1
 
 type SimState {
-    machines_speed: number[6], 
+    machines_actual_speed: number[6], 
     machines_state: number[6],
-    # actual_speeds: number[6],
     brain_speed: number[6],
     machines_state_sum: number,
     conveyors_speed: number[5],
+    conveyors_level: number[5],
     conveyor_buffers: number[10][5],
     sink_machines_rate_sum: number,  # rate of production in the last simulation step 
     sink_throughput_delta_sum: number,  # amount of product produced between the controls 
@@ -70,10 +72,10 @@ type SimState {
 }
 
 type ObservationState{
-    machines_speed: number[6],
-    # actual_speeds: number[6], 
+    machines_actual_speed: number[6],
     machines_state: number[6],
     brain_speed: number[6],
+    conveyors_level: number[5],
     sink_machines_rate_sum: number,
     sink_throughput_delta_sum: number,
     conveyor_infeed_m1_prox_empty: number[5],
@@ -91,14 +93,15 @@ type SimAction{
 
 
 type SimConfig {
-    control_type : control_type,
-    control_frequency : control_frequency, 
-    interval_downtime_event_mean : interval_downtime_event_mean,  
-    interval_downtime_event_dev : interval_downtime_event_dev,
-    downtime_event_duration_mean : downtime_event_duration_mean,   
-    downtime_event_duration_dev : downtime_event_duration_dev,  
-    number_parallel_downtime_events : number_parallel_downtime_events,
-    layout_configuration : layout_configuration, 
+    simulation_time_step: simulation_time_step,
+    control_type: control_type,
+    control_frequency: control_frequency, 
+    interval_downtime_event_mean: interval_downtime_event_mean,  
+    interval_downtime_event_dev: interval_downtime_event_dev,
+    downtime_event_duration_mean: downtime_event_duration_mean,   
+    downtime_event_duration_dev: downtime_event_duration_dev,  
+    number_parallel_downtime_events: number_parallel_downtime_events,
+    layout_configuration: layout_configuration, 
     down_machine_index: down_machine_index,
     initial_bin_level: initial_bin_level,
     bin_maximum_capacity: bin_maximum_capacity,
@@ -158,6 +161,7 @@ graph (input: ObservationState): SimAction {
 
             lesson `learn 1` {
                 scenario {
+                    simulation_time_step: simulation_time_step,
                     control_type : control_type,
                     control_frequency : control_frequency, 
                     interval_downtime_event_mean : interval_downtime_event_mean,  

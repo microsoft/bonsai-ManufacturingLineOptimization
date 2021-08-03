@@ -619,10 +619,12 @@ class DES(General):
     def reset(self, config):
         # self.episode_end = False
         # overwrite some parameters with that of config:
+        General.simulation_time_step = \
+            config["simulation_time_step"]        
         General.control_type = \
             config["control_type"]
         General.control_frequency = \
-            config["control_frequency"]
+            config["control_frequency"]          
         General.interval_downtime_event_mean = \
             config["interval_downtime_event_mean"]
         General.interval_downtime_event_dev = \
@@ -801,6 +803,10 @@ class DES(General):
             conveyor_buffers.append(buffer)
             conveyor_buffers_full.append(buffer_full)
 
+            conveyor_buffers_array = np.array(conveyor_buffers)
+            conveyors_level = conveyor_buffers_array.sum(axis=1).tolist()
+
+
         # throughput rate: 5
         # Most useful for fixed control frequency
         sink_machines_rate = []
@@ -843,14 +849,15 @@ class DES(General):
 
         control_delta_t = self.calculate_control_frequency_delta_time()
 
-        states = {'machines_speed': machines_speed,
+        states = {'machines_actual_speed': machines_speed, # actual speed used by the machine
                   'machines_state': machines_state,
-                  'brain_speed': self.brain_speed,
+                  'brain_speed': self.brain_speed, # brain choice of speed that can be over-written by the sim
                   'machines_state_sum': sum(machines_state),
                   'conveyors_speed': conveyors_speed,
                   'conveyors_state': conveyors_state,
                   'conveyor_buffers': conveyor_buffers,
                   'conveyor_buffers_full': conveyor_buffers_full,
+                  'conveyors_level': conveyors_level,
                   'sink_machines_rate': sink_machines_rate,
                   'sink_machines_rate_sum': sum(sink_machines_rate),
                   'sink_throughput_delta': sinks_throughput_delta,
@@ -861,7 +868,6 @@ class DES(General):
                   'conveyor_discharge_p1_prox_full': [int(val) for val in conveyor_discharge_p1_prox_full],
                   'conveyor_discharge_p2_prox_full': [int(val) for val in conveyor_discharge_p2_prox_full],
                   'illegal_machine_actions': illegal_machine_actions,
-                #   'actual_speeds': actual_speeds,
                   'remaining_downtime_machines': remaining_downtime_machines,
                   'control_delta_t': control_delta_t,
                   'env_time': self.env.now,
@@ -942,6 +948,7 @@ if __name__ == "__main__":
     env = simpy.Environment()
     my_env = DES(env)
     default_config = {
+        "simulation_time_step": 1,
         "control_type": 0,
         "control_frequency": 10,
         "interval_downtime_event_mean": 100,

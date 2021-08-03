@@ -50,6 +50,7 @@ ENV = simpy.Environment()
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 LOG_PATH = "logs"
 default_config = {
+    "simulation_time_step": 1,
     "control_type": 0,
     "control_frequency": 10,
     "interval_downtime_event_mean": 100,
@@ -142,13 +143,14 @@ class TemplateSimulatorSession:
         sim_states = self.simulator.get_states()
         # Add an extra field needed for go-to-point experiments
 
-        print('Summary Status of Conveyor Buffers is')
+        print('Summary Status of Simulator States is')
         print('conveyor 0 is', sim_states['conveyor_buffers'][0])
         print('conveyor 1 is', sim_states['conveyor_buffers'][1])
         print('conveyor 2 is', sim_states['conveyor_buffers'][2]) 
         print('conveyor 3 is', sim_states['conveyor_buffers'][3])   
-        print('conveyor 4 is', sim_states['conveyor_buffers'][4])  
-        print('actual machine speeds are', sim_states['machines_speed']) 
+        print('conveyor 4 is', sim_states['conveyor_buffers'][4]) 
+        print('conveyor level is', sim_states['conveyors_level']) 
+        print('actual machine speeds are', sim_states['machines_actual_speed']) 
         print('brain speeds are', sim_states['brain_speed'])
 
 
