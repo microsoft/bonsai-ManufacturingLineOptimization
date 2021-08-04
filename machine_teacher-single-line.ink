@@ -41,10 +41,10 @@ const machine_max_speed = 100
 const machine_initial_speed = 100
 # const machine_BF_buffer = machine_max_speed * downtime_event_duration_mean + (10 - downtime_event_duration_mean) * machine_min_speed
 # const machine_AF_buffer = machine_max_speed * downtime_event_duration_mean + (10 - downtime_event_duration_mean) * machine_min_speed
-const infeed_prox_upper_limit = 100
+const infeed_prox_upper_limit = 50
 const infeed_prox_lower_limit = 5
-const discharge_prox_upper_limit = 100
-const discharge_prox_lower_limit = 5
+const discharge_prox_upper_limit = 90
+const discharge_prox_lower_limit = 30
 const infeedProx_index1 = 1
 const infeedProx_index2 = 2
 const dischargeProx_index1 = 0
@@ -57,6 +57,7 @@ type SimState {
     machines_state_sum: number,
     conveyors_speed: number[5],
     conveyors_level: number[5],
+    conveyors_previous_level: number[5],
     conveyor_buffers: number[10][5],
     sink_machines_rate_sum: number,  # rate of production in the last simulation step 
     sink_throughput_delta_sum: number,  # amount of product produced between the controls 
@@ -65,6 +66,10 @@ type SimState {
     conveyor_infeed_m2_prox_empty: number[5],
     conveyor_discharge_p1_prox_full: number[5],
     conveyor_discharge_p2_prox_full: number[5],
+    conveyor_previous_infeed_m1_prox_empty: number[5],
+    conveyor_previous_infeed_m2_prox_empty: number[5],
+    conveyor_previous_discharge_p1_prox_full: number[5],
+    conveyor_previous_discharge_p2_prox_full: number[5],
     illegal_machine_actions: number[6],
     remaining_downtime_machines: number[6],
     control_delta_t: number,
@@ -76,12 +81,17 @@ type ObservationState{
     machines_state: number[6],
     brain_speed: number[6],
     conveyors_level: number[5],
+    conveyors_previous_level: number[5],
     sink_machines_rate_sum: number,
     sink_throughput_delta_sum: number,
     conveyor_infeed_m1_prox_empty: number[5],
     conveyor_infeed_m2_prox_empty: number[5],
     conveyor_discharge_p1_prox_full: number[5],
     conveyor_discharge_p2_prox_full: number[5], 
+    conveyor_previous_infeed_m1_prox_empty: number[5],
+    conveyor_previous_infeed_m2_prox_empty: number[5],
+    conveyor_previous_discharge_p1_prox_full: number[5],
+    conveyor_previous_discharge_p2_prox_full: number[5],
     illegal_machine_actions: number[6],
     remaining_downtime_machines: number[6] 
 }

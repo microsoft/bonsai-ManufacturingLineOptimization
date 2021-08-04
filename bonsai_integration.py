@@ -52,7 +52,7 @@ LOG_PATH = "logs"
 default_config = {
     "simulation_time_step": 1,
     "control_type": 0,
-    "control_frequency": 10,
+    "control_frequency": 1,
     "interval_downtime_event_mean": 100,
     "interval_downtime_event_dev": 20,
     "downtime_event_duration_mean": 10,
@@ -150,6 +150,7 @@ class TemplateSimulatorSession:
         print('conveyor 3 is', sim_states['conveyor_buffers'][3])   
         print('conveyor 4 is', sim_states['conveyor_buffers'][4]) 
         print('conveyor level is', sim_states['conveyors_level']) 
+        print('conveyor previous level is', sim_states['conveyors_previous_level']) 
         print('actual machine speeds are', sim_states['machines_actual_speed']) 
         print('brain speeds are', sim_states['brain_speed'])
 

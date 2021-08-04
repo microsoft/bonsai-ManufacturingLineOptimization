@@ -156,6 +156,7 @@ class Conveyor(General):
         # each bin is a container and has a capacity and initial value
         for i in range(0, self.num_conveyor_bins):
             setattr(self, "bin" + str(i), self.initial_bin_level)
+            setattr(self, "previois_bin_level" + str(i), 0)
 
     @property
     def speed(self):
@@ -381,9 +382,9 @@ class DES(General):
         # self.update_conveyors_speed()
 
         self.get_conveyor_level()
-        # enforcing PLC rules to prevent jamming. This may ignore brain actions if buffers are full.
         self.plc_control_machine_speed()
         self.actual_machine_speeds()
+        self.store_bin_levels()
         self.accumulate_conveyor_bins()
         self.update_sinks_product_accumulation()
 
@@ -466,6 +467,14 @@ class DES(General):
                 conveyor_level += bin_level # [AJ]: total number of cans in the conveyor
             self.all_conveyor_levels.append(conveyor_level) # [AJ]: array that contains the total level of all conveyors
 
+    def store_bin_levels(self):
+        for conveyor in adj_conv.keys():        
+            for bin_num in range(General.num_conveyor_bins-1, -1, -1):
+                previous_bin_level = getattr(getattr(self, conveyor), 
+                                "bin" + str(bin_num)) # [AJ]: get the level of the conveyor bin
+                setattr(eval('self.' + conveyor), "previois_bin_level" +
+                        str(bin_num), previous_bin_level) # [AJ]: set the previous level of the bin             
+    
     def accumulate_conveyor_bins(self):
         
         index = 0
@@ -496,6 +505,7 @@ class DES(General):
             current_conveyor_level = max(0, current_conveyor_level)
 
             for bin_num in range(General.num_conveyor_bins-1, -1, -1): # [AJ]: accumulate cans in the conveyor from last bin to first bin
+                
                 setattr(eval('self.' + conveyor), "bin" +
                         str(bin_num), 0) # [AJ]: set the level of the bin to 0
                 bin_level = min(current_conveyor_level, capacity)
@@ -683,7 +693,7 @@ class DES(General):
 
         self.get_conveyor_level()
         self.accumulate_conveyor_bins()
-
+        self.store_bin_levels()
 
     def step(self, brain_actions):
         
@@ -763,17 +773,23 @@ class DES(General):
         # 3,4
         conveyor_buffers = []
         conveyor_buffers_full = []
+        conveyor_buffers_previous = []
 
         # minus 1, minus2
         conveyor_infeed_m1_prox_empty = []
         conveyor_infeed_m2_prox_empty = []
+        conveyor_previous_infeed_m1_prox_empty = []
+        conveyor_previous_infeed_m2_prox_empty = []
 
         # plus 1, plus2
         conveyor_discharge_p1_prox_full = []
         conveyor_discharge_p2_prox_full = []
+        conveyor_previous_discharge_p1_prox_full = []
+        conveyor_previous_discharge_p2_prox_full = []
 
         for conveyor in General.conveyors:
             buffer = []
+            buffer_previous = []
             buffer_full = []
             bin_capacity = getattr(getattr(self, conveyor), "bins_capacity")
             # [AJ]: For each bin, it checks whether the bin is full or not
@@ -781,6 +797,8 @@ class DES(General):
             for bin_num in range(0, self.num_conveyor_bins): # [AJ]: Added by Amir
                 buffer.append(
                     getattr(getattr(self, conveyor), "bin" + str(bin_num)))
+                buffer_previous.append(
+                    getattr(getattr(self, conveyor), "previois_bin_level" + str(bin_num)))
                 buffer_full.append(
                     int(getattr(getattr(self, conveyor), "bin" + str(bin_num)) == bin_capacity)) # [AJ]: Check whether each bin reaches bin capacity or not
 
@@ -790,7 +808,13 @@ class DES(General):
                 getattr(self, conveyor), "bin" + str(self.num_conveyor_bins-self.infeedProx_index1))) <= self.infeed_prox_lower_limit)
             # The second infeed sensor next to machine
             conveyor_infeed_m2_prox_empty.append(int(getattr(
-                getattr(self, conveyor), "bin" + str(self.num_conveyor_bins-self.infeedProx_index2))) <= self.infeed_prox_upper_limit)
+                getattr(self, conveyor), "bin" + str(self.num_conveyor_bins-self.infeedProx_index2))) < self.infeed_prox_upper_limit)
+
+            conveyor_previous_infeed_m1_prox_empty.append(int(getattr(
+                getattr(self, conveyor), "previois_bin_level" + str(self.num_conveyor_bins-self.infeedProx_index1))) <= self.infeed_prox_lower_limit)
+            # The second infeed sensor next to machine
+            conveyor_previous_infeed_m2_prox_empty.append(int(getattr(
+                getattr(self, conveyor), "previois_bin_level" + str(self.num_conveyor_bins-self.infeedProx_index2))) < self.infeed_prox_upper_limit)                
 
             # [AJ]: The following is added by Amir
             # The discharge sensor next to machine
@@ -798,13 +822,24 @@ class DES(General):
                 int(getattr(getattr(self, conveyor), "bin" + str(self.dischargeProx_index1))) >= self.discharge_prox_lower_limit)
             # The second discharge sensor next to machine
             conveyor_discharge_p2_prox_full.append(
-                int(getattr(getattr(self, conveyor), "bin" + str(self.dischargeProx_index2))) >= self.discharge_prox_upper_limit)            
+                int(getattr(getattr(self, conveyor), "bin" + str(self.dischargeProx_index2))) >= self.discharge_prox_upper_limit)    
+
+
+            conveyor_previous_discharge_p1_prox_full.append(
+                int(getattr(getattr(self, conveyor), "previois_bin_level" + str(self.dischargeProx_index1))) >= self.discharge_prox_lower_limit)
+            # The second discharge sensor next to machine
+            conveyor_previous_discharge_p2_prox_full.append(
+                int(getattr(getattr(self, conveyor), "previois_bin_level" + str(self.dischargeProx_index2))) >= self.discharge_prox_upper_limit)            
 
             conveyor_buffers.append(buffer)
             conveyor_buffers_full.append(buffer_full)
+            conveyor_buffers_previous.append(buffer_previous)
 
             conveyor_buffers_array = np.array(conveyor_buffers)
             conveyors_level = conveyor_buffers_array.sum(axis=1).tolist()
+
+            conveyor_previous_buffers_array = np.array(conveyor_buffers_previous)
+            conveyors_previous_level = conveyor_previous_buffers_array.sum(axis=1).tolist()            
 
 
         # throughput rate: 5
@@ -858,6 +893,7 @@ class DES(General):
                   'conveyor_buffers': conveyor_buffers,
                   'conveyor_buffers_full': conveyor_buffers_full,
                   'conveyors_level': conveyors_level,
+                  'conveyors_previous_level': conveyors_previous_level,
                   'sink_machines_rate': sink_machines_rate,
                   'sink_machines_rate_sum': sum(sink_machines_rate),
                   'sink_throughput_delta': sinks_throughput_delta,
@@ -867,6 +903,10 @@ class DES(General):
                   'conveyor_infeed_m2_prox_empty': [int(val) for val in conveyor_infeed_m2_prox_empty],
                   'conveyor_discharge_p1_prox_full': [int(val) for val in conveyor_discharge_p1_prox_full],
                   'conveyor_discharge_p2_prox_full': [int(val) for val in conveyor_discharge_p2_prox_full],
+                  'conveyor_previous_infeed_m1_prox_empty': [int(val) for val in conveyor_previous_infeed_m1_prox_empty],
+                  'conveyor_previous_infeed_m2_prox_empty': [int(val) for val in conveyor_previous_infeed_m2_prox_empty],
+                  'conveyor_previous_discharge_p1_prox_full': [int(val) for val in conveyor_previous_discharge_p1_prox_full],
+                  'conveyor_previous_discharge_p2_prox_full': [int(val) for val in conveyor_previous_discharge_p2_prox_full],
                   'illegal_machine_actions': illegal_machine_actions,
                   'remaining_downtime_machines': remaining_downtime_machines,
                   'control_delta_t': control_delta_t,
