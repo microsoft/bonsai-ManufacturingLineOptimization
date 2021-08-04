@@ -92,6 +92,14 @@ class General:
     dischargeProx_index2 = 1 # bin index for location of second discharge sensor
     startup_time = 20 # time it takes to reach the desired speed
 
+    num_cans_at_discharge_index1 = (num_conveyor_bins - dischargeProx_index1 - 1)*bin_maximum_capacity + discharge_prox_lower_limit
+    num_cans_at_discharge_index2 = (num_conveyor_bins - dischargeProx_index2 - 1)*bin_maximum_capacity + discharge_prox_upper_limit
+
+    num_cans_at_infeed_index1 = (infeedProx_index1 - 1)*bin_maximum_capacity + infeed_prox_lower_limit
+    num_cans_at_infeed_index2 = (infeedProx_index2 - 1)*bin_maximum_capacity + infeed_prox_upper_limit
+
+    
+
 class Machine(General):
     '''
     This class represents a General machine, i.e. its states and function
@@ -158,6 +166,7 @@ class Conveyor(General):
             setattr(self, "bin" + str(i), self.initial_bin_level)
             setattr(self, "previois_bin_level" + str(i), 0)
 
+
     @property
     def speed(self):
         return self._speed
@@ -212,6 +221,7 @@ class DES(General):
         self.components_speed = {}
         self.conveyor_initial_level = General.initial_bin_level * General.num_conveyor_bins
         self.all_conveyor_levels = [self.conveyor_initial_level] * General.number_of_conveyors
+        self.all_conveyor_levels_estimate = [self.conveyor_initial_level] * General.number_of_conveyors
         self.brain_speed = [General.machine_initial_speed] * General.number_of_machines
         self._initialize_conveyor_buffers()
         self._initialize_machines()
@@ -387,6 +397,7 @@ class DES(General):
         self.store_bin_levels()
         self.accumulate_conveyor_bins()
         self.update_sinks_product_accumulation()
+        self.get_conveyor_level_estimate() ## Added estimation
 
     def update_sinks_product_accumulation(self):
         '''
@@ -466,6 +477,109 @@ class DES(General):
                                 "bin" + str(bin_num))
                 conveyor_level += bin_level # [AJ]: total number of cans in the conveyor
             self.all_conveyor_levels.append(conveyor_level) # [AJ]: array that contains the total level of all conveyors
+
+    def get_conveyor_level_estimate_initally(self):
+        '''
+        get the estimate of the total number of cans that exist in the conveyor initally
+        '''    
+         #[KN]
+        # num_cans_at_discharge_index1 =  950
+        # num_cans_at_discharge_index2 = 650
+        # num_cans_at_infeed_index1 = 50
+        # num_cans_at_infeed_index2 = 350
+
+        self.all_conveyor_levels_estimate = []
+        for conveyor_level in self.all_conveyor_levels:
+            if conveyor_level <= General.num_cans_at_infeed_index1:
+                conveyor_estimate_initial= round(General.num_cans_at_infeed_index1/2)
+                
+            elif(conveyor_level > General.num_cans_at_infeed_index1) and (conveyor_level < General.num_cans_at_infeed_index2):
+                conveyor_estimate_initial= round((General.num_cans_at_infeed_index1 + General.num_cans_at_infeed_index2)/2)
+
+            elif(conveyor_level >= General.num_cans_at_infeed_index2) and (conveyor_level < General.num_cans_at_discharge_index2):
+                conveyor_estimate_initial= round((General.num_cans_at_infeed_index2 + General.num_cans_at_discharge_index2)/2)
+
+            elif(conveyor_level >= General.num_cans_at_discharge_index2) and (conveyor_level < General.num_cans_at_discharge_index1):
+                conveyor_estimate_initial= round((General.num_cans_at_discharge_index2 + General.num_cans_at_discharge_index1)/2)
+
+            else:
+                conveyor_estimate_initial= round(General.num_cans_at_discharge_index1/2)
+
+            self.all_conveyor_levels_estimate.append(conveyor_estimate_initial)
+
+        
+
+    def get_conveyor_level_estimate(self):
+        # [KN]: Estimate the number of cans on the conveyor
+        
+        machines_speed = []
+        for machine in General.machines:
+            machines_speed.append(getattr(eval('self.' + machine), 'speed'))
+        
+        #######
+        # minus 1, minus2
+        conveyor_infeed_m1_prox_empty = []
+        conveyor_infeed_m2_prox_empty = []
+        conveyor_previous_infeed_m1_prox_empty = []
+        conveyor_previous_infeed_m2_prox_empty = []
+
+        # plus 1, plus2
+        conveyor_discharge_p1_prox_full = []
+        conveyor_discharge_p2_prox_full = []
+        conveyor_previous_discharge_p1_prox_full = []
+        conveyor_previous_discharge_p2_prox_full = []
+
+        for conveyor in General.conveyors:
+            # [AJ]: The following is added by Amir
+            # The infeed sensor next to machine
+            conveyor_infeed_m1_prox_empty.append(int(getattr(
+                getattr(self, conveyor), "bin" + str(self.num_conveyor_bins-self.infeedProx_index1))) <= self.infeed_prox_lower_limit)
+            # The second infeed sensor next to machine
+            conveyor_infeed_m2_prox_empty.append(int(getattr(
+                getattr(self, conveyor), "bin" + str(self.num_conveyor_bins-self.infeedProx_index2))) < self.infeed_prox_upper_limit)
+
+            conveyor_previous_infeed_m1_prox_empty.append(int(getattr(
+                getattr(self, conveyor), "previois_bin_level" + str(self.num_conveyor_bins-self.infeedProx_index1))) <= self.infeed_prox_lower_limit)
+            # The second infeed sensor next to machine
+            conveyor_previous_infeed_m2_prox_empty.append(int(getattr(
+                getattr(self, conveyor), "previois_bin_level" + str(self.num_conveyor_bins-self.infeedProx_index2))) < self.infeed_prox_upper_limit)                
+
+            # [AJ]: The following is added by Amir
+            # The discharge sensor next to machine
+            conveyor_discharge_p1_prox_full.append(
+                int(getattr(getattr(self, conveyor), "bin" + str(self.dischargeProx_index1))) >= self.discharge_prox_lower_limit)
+            # The second discharge sensor next to machine
+            conveyor_discharge_p2_prox_full.append(
+                int(getattr(getattr(self, conveyor), "bin" + str(self.dischargeProx_index2))) >= self.discharge_prox_upper_limit)    
+
+            conveyor_previous_discharge_p1_prox_full.append(
+                int(getattr(getattr(self, conveyor), "previois_bin_level" + str(self.dischargeProx_index1))) >= self.discharge_prox_lower_limit)
+            # The second discharge sensor next to machine
+            conveyor_previous_discharge_p2_prox_full.append(
+                int(getattr(getattr(self, conveyor), "previois_bin_level" + str(self.dischargeProx_index2))) >= self.discharge_prox_upper_limit)            
+
+
+
+        #######
+        all_conveyor_levels_estimate_temp = []
+        
+        for i in range(len(self.all_conveyor_levels_estimate)):
+            ## Predict Phase of Estimator
+            _estimate = self.all_conveyor_levels_estimate[i] + machines_speed[i] - machines_speed[i+1]
+
+            ## Update Phase of Estimator (Assumption: Measurement are true whenever available)
+            if conveyor_infeed_m1_prox_empty[i] != conveyor_previous_infeed_m1_prox_empty[i]:
+                _estimate = General.num_cans_at_infeed_index1
+            elif conveyor_infeed_m2_prox_empty[i] != conveyor_previous_infeed_m2_prox_empty[i]:
+                _estimate = General.num_cans_at_infeed_index2
+            elif conveyor_discharge_p1_prox_full[i] != conveyor_previous_discharge_p1_prox_full[i]:
+                _estimate = General.num_cans_at_discharge_index1
+            elif conveyor_discharge_p2_prox_full[i] != conveyor_previous_discharge_p2_prox_full[i]:
+                _estimate = General.num_cans_at_discharge_index2
+
+            all_conveyor_levels_estimate_temp.append(_estimate)
+
+        self.all_conveyor_levels_estimate = all_conveyor_levels_estimate_temp.copy()
 
     def store_bin_levels(self):
         for conveyor in adj_conv.keys():        
@@ -682,7 +796,16 @@ class DES(General):
         General.dischargeProx_index1 = \
             config["dischargeProx_index1"]
         General.dischargeProx_index2 = \
-            config["dischargeProx_index2"]                    
+            config["dischargeProx_index2"]
+
+        General.num_cans_at_discharge_index1 = \
+            config["num_cans_at_discharge_index1"]
+        General.num_cans_at_discharge_index2 = \
+            config["num_cans_at_discharge_index2"]  
+        General.num_cans_at_infeed_index1 = \
+            config["num_cans_at_infeed_index1"]  
+        General.num_cans_at_infeed_index2 = \
+            config["num_cans_at_infeed_index2"]
 
         self._initialize_machines()
         self._initialize_sink()
@@ -692,6 +815,7 @@ class DES(General):
         self.processes_generator()
 
         self.get_conveyor_level()
+        self.get_conveyor_level_estimate_initally() #[KN]: estimate initial value of conveyor level
         self.accumulate_conveyor_bins()
         self.store_bin_levels()
 
@@ -883,6 +1007,8 @@ class DES(General):
         actual_speeds = self.actual_machine_speeds()
 
         control_delta_t = self.calculate_control_frequency_delta_time()
+       
+
 
         states = {'machines_actual_speed': machines_speed, # actual speed used by the machine
                   'machines_state': machines_state,
@@ -912,7 +1038,14 @@ class DES(General):
                   'control_delta_t': control_delta_t,
                   'env_time': self.env.now,
                   'all_conveyor_levels': self.all_conveyor_levels,
+                  'all_conveyor_levels_estimate': self.all_conveyor_levels_estimate,
                   }
+
+        print('Conveyor Estimate..............  ', self.all_conveyor_levels_estimate)
+
+            
+
+
 
         return states
 
@@ -989,16 +1122,16 @@ if __name__ == "__main__":
     my_env = DES(env)
     default_config = {
         "simulation_time_step": 1,
-        "control_type": 0,
-        "control_frequency": 10,
+        "control_type": -1,
+        "control_frequency": 1,
         "interval_downtime_event_mean": 100,
         "interval_downtime_event_dev": 20,
-        "downtime_event_duration_mean": 10,
-        "downtime_event_duration_dev": 3,
+        "downtime_event_duration_mean": 4,
+        "downtime_event_duration_dev": 2,
         "number_parallel_downtime_events": 1,
         "layout_configuration": 1,
         "down_machine_index": 2, 
-        "initial_bin_level": 20,
+        "initial_bin_level": 10,
         "bin_maximum_capacity": 100,
         "num_conveyor_bins": 10,
         "conveyor_capacity": 1000,
@@ -1007,14 +1140,18 @@ if __name__ == "__main__":
         "machine_initial_speed": 100,
         # "machine_BF_buffer": 1000,
         # "machine_AF_buffer": 1000,
-        "infeed_prox_upper_limit": 100,
-        "infeed_prox_lower_limit": 5,
-        "discharge_prox_upper_limit": 100,
-        "discharge_prox_lower_limit": 5,
+        "infeed_prox_upper_limit": 50,
+        "infeed_prox_lower_limit": 50,
+        "discharge_prox_upper_limit": 50,
+        "discharge_prox_lower_limit": 50,
         "infeedProx_index1": 1,
-        "infeedProx_index2": 2, 
+        "infeedProx_index2": 4, 
         "dischargeProx_index1": 0, 
-        "dischargeProx_index2": 1
+        "dischargeProx_index2": 3,
+        "num_cans_at_discharge_index1": 950 , 
+        "num_cans_at_discharge_index2": 650 ,
+        "num_cans_at_infeed_index2": 350 ,  
+        "num_cans_at_infeed_index2": 50 ,  
     }
     my_env.reset(default_config)
     my_env.render()
