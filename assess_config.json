@@ -26,7 +26,11 @@
       "infeedProx_index1": 1,
       "infeedProx_index2": 2, 
       "dischargeProx_index1": 0, 
-      "dischargeProx_index2": 1
+      "dischargeProx_index2": 1,
+      "num_cans_at_discharge_index1": 910,
+      "num_cans_at_discharge_index2": 710,
+      "num_cans_at_infeed_index1": 10,
+      "num_cans_at_infeed_index2": 210
     },
     {
       "control_type": 0,
@@ -52,7 +56,11 @@
       "infeedProx_index1": 1,
       "infeedProx_index2": 2, 
       "dischargeProx_index1": 0, 
-      "dischargeProx_index2": 1
+      "dischargeProx_index2": 1,
+      "num_cans_at_discharge_index1": 910,
+      "num_cans_at_discharge_index2": 710,
+      "num_cans_at_infeed_index1": 10,
+      "num_cans_at_infeed_index2": 210
     },
     {
       "control_type": 0,
@@ -78,7 +86,11 @@
       "infeedProx_index1": 1,
       "infeedProx_index2": 2, 
       "dischargeProx_index1": 0, 
-      "dischargeProx_index2": 1
+      "dischargeProx_index2": 1,
+      "num_cans_at_discharge_index1": 910,
+      "num_cans_at_discharge_index2": 710,
+      "num_cans_at_infeed_index1": 10,
+      "num_cans_at_infeed_index2": 210
     }
   ]
 }

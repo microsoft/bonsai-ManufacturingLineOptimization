@@ -68,23 +68,16 @@ type SimState {
     machines_state: number[6],
     brain_speed: number[6],
     machines_state_sum: number,
-    conveyors_speed: number[5],
-    conveyors_level: number[5],
-    conveyors_previous_level: number[5],
-    conveyor_buffers: number[10][5],
-    sink_machines_rate_sum: number,  # rate of production in the last simulation step 
-    sink_throughput_delta_sum: number,  # amount of product produced between the controls 
+    iteration_count: number,
+    down_duration: number,
+    all_conveyor_levels_estimate: number[5],
+    mean_downtime_offset: number[6],
+    max_downtime_offset: number[6],
     sink_throughput_absolute_sum: number, # absolute sum of all the productions at eny iteration
     conveyor_infeed_m1_prox_empty: number[5],
     conveyor_infeed_m2_prox_empty: number[5],
     conveyor_discharge_p1_prox_full: number[5],
     conveyor_discharge_p2_prox_full: number[5],
-    conveyor_previous_infeed_m1_prox_empty: number[5],
-    conveyor_previous_infeed_m2_prox_empty: number[5],
-    conveyor_previous_discharge_p1_prox_full: number[5],
-    conveyor_previous_discharge_p2_prox_full: number[5],
-    illegal_machine_actions: number[6],
-    remaining_downtime_machines: number[6],
     control_delta_t: number,
     env_time: number,
 }
@@ -100,12 +93,8 @@ type ObservationState {
 
 # multiarm bandit actions. 
 type SimAction {
-    machines_speed: number<0, 10, 20, 30,40,50,60,
-    70,71,72,73,74,75,76,77,78,79,
-    80,81,82,83,84,85,86,87,88,89,
-    90,91,92,93,94,95,96,97,98,99, 100, >[6],
+    machines_speed: number<machine_min_speed .. machine_max_speed step 1>[6],
 }
-
 
 type SimConfig {
     simulation_time_step: simulation_time_step,
@@ -125,8 +114,6 @@ type SimConfig {
     machine_min_speed: machine_min_speed,
     machine_max_speed: machine_max_speed,
     machine_initial_speed: machine_initial_speed,
-    # machine_BF_buffer: machine_BF_buffer,
-    # machine_AF_buffer: machine_AF_buffer,
     infeed_prox_upper_limit: infeed_prox_upper_limit,
     infeed_prox_lower_limit: infeed_prox_lower_limit,
     discharge_prox_upper_limit: discharge_prox_upper_limit,
@@ -135,8 +122,11 @@ type SimConfig {
     infeedProx_index2: infeedProx_index2, 
     dischargeProx_index1: dischargeProx_index1, 
     dischargeProx_index2: dischargeProx_index2,
+    num_cans_at_discharge_index1: num_cans_at_discharge_index1,
+    num_cans_at_discharge_index2: num_cans_at_discharge_index2,
+    num_cans_at_infeed_index1: num_cans_at_infeed_index1,
+    num_cans_at_infeed_index2:num_cans_at_infeed_index2,
 }
-
 
 function Reward(sim_observation: SimState) {
     var num_cans_norm:number = 0  # Number of cans per sec
@@ -154,9 +144,6 @@ function Reward(sim_observation: SimState) {
     # var ss_reached = (ss_buffer_reached + ss_speed_reached)/2
 
     return lambda_num_cans*num_cans_norm + lambda_ss_speed*ss_speed_reached + lambda_ss_buffer*ss_buffer_reached - iteration_penalty
-
-
-    
 
 }
 
@@ -197,8 +184,6 @@ graph (input: ObservationState): SimAction {
                 EpisodeIterationLimit: number_of_iterations,
                 NoProgressIterationLimit: 500000
             }
-
-
             lesson `learn 1` {
                 scenario {
                     simulation_time_step: simulation_time_step,
@@ -218,8 +203,6 @@ graph (input: ObservationState): SimAction {
                     machine_min_speed: machine_min_speed,
                     machine_max_speed: machine_max_speed,
                     machine_initial_speed: machine_initial_speed,
-                    # machine_BF_buffer: machine_BF_buffer,
-                    # machine_AF_buffer: machine_AF_buffer,
                     infeed_prox_upper_limit: infeed_prox_upper_limit,
                     infeed_prox_lower_limit: infeed_prox_lower_limit,
                     discharge_prox_upper_limit: discharge_prox_upper_limit,
@@ -228,6 +211,10 @@ graph (input: ObservationState): SimAction {
                     infeedProx_index2: infeedProx_index2,
                     dischargeProx_index1: dischargeProx_index1,
                     dischargeProx_index2: dischargeProx_index2,
+                    num_cans_at_discharge_index1: num_cans_at_discharge_index1,
+                    num_cans_at_discharge_index2: num_cans_at_discharge_index2,
+                    num_cans_at_infeed_index1: num_cans_at_infeed_index1,
+                    num_cans_at_infeed_index2:num_cans_at_infeed_index2,
                 }
             }
         }
