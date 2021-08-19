@@ -59,7 +59,7 @@ default_config = {
     "downtime_event_duration_dev": 5,
     "number_parallel_downtime_events": 1,
     "layout_configuration": 1,
-    "down_machine_index": 3, 
+    "down_machine_index": -1, 
     "initial_bin_level": 40,
     "bin_maximum_capacity": 100,
     "num_conveyor_bins": 10,

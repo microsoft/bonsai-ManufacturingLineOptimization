@@ -218,8 +218,6 @@ class DES(General):
         self.env = env
         self.components_speed = {}
         self.iteration = 1
-        self.random_downtime_duration = random.randint(self.downtime_event_duration_mean-self.downtime_event_duration_dev,
-        self.downtime_event_duration_mean + self.downtime_event_duration_dev)
         self.conveyor_initial_level = General.initial_bin_level * General.num_conveyor_bins
         self.all_conveyor_levels = [self.conveyor_initial_level] * General.number_of_conveyors
         self.all_conveyor_levels_estimate = [self.conveyor_initial_level] * General.number_of_conveyors
@@ -343,31 +341,38 @@ class DES(General):
             print(f'----simulation update at {self.env.now}')
             self.update_line()
 
-    def downtime_generator(self):
+    def downtime_generator(self, ):
         '''
         Parameters used in General will be used to generate downtime events on a random machine.
         '''
         while True:
             machines_list = list(General.machines) # [AJ]: Added by Amir
+            print('The list of machines is', machines_list)
+            for machine in General.machines:
+                machine_status = getattr(eval('self.' + machine), 'state')
+                if machine_status == 'down':
+                    machines_list.remove(machine)
+            print('The list of non-down machines is', machines_list)
             if self.down_machine_index == -1: # [AJ]: pick a machine randomly to go down
-                self.random_down_machine = random.choice(list(General.machines))
+                down_machine = random.choice(machines_list)
             else: # [AJ]: pick a specific machine to go down
-                self.down_machine = machines_list[self.down_machine_index] # [AJ]: Added by Amir
-                self.random_down_machine = self.down_machine # [AJ]: Added by Amir
+                down_machine = machines_list[self.down_machine_index]
+            print('down machine is', down_machine)
             self.is_control_downtime_event = 1
             self.is_control_frequency_event = 0
-            print(
-                f'................ now machine {self.random_down_machine} goes down at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
-            setattr(eval('self.' + self.random_down_machine), 'state', 'down')
+            # print(
+            #     f'................ now machine {down_machine} goes down at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
+            setattr(eval('self.' + down_machine), 'state', 'down')
             # track current downtime event for the specific machine
-            self.random_downtime_duration = random.randint(self.downtime_event_duration_mean-self.downtime_event_duration_dev,
+            random_downtime_duration = random.randint(self.downtime_event_duration_mean-self.downtime_event_duration_dev,
                                                            self.downtime_event_duration_mean + self.downtime_event_duration_dev)
+            print('down time duration is', random_downtime_duration)
             # only add control events to a deque
-            self.track_event()
-            yield self.env.timeout(self.random_downtime_duration) # [AJ]: it means machine should go down for this amount of time
-            setattr(eval('self.' + self.random_down_machine), 'state', 'idle') # [AJ]: put the machine in idle mode so that it can receive the new speed from brain
-            print(
-                f'................ now machine {self.random_down_machine} is up at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
+            self.track_event(down_machine, random_downtime_duration)
+            yield self.env.timeout(random_downtime_duration) # [AJ]: it means machine should go down for this amount of time
+            setattr(eval('self.' + down_machine), 'state', 'idle') # [AJ]: put the machine in idle mode so that it can receive the new speed from brain
+            # print(
+            #     f'................ now machine {down_machine} is up at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
             print(
                 f'................ let machines run for a given period of time without any downtime event')
             self.is_control_downtime_event = 0
@@ -393,9 +398,9 @@ class DES(General):
                 self.mean_downtime_offset[ind] = 0
                 self.max_downtime_offset[ind] = 0
                 continue
-        print('down time estimation')
-        print(self.mean_downtime_offset)
-        print(self.max_downtime_offset)
+        # print('down time estimation')
+        # print(self.mean_downtime_offset)
+        # print(self.max_downtime_offset)
     
     def update_line(self):
         # now moved to step
@@ -435,14 +440,14 @@ class DES(General):
                 setattr(eval('self.' + discharge),
                         "product_count", level + delta)
 
-    def track_event(self):
+    def track_event(self, down_machine, random_downtime_duration):
         '''
         Once called, will add current simulation time and also
         It will be used to track the occurrence time of downtime events
         '''
         self.downtime_event_times_history.append(self.env.now)
         self.downtime_machine_history.append(
-            (self.env.now, self.random_down_machine, self.random_downtime_duration))
+            (self.env.now, down_machine, random_downtime_duration))
 
     def track_control_frequency(self):
         self.control_frequency_history.append(self.env.now)
@@ -607,7 +612,7 @@ class DES(General):
         for conveyor in adj_conv.keys():
             capacity = getattr(getattr(self, conveyor), "bins_capacity") # [AJ]: maximum capacity of the bin
             current_conveyor_level = self.all_conveyor_levels[index] # [AJ]: current conveyor level
-            print('original current_conveyor_level is', current_conveyor_level)
+            # print('original current_conveyor_level is', current_conveyor_level)
 
             adj_machines = adj_conv[conveyor] # [AJ]: the machines corresponding to each conveyor
             previous_machine = adj_machines[0] # [AJ]: the machine before the conveyor
@@ -616,18 +621,18 @@ class DES(General):
             # [AJ]: amount of cans processed by the machine before the conveyor - input to the conveyor
             delta_previous = getattr(eval('self.' + previous_machine), 'speed') * \
                 self.simulation_time_step
-            print('previous machine speed is', getattr(eval('self.' + previous_machine), 'speed'))
+            # print('previous machine speed is', getattr(eval('self.' + previous_machine), 'speed'))
             # print('previous delta is', delta_previous)
             # [AJ]: amount of cans processed by the machine after the conveyor - output from the conveyor
             delta_next = getattr(eval('self.' + next_machine), 'speed') * \
                 self.simulation_time_step
-            print('next machine speed is', getattr(eval('self.' + next_machine), 'speed'))
+            # print('next machine speed is', getattr(eval('self.' + next_machine), 'speed'))
             # print('next delta is', delta_next)
 
             current_conveyor_level += delta_previous # [AJ]: addition of cans receiving from machine before the conveyor 
-            print('current_conveyor_level after addition is', current_conveyor_level)
+            # print('current_conveyor_level after addition is', current_conveyor_level)
             current_conveyor_level -= delta_next # [AJ]: subtraction of cans passing to the machine after the conveyor
-            print('current_conveyor_level after subtraction is', current_conveyor_level)
+            # print('current_conveyor_level after subtraction is', current_conveyor_level)
             current_conveyor_level = max(0, current_conveyor_level)
 
             for bin_num in range(General.num_conveyor_bins-1, -1, -1): # [AJ]: accumulate cans in the conveyor from last bin to first bin
@@ -723,34 +728,34 @@ class DES(General):
 
         return illegal_machine_actions
 
-    def calculate_downtime_remaining_time(self):
-        # first calculated the delta time elapsed since previous event
-        delta_t = self.calculate_inter_event_delta_time()
+    # def calculate_downtime_remaining_time(self):
+    #     # first calculated the delta time elapsed since previous event
+    #     delta_t = self.calculate_inter_event_delta_time()
 
-        # update the machine and conveyor downtime tracker using the delta t
-        for machine in General.machines:
-            self.downtime_tracker_machines[machine] = max(
-                self.downtime_tracker_machines[machine]-delta_t, 0)
+    #     # update the machine and conveyor downtime tracker using the delta t
+    #     for machine in General.machines:
+    #         self.downtime_tracker_machines[machine] = max(
+    #             self.downtime_tracker_machines[machine]-delta_t, 0)
 
-        for conveyor in General.conveyors:
-            self.downtime_tracker_conveyors[conveyor] = max(
-                self.downtime_tracker_machines[machine]-delta_t, 0)
+    #     for conveyor in General.conveyors:
+    #         self.downtime_tracker_conveyors[conveyor] = max(
+    #             self.downtime_tracker_machines[machine]-delta_t, 0)
 
-        # add/update the latest downtime event to the tracker
-        # currently only machines downtime is considered.
-        try:
-            self.downtime_tracker_machines[self.random_down_machine] = self.random_downtime_duration
-        except:
-            print(
-                'Could not update downtime_tracker_machines dict. Ok for iteration zero!')
+    #     # add/update the latest downtime event to the tracker
+    #     # currently only machines downtime is considered.
+    #     try:
+    #         self.downtime_tracker_machines[self.random_down_machine] = self.random_downtime_duration
+    #     except:
+    #         print(
+    #             'Could not update downtime_tracker_machines dict. Ok for iteration zero!')
 
-        remaining_downtime_machines = []
+    #     remaining_downtime_machines = []
 
-        for machine in General.machines:
-            remaining_downtime_machines.append(
-                self.downtime_tracker_machines[machine])
+    #     for machine in General.machines:
+    #         remaining_downtime_machines.append(
+    #             self.downtime_tracker_machines[machine])
 
-        return remaining_downtime_machines, delta_t
+    #     return remaining_downtime_machines, delta_t
 
     def reset(self, config):
         # self.episode_end = False
@@ -986,7 +991,7 @@ class DES(General):
             if 'sink' in discharge: # [AJ]: if the last machine in the line
                 sink_machines_rate.append(
                     getattr(eval('self.' + machine), 'speed'))
-                print('sink_machines_rate is', sink_machines_rate)
+                # print('sink_machines_rate is', sink_machines_rate)
 
         # sink inter-event product accumulation: 6
 
@@ -999,9 +1004,9 @@ class DES(General):
             s = eval('self.' + sink)
             delta = s.count_history[-1] - s.count_history[-2]
             sinks_throughput_delta.append(delta)
-            print('sinks_throughput_delta is', sinks_throughput_delta)
+            # print('sinks_throughput_delta is', sinks_throughput_delta)
             sinks_throughput_abs.append(s.count_history[-1])
-            print('sinks_throughput_abs is', sinks_throughput_abs)
+            # print('sinks_throughput_abs is', sinks_throughput_abs)
 
         self.sinks_throughput_abs = sum(sinks_throughput_abs)
         # print('self.sinks_throughput_abs is', self.sinks_throughput_abs)
@@ -1011,10 +1016,10 @@ class DES(General):
         illegal_machine_actions = self.check_illegal_actions()
 
         # downtime remaining time: 8
-        remaining_downtime_machines, downtime_event_delta_t = self.calculate_downtime_remaining_time()
+        # remaining_downtime_machines, downtime_event_delta_t = self.calculate_downtime_remaining_time()
 
         ## actual speeds: 9
-        actual_speeds = self.actual_machine_speeds()
+        # actual_speeds = self.actual_machine_speeds()
 
         control_delta_t = self.calculate_control_frequency_delta_time()
        
@@ -1024,7 +1029,6 @@ class DES(General):
                   'brain_speed': self.brain_speed, # brain choice of speed that can be over-written by the sim
                   'machines_state_sum': sum(machines_state),
                   'iteration_count': self.iteration,
-                  'down_duration': self.random_downtime_duration,
                   'conveyors_speed': conveyors_speed,
                   'conveyors_state': conveyors_state,
                   'conveyor_buffers': conveyor_buffers,
@@ -1045,7 +1049,7 @@ class DES(General):
                   'conveyor_previous_discharge_p1_prox_full': [int(val) for val in conveyor_previous_discharge_p1_prox_full],
                   'conveyor_previous_discharge_p2_prox_full': [int(val) for val in conveyor_previous_discharge_p2_prox_full],
                   'illegal_machine_actions': illegal_machine_actions,
-                  'remaining_downtime_machines': remaining_downtime_machines,
+                #   'remaining_downtime_machines': remaining_downtime_machines,
                   'control_delta_t': control_delta_t,
                   'env_time': self.env.now,
                   'all_conveyor_levels': self.all_conveyor_levels,

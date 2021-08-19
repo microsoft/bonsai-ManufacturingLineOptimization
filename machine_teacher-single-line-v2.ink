@@ -26,13 +26,13 @@ const downtime_event_duration_dev = 5 # seconds (s)
 ## 1 means 0 or 1 machine may go down at any point in time
 ## 2 means: 0, or 1 or 2 machines may go down at any point in time
 ## n means: 0 upto n machines may go down at any point in time.
-const number_parallel_downtime_events = 1
+const number_parallel_downtime_events = 3
 
 ## plant layout
 ## Currently only 1 configuration exists 
 const layout_configuration = 1
 
-const down_machine_index = 3 # It can be from -1 for random machine down or 0 to 5 for specific down machine
+const down_machine_index = -1 # It can be from -1 for random machine down or 0 to 5 for specific down machine
 const initial_bin_level = 40
 const bin_maximum_capacity = 100
 const num_conveyor_bins = 10
@@ -69,7 +69,6 @@ type SimState {
     brain_speed: number[6],
     machines_state_sum: number,
     iteration_count: number,
-    down_duration: number,
     all_conveyor_levels_estimate: number[5],
     mean_downtime_offset: number[6],
     max_downtime_offset: number[6],
