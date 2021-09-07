@@ -84,9 +84,31 @@ class General:
     infeed_prox_lower_limit =  5 # # [AJ]: threshold to turn on/off the prox - infeed
     discharge_prox_upper_limit = 100 # [AJ]: threshold to turn on/off the prox - discharge
     discharge_prox_lower_limit = 5 # [AJ]: threshold to turn on/off the prox - discharge
-    machine_min_speed = 10  # cans/second
-    machine_max_speed = 100  # cans/second
-    machine_initial_speed = 100 # [AJ]: initial speed of the machine
+    machine0_min_speed = 1
+    machine1_min_speed = 2
+    machine2_min_speed = 3
+    machine3_min_speed = 4
+    machine4_min_speed = 5
+    machine5_min_speed = 6
+    machine_min_speed = [machine0_min_speed, machine1_min_speed, machine2_min_speed,
+     machine3_min_speed, machine4_min_speed, machine5_min_speed]
+    machine0_max_speed = 10
+    machine1_max_speed = 20
+    machine2_max_speed = 30
+    machine3_max_speed = 40
+    machine4_max_speed = 50
+    machine5_max_speed = 60
+    machine_max_speed = [machine0_max_speed, machine1_max_speed, machine2_max_speed,
+     machine3_max_speed, machine4_max_speed, machine5_max_speed]
+    machine0_initial_speed = 1
+    machine1_initial_speed = 2
+    machine2_initial_speed = 3
+    machine3_initial_speed = 4
+    machine4_initial_speed = 5
+    machine5_initial_speed = 6
+    machine_initial_speed = [machine0_initial_speed, machine1_initial_speed, machine2_initial_speed,
+     machine3_initial_speed, machine4_initial_speed, machine5_initial_speed]
+    
     infeedProx_index1 = 1 # bin index for location of first infeed sensor
     infeedProx_index2 = 2 # bin index for location of second infeed sensor
     dischargeProx_index1 = 0 # bin index for location of first discharge sensor
@@ -121,9 +143,9 @@ class Machine(General):
 
     @speed.setter
     def speed(self, value):
-        if not (self.machine_min_speed <= value <= self.machine_max_speed or value == 0):
-            raise ValueError(
-                f'speed must be 0 or between {self.machine_min_speed} and {self.machine_max_speed}')
+        # for i in range(len(self.machine_max_speed)):
+        if not (self.machine_min_speed[self.id] <= value <= self.machine_max_speed[self.id] or value == 0):
+                raise ValueError(f'speed must be 0 or between {self.machine_min_speed[self.id]} and {self.machine_max_speed[self.id]}')
         if self.state == "down":
             self._speed = 0
             print('Illegal action: machine is down, machine speed will be kept zero')
@@ -224,7 +246,7 @@ class DES(General):
         self.down_cnt = [0] * General.number_of_machines
         self.mean_downtime_offset = [0] * General.number_of_machines
         self.max_downtime_offset = [0] * General.number_of_machines
-        self.brain_speed = [General.machine_initial_speed] * General.number_of_machines
+        self.brain_speed = General.machine_initial_speed
         self._initialize_conveyor_buffers()
         self._initialize_machines()
         self._initialize_sink()
@@ -258,9 +280,9 @@ class DES(General):
         id = 0
         for machine in General.machines:
             setattr(self, machine,  Machine(
-                id=id, speed=self.machine_initial_speed)) # [AJ]: Added by Amir   
+                id=id, speed=self.machine_initial_speed[id])) # [AJ]: Added by Amir   
             # print(getattr(self, machine))
-            self.components_speed[machine] = self.machine_initial_speed
+            self.components_speed[machine] = self.machine_initial_speed[id]
             id += 1
 
     def _initialize_sink(self):
@@ -788,12 +810,47 @@ class DES(General):
             config["num_conveyor_bins"]           
         General.conveyor_capacity = \
             config["conveyor_capacity"]
-        General.machine_min_speed = \
-            config["machine_min_speed"]
-        General.machine_max_speed = \
-            config["machine_max_speed"]
-        General.machine_initial_speed = \
-            config["machine_initial_speed"]            
+        
+        General.machine0_min_speed = \
+            config["machine0_min_speed"]
+        General.machine1_min_speed = \
+            config["machine1_min_speed"]
+        General.machine2_min_speed = \
+            config["machine2_min_speed"]
+        General.machine3_min_speed = \
+            config["machine3_min_speed"]
+        General.machine4_min_speed = \
+            config["machine4_min_speed"]
+        General.machine5_min_speed = \
+            config["machine5_min_speed"]
+
+        General.machine0_max_speed = \
+            config["machine0_max_speed"]
+        General.machine1_max_speed = \
+            config["machine1_max_speed"]            
+        General.machine2_max_speed = \
+            config["machine2_max_speed"]
+        General.machine3_max_speed = \
+            config["machine3_max_speed"]            
+        General.machine4_max_speed = \
+            config["machine4_max_speed"]
+        General.machine5_max_speed = \
+            config["machine5_max_speed"]        
+        
+        General.machine0_initial_speed = \
+            config["machine0_initial_speed"] 
+        General.machine1_initial_speed = \
+            config["machine1_initial_speed"] 
+        General.machine2_initial_speed = \
+            config["machine2_initial_speed"] 
+        General.machine3_initial_speed = \
+            config["machine3_initial_speed"] 
+        General.machine4_initial_speed = \
+            config["machine4_initial_speed"] 
+        General.machine5_initial_speed = \
+            config["machine5_initial_speed"] 
+
+
         General.infeed_prox_upper_limit = \
             config["infeed_prox_upper_limit"]
         General.infeed_prox_lower_limit = \
@@ -841,6 +898,9 @@ class DES(General):
         for key in list(brain_actions.keys()):
             self.components_speed[key] = brain_actions[key]
             self.brain_speed.append(brain_actions[key])
+        
+        print('The component speeds are')
+        print(self.components_speed)
         
         # # update line using self.component_speed
         # self.update_line() 
@@ -991,7 +1051,7 @@ class DES(General):
             if 'sink' in discharge: # [AJ]: if the last machine in the line
                 sink_machines_rate.append(
                     getattr(eval('self.' + machine), 'speed'))
-                # print('sink_machines_rate is', sink_machines_rate)
+
 
         # sink inter-event product accumulation: 6
 
@@ -1148,9 +1208,24 @@ if __name__ == "__main__":
         "bin_maximum_capacity": 100,
         "num_conveyor_bins": 10,
         "conveyor_capacity": 1000,
-        "machine_min_speed": 10,
-        "machine_max_speed": 100,
-        "machine_initial_speed": 100,
+        "machine0_min_speed": 1,
+        "machine1_min_speed": 2,
+        "machine2_min_speed": 3,
+        "machine3_min_speed": 4,
+        "machine4_min_speed": 5,
+        "machine5_min_speed": 6,
+        "machine0_max_speed": 10,
+        "machine1_max_speed": 20,
+        "machine2_max_speed": 30,
+        "machine3_max_speed": 40,
+        "machine4_max_speed": 50,
+        "machine5_max_speed": 60,
+        "machine0_initial_speed": 1,
+        "machine1_initial_speed": 2,
+        "machine2_initial_speed": 3,
+        "machine3_initial_speed": 4,
+        "machine4_initial_speed": 5,
+        "machine5_initial_speed": 6,
         "infeed_prox_upper_limit": 50,
         "infeed_prox_lower_limit": 50,
         "discharge_prox_upper_limit": 50,

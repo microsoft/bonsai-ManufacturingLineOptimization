@@ -8,6 +8,38 @@ from typing import Dict
 import requests
 
 
+def machine_speed_heuristic(dschrg_p1, dschrg_p2, infeed_m1, infeed_m2, machine_state):
+
+    machine_max_speed = 100
+    if dschrg_p1 == 0 and infeed_m1 == 0: # machine is running
+        if dschrg_p2  == 1 or infeed_m2 == 1:
+            machine_new_speed = machine_max_speed / 2
+            return  machine_new_speed        
+        else : # if p2 or m2 are 0
+            return machine_max_speed        
+    elif machine_state == -1 : # machine is down
+        return 0
+    else:  # machine is idle
+        return machine_max_speed
+
+
+def heuristic_policy(state):
+    action = {"machines_speed": []}
+    for machine_idx in range(6):
+        if machine_idx == 0: # first machine
+            machine_speed = machine_speed_heuristic(state['conveyor_discharge_p1_prox_full'][machine_idx], state['conveyor_discharge_p2_prox_full'][machine_idx], 0, 0, state['machines_state'][machine_idx])
+
+        elif machine_idx == 5: # last machine
+            machine_speed = machine_speed_heuristic(0, 0,
+                                state['conveyor_infeed_m1_prox_empty'][machine_idx-1], state['conveyor_infeed_m2_prox_empty'][machine_idx-1], state['machines_state'][machine_idx])
+
+        else:
+            machine_speed = machine_speed_heuristic(state['conveyor_discharge_p1_prox_full'][machine_idx], state['conveyor_discharge_p2_prox_full'][machine_idx],
+                                        state['conveyor_infeed_m1_prox_empty'][machine_idx-1], state['conveyor_infeed_m2_prox_empty'][machine_idx-1], state['machines_state'][machine_idx])
+
+        action["machines_speed"].append(machine_speed)
+    return action
+
 def random_policy(state):
     """
     Ignore the state, move randomly.

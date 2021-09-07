@@ -14,7 +14,7 @@ Usage:
 import simpy
 from sim.line_config import adj, adj_conv
 from sim import manufacturing_env as MLS
-from policies import random_policy, brain_policy, max_policy, down_policy
+from policies import random_policy, brain_policy, max_policy, down_policy, heuristic_policy
 import datetime
 import json
 import os
@@ -64,9 +64,24 @@ default_config = {
     "bin_maximum_capacity": 100,
     "num_conveyor_bins": 10,
     "conveyor_capacity": 1000,
-    "machine_min_speed": 10,
-    "machine_max_speed": 100,
-    "machine_initial_speed": 100,
+    "machine0_min_speed": 1,        
+    "machine1_min_speed": 2,
+    "machine2_min_speed": 3,
+    "machine3_min_speed": 4,
+    "machine4_min_speed": 5,
+    "machine5_min_speed": 6,
+    "machine0_max_speed": 10,
+    "machine1_max_speed": 20,
+    "machine2_max_speed": 30,
+    "machine3_max_speed": 40,
+    "machine4_max_speed": 50,
+    "machine5_max_speed": 60,
+    "machine0_initial_speed": 1,
+    "machine1_initial_speed": 2,
+    "machine2_initial_speed": 3,
+    "machine3_initial_speed": 4,
+    "machine4_initial_speed": 5,
+    "machine5_initial_speed": 6,
     "infeed_prox_upper_limit": 100,
     "infeed_prox_lower_limit": 5,
     "discharge_prox_upper_limit": 100,
@@ -258,17 +273,15 @@ class TemplateSimulatorSession:
         action : Dict
             An action to take to modulate environment.
         """
-        machines_speed_list = action['machines_speed']
         
         # take speed arrays and assign them into sim_action dictionary
         sim_action = {}
         index = 0
-        # print(MACHINES)
+        print(MACHINES)
         # print(CONVEYORS)
         for machine in MACHINES:
-            sim_action[machine] = machines_speed_list[index]
+            sim_action[machine] = action[machine]
             index += 1
-
         print('sim action is:\n', sim_action)
         self.simulator.step(brain_actions=sim_action)
 
@@ -324,13 +337,13 @@ def env_setup(env_file: str = ".env"):
 
 def test_policy(
     render=False,
-    num_episodes: int = 2,
-    num_iterations: int = 20,
+    num_episodes: int = 100,
+    num_iterations: int = 100,
     log_iterations: bool = False,
-    policy=down_policy,
+    policy=max_policy,
     policy_name: str = "test_policy",
-    scenario_file: str = "assess_config.json",
-    exported_brain_url: str = "http://localhost:5000"
+    scenario_file: str = "assess_config-no-down.json",
+    exported_brain_url: str = "http://5200:5000"
 ):
     """Test a policy using random actions over a fixed number of episodes
     Parameters
@@ -345,6 +358,7 @@ def test_policy(
     scenario_configs = assess_info['episodeConfigurations']
     num_episodes = len(scenario_configs)
 
+
     current_time = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     log_file_name = current_time + "_" + policy_name + "_log.csv"
     sim = TemplateSimulatorSession(
@@ -352,7 +366,7 @@ def test_policy(
         log_data=log_iterations,
         log_file_name=log_file_name
     )
-    for episode in range(1, num_episodes):
+    for episode in range(0, num_episodes):
         iteration = 1
         terminal = False
         sim_state = sim.episode_start(config=default_config)
@@ -628,7 +642,7 @@ if __name__ == "__main__":
     group.add_argument(
         "--test-exported",
         type=int,
-        const=5000,  # if arg is passed with no PORT, use this
+        const=5200,  # if arg is passed with no PORT, use this
         nargs="?",
         metavar="PORT",
         help="Run simulator with an exported brain running on localhost:PORT (default 5000)",
@@ -645,7 +659,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--custom_assess",
         type=str,
-        default=None,
+        default=False,
         help="Custom assess config json filename",
     )
 
@@ -653,13 +667,13 @@ if __name__ == "__main__":
 
     if args.test_random:
         test_policy(
-            render=args.render, log_iterations=args.log_iterations, policy=down_policy
+            render=args.render, log_iterations=args.log_iterations, policy=max_policy
         )
     elif args.test_exported:
         port = args.test_exported
         url = f"http://localhost:{port}"
         print(f"Connecting to exported brain running at {url}...")
-        scenario_file = 'assess_config.json'
+        scenario_file = 'assess_config-no-down.json'
         if args.custom_assess:
             scenario_file = args.custom_assess
         trained_brain_policy = partial(brain_policy, exported_brain_url=url)
