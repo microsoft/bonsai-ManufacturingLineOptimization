@@ -5,7 +5,7 @@ import os
 import time
 import random
 from collections import OrderedDict, deque
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, ValuesView
 import simpy
 import numpy as np
 from matplotlib import pyplot as plt
@@ -144,8 +144,8 @@ class Machine(General):
     @speed.setter
     def speed(self, value):
         # for i in range(len(self.machine_max_speed)):
-        if not (self.machine_min_speed[self.id] <= value <= self.machine_max_speed[self.id] or value == 0):
-                raise ValueError(f'speed must be 0 or between {self.machine_min_speed[self.id]} and {self.machine_max_speed[self.id]}')
+        if not (value <= self.machine_max_speed[self.id] or value == 0):
+            raise ValueError(f'speed must be 0 or smaller than {self.machine_max_speed[self.id]}')
         if self.state == "down":
             self._speed = 0
             print('Illegal action: machine is down, machine speed will be kept zero')
@@ -722,14 +722,14 @@ class DES(General):
                 index += 1
             elif 'source' in adj[machine][0]: # [AJ]: if the first machine in the line
                 if speed == 0:
-                    self.actual_speeds[machine] = 0
+                    self.actual_speeds[machine] = 0               
                 else:
                     tmp1 = min(speed, General.conveyor_capacity - self.all_conveyor_levels[0])
                     self.actual_speeds[machine] = tmp1
                 setattr(eval('self.' + machine), 'speed', self.actual_speeds[machine])
             elif 'sink' in adj[machine][1]: # [AJ]: if the last machine in the line
                 if speed == 0:
-                    self.actual_speeds[machine] = 0
+                    self.actual_speeds[machine] = 0                    
                 else:
                     tmp2 = min(speed, self.all_conveyor_levels[4])
                     self.actual_speeds[machine] = tmp2
@@ -823,6 +823,8 @@ class DES(General):
             config["machine4_min_speed"]
         General.machine5_min_speed = \
             config["machine5_min_speed"]
+        General.machine_min_speed = [General.machine0_min_speed, General.machine1_min_speed, General.machine2_min_speed, 
+        General.machine3_min_speed, General.machine4_min_speed, General.machine5_min_speed]
 
         General.machine0_max_speed = \
             config["machine0_max_speed"]
@@ -835,7 +837,9 @@ class DES(General):
         General.machine4_max_speed = \
             config["machine4_max_speed"]
         General.machine5_max_speed = \
-            config["machine5_max_speed"]        
+            config["machine5_max_speed"]  
+        General.machine_max_speed = [General.machine0_max_speed, General.machine1_max_speed, General.machine2_max_speed, 
+        General.machine3_max_speed, General.machine4_max_speed, General.machine5_max_speed]      
         
         General.machine0_initial_speed = \
             config["machine0_initial_speed"] 
@@ -876,6 +880,14 @@ class DES(General):
         General.num_cans_at_infeed_index2 = \
             config["num_cans_at_infeed_index2"]
 
+        self.machine_min_speed_dic = {}
+        self.machine_min_speed_dic['m0'] = General.machine_min_speed[0]
+        self.machine_min_speed_dic['m1'] = General.machine_min_speed[1]
+        self.machine_min_speed_dic['m2'] = General.machine_min_speed[2]
+        self.machine_min_speed_dic['m3'] = General.machine_min_speed[3]
+        self.machine_min_speed_dic['m4'] = General.machine_min_speed[4]
+        self.machine_min_speed_dic['m5'] = General.machine_min_speed[5]
+
         self._initialize_machines()
         self._initialize_sink()
         self._initialize_conveyor_buffers()
@@ -888,6 +900,7 @@ class DES(General):
         self.downtime_estimator()
         self.accumulate_conveyor_bins()
         self.store_bin_levels()
+
 
     def step(self, brain_actions):
 
