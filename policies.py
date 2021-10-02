@@ -44,17 +44,39 @@ def random_policy(state):
     """
     Ignore the state, move randomly.
     """
+    action = {}
+    machine_min_speed = [100, 30, 60, 40, 80, 80]
+    machine_max_speed = [170, 190, 180, 180, 180, 300]
+    for i in range(6):
+        action["m" + str(i)] = random.randint(machine_min_speed[i], machine_max_speed[i])
+    return action
+
+
+def max_policy_various(state):
+    """
+    Pick the max speed for each machine.
+    """
     action = {
-        "machines_speed": [random.randint(10, 100) for i in range(6)], 
+        'm0': 170,
+        'm1': 190,
+        'm2': 180,
+        'm3': 180,
+        'm4': 180,
+        'm5': 300
     }
     return action
 
-def max_policy(state):
+def max_bottleneck_policy(state):
     """
-    Ignore the state, move randomly.
+    Run all machines at max speed of bottleneck machine.
     """
     action = {
-        "machines_speed": [100 for i in range(6)], 
+        'm0': 170,
+        'm1': 170,
+        'm2': 170,
+        'm3': 170,
+        'm4': 170,
+        'm5': 170
     }
     return action
 
@@ -62,10 +84,15 @@ def down_policy(state):
     """
     Ignore the state, move randomly.
     """
+
     action = {
-        "machines_speed": [80 for i in range(6)], 
+        'm0': 80,
+        'm1': 80,
+        'm2': 40,
+        'm3': 80,
+        'm4': 80,
+        'm5': 80
     }
-    action["machines_speed"][2] = 20
     return action
 
 

@@ -54,65 +54,66 @@ class General:
     conveyor_min_speed = 10
     conveyor_max_speed = 1000
     conveyor_speed = conveyor_max_speed    
-    # warmup_time = 100  # seconds(s)
     # downtime_event_prob = 0.1 # probability applied every "downtime-even_gen_mean" to create downtime on a random machine
     # seconds (s) average time between random downtime events
-    interval_downtime_event_mean = 100
+    interval_downtime_event_mean = 15
     # deviation, a random interval_downtime_event is generated in range [interval_downtime_event_mean - interval_downtime_event_dev, interval_downtime_event_mean + interval_downtime_event_dev]
-    interval_downtime_event_dev = 20
+    interval_downtime_event_dev = 10
     # seconds(s), mean duration of each downtime event
-    downtime_event_duration_mean = 10
+    downtime_event_duration_mean = 4
     # seconds(s), deviation from mean. [downtime_event_duration_mean - downtime_event_duration_std, downtime_event_duration_mean + downtime_event_duration_std]
     downtime_event_duration_dev = 3
+    # distribution parameters of startup time
+    idletime_duration = random.sample(range(2, 10), number_of_machines)
     control_frequency = 1  # seconds (s), fixed control frequency duration
     # control type: -1: control at fixed time frequency but no downtime event 0: control at fixed time frequency
     # control type: 1: event driven, i.e. when a downtime occurs, 2: both at fixed control frequency and downtime
     control_type = 0
-    number_parallel_downtime_events = 1
+    number_parallel_downtime_events = 3
     # placeholder for different configurations of machines.
     layout_configuration = 1
     # granularity of simulation updates. Larger values make simulation less accurate. Recommended value: 1.
     simulation_time_step = 1
     down_machine_index = -1 # [AJ]: from 0 to 5 to refer to the specific down machine, -1 for random down machine
     
-    initial_bin_level = 0 # [AJ]: initial capacity of the bin (from 0 to 100)
+    initial_bin_level = 100 # [AJ]: initial capacity of the bin (from 0 to 100)
     bin_maximum_capacity = 100 # [AJ]: maximum capacity of each bin
     num_conveyor_bins = 10 # number of bins per conveyor
     conveyor_capacity = bin_maximum_capacity * num_conveyor_bins  # in cans
     
-    infeed_prox_upper_limit = 100 # [AJ]: threshold to turn on/off the prox - infeed
-    infeed_prox_lower_limit =  5 # # [AJ]: threshold to turn on/off the prox - infeed
-    discharge_prox_upper_limit = 100 # [AJ]: threshold to turn on/off the prox - discharge
-    discharge_prox_lower_limit = 5 # [AJ]: threshold to turn on/off the prox - discharge
-    machine0_min_speed = 1
-    machine1_min_speed = 2
-    machine2_min_speed = 3
-    machine3_min_speed = 4
-    machine4_min_speed = 5
-    machine5_min_speed = 6
+    infeed_prox_upper_limit = 50 # [AJ]: threshold to turn on/off the prox - infeed
+    infeed_prox_lower_limit =  50 # # [AJ]: threshold to turn on/off the prox - infeed
+    discharge_prox_upper_limit = 50 # [AJ]: threshold to turn on/off the prox - discharge
+    discharge_prox_lower_limit = 50 # [AJ]: threshold to turn on/off the prox - discharge
+    machine0_min_speed = 100
+    machine1_min_speed = 25
+    machine2_min_speed = 50
+    machine3_min_speed = 40
+    machine4_min_speed = 70
+    machine5_min_speed = 70
     machine_min_speed = [machine0_min_speed, machine1_min_speed, machine2_min_speed,
      machine3_min_speed, machine4_min_speed, machine5_min_speed]
-    machine0_max_speed = 10
-    machine1_max_speed = 20
-    machine2_max_speed = 30
-    machine3_max_speed = 40
-    machine4_max_speed = 50
-    machine5_max_speed = 60
+    machine0_max_speed = 150
+    machine1_max_speed = 170
+    machine2_max_speed = 160
+    machine3_max_speed = 160
+    machine4_max_speed = 160
+    machine5_max_speed = 250
     machine_max_speed = [machine0_max_speed, machine1_max_speed, machine2_max_speed,
      machine3_max_speed, machine4_max_speed, machine5_max_speed]
-    machine0_initial_speed = 1
-    machine1_initial_speed = 2
-    machine2_initial_speed = 3
-    machine3_initial_speed = 4
-    machine4_initial_speed = 5
-    machine5_initial_speed = 6
+    machine0_initial_speed = 110
+    machine1_initial_speed = 50
+    machine2_initial_speed = 70
+    machine3_initial_speed = 60
+    machine4_initial_speed = 100
+    machine5_initial_speed = 120
     machine_initial_speed = [machine0_initial_speed, machine1_initial_speed, machine2_initial_speed,
      machine3_initial_speed, machine4_initial_speed, machine5_initial_speed]
     
     infeedProx_index1 = 1 # bin index for location of first infeed sensor
-    infeedProx_index2 = 2 # bin index for location of second infeed sensor
+    infeedProx_index2 = 4 # bin index for location of second infeed sensor
     dischargeProx_index1 = 0 # bin index for location of first discharge sensor
-    dischargeProx_index2 = 1 # bin index for location of second discharge sensor
+    dischargeProx_index2 = 3 # bin index for location of second discharge sensor
     
     num_cans_at_discharge_index1 = (num_conveyor_bins - dischargeProx_index1 - 1) * bin_maximum_capacity + discharge_prox_lower_limit
     num_cans_at_discharge_index2 = (num_conveyor_bins - dischargeProx_index2 - 1) * bin_maximum_capacity + discharge_prox_upper_limit
@@ -120,7 +121,7 @@ class General:
     num_cans_at_infeed_index1 = (infeedProx_index1 - 1) * bin_maximum_capacity + infeed_prox_lower_limit
     num_cans_at_infeed_index2 = (infeedProx_index2 - 1) * bin_maximum_capacity + infeed_prox_upper_limit
 
-    
+
 class Machine(General):
     '''
     This class represents a General machine, i.e. its states and function
@@ -131,6 +132,7 @@ class Machine(General):
         self.id = id
         self._speed = speed
         self._state = 'idle' if speed == 0 else 'active'
+        self.idle_counter = 0
         # keep track of the down time event times.
 
     @property
@@ -141,28 +143,36 @@ class Machine(General):
     def state(self):
         return self._state
 
+    # explanation of states
+    # idle: machine speed is 0 due to conveyor being overloaded/underloaded
+    # down: machine speed is 0 due to jamming/hardware issue
+    # startup: machine speed is 0 due to being in startup phase after being idle
+    # active: machine is running at a non-zero speed
+
     @speed.setter
     def speed(self, value):
-        # for i in range(len(self.machine_max_speed)):
         if not (value <= self.machine_max_speed[self.id] or value == 0):
             raise ValueError(f'speed must be 0 or smaller than {self.machine_max_speed[self.id]}')
         if self.state == "down":
             self._speed = 0
-            print('Illegal action: machine is down, machine speed will be kept zero')
-        elif value == 0 and self.state != "down":
-            self.state = "idle"
-            self._speed = value
-        elif value > 0:
+            print('machine is down, machine speed will be kept zero')
+        elif self.state == "idle":
+            self._speed = 0
+            print('machine is idle, machine speed will be kept zero')
+        elif self.state == "startup":
+            self._speed = 0
+            print('machne is startup, machine speed will be kept zero')        
+        elif value > 0 and self.state != "down" and self.state != "idle" and self.state != "startup":
             self._speed = value
             self.state = "active"
 
     @state.setter
     def state(self, state):
-        if state not in ("prime", "idle", "active", "down"):
+        if state not in ("idle", "active", "down", "startup"):
             raise ValueError(
-                'state must be one of the following prime, idle, active, down')
+                'state must be one of the idle, active, down, startup')
         self._state = state
-        if state == 'down' or state == 'idle':
+        if state == 'down' or state == 'idle' or state == 'startup':
             self._speed = 0
 
     def __repr__(self):
@@ -246,7 +256,7 @@ class DES(General):
         self.down_cnt = [0] * General.number_of_machines
         self.mean_downtime_offset = [0] * General.number_of_machines
         self.max_downtime_offset = [0] * General.number_of_machines
-        self.brain_speed = General.machine_initial_speed
+        self.brain_speed = [0] * General.number_of_machines
         self._initialize_conveyor_buffers()
         self._initialize_machines()
         self._initialize_sink()
@@ -269,7 +279,6 @@ class DES(General):
         for conveyor in General.conveyors:
             # [AJ]: Set the conveyor speed at the general conveyor speed which is the max speed
             setattr(self, conveyor,  Conveyor(id = id, speed = General.conveyor_speed, env = self.env))
-            #print(getattr(self, conveyor))
             # [AJ]: Set the component speed at the general conveyor speed which is the max speed
             self.components_speed[conveyor] = General.conveyor_speed
 
@@ -281,7 +290,6 @@ class DES(General):
         for machine in General.machines:
             setattr(self, machine,  Machine(
                 id=id, speed=self.machine_initial_speed[id])) # [AJ]: Added by Amir   
-            # print(getattr(self, machine))
             self.components_speed[machine] = self.machine_initial_speed[id]
             id += 1
 
@@ -355,7 +363,7 @@ class DES(General):
         '''
         Updating can accumulation at fixed time interval, i.e General.simulation_time_step
         '''
-        while True: # [AJ]: an infinite loop for the generator functio
+        while True: # [AJ]: an infinite loop for the generator function
             self.is_control_frequency_event = 0
             self.is_control_downtime_event = 0
             # [AJ]: the yield signals the simulation that it wants to wait for the next event (either fixed control frequency event or down time event) to occur
@@ -363,16 +371,16 @@ class DES(General):
             print(f'----simulation update at {self.env.now}')
             self.update_line()
 
-    def downtime_generator(self, ):
+    def downtime_generator(self):
         '''
         Parameters used in General will be used to generate downtime events on a random machine.
         '''
-        while True:
+        while True:    
             machines_list = list(General.machines) # [AJ]: Added by Amir
             print('The list of machines is', machines_list)
             for machine in General.machines:
                 machine_status = getattr(eval('self.' + machine), 'state')
-                if machine_status == 'down':
+                if machine_status == 'down' or machine_status == 'startup':
                     machines_list.remove(machine)
             print('The list of non-down machines is', machines_list)
             if self.down_machine_index == -1: # [AJ]: pick a machine randomly to go down
@@ -392,9 +400,8 @@ class DES(General):
             # only add control events to a deque
             self.track_event(down_machine, random_downtime_duration)
             yield self.env.timeout(random_downtime_duration) # [AJ]: it means machine should go down for this amount of time
-            setattr(eval('self.' + down_machine), 'state', 'idle') # [AJ]: put the machine in idle mode so that it can receive the new speed from brain
-            # print(
-            #     f'................ now machine {down_machine} is up at {self.env.now} and event requires control: {self.is_control_downtime_event}...')
+            
+            setattr(eval('self.' + down_machine), 'state', 'active') # [AJ]: put the machine in active mode so that it can receive the new speed from brain            
             print(
                 f'................ let machines run for a given period of time without any downtime event')
             self.is_control_downtime_event = 0
@@ -402,7 +409,30 @@ class DES(General):
             interval_downtime_event_duration = random.randint(self.interval_downtime_event_mean - self.interval_downtime_event_dev,
                                                               self.interval_downtime_event_mean + self.interval_downtime_event_dev)
             yield self.env.timeout(interval_downtime_event_duration) # [AJ]: in simple terms, it means wait for this amount of time
-   
+       
+    
+    def idletime_generator(self, machine, machine_index):
+        '''
+        Parameters used in General will be used to generate idle time events.
+        '''
+        machine_state = getattr(eval('self.' + machine), 'state')
+        machine_counter = getattr(eval('self.' + machine), 'idle_counter')
+        machine_idletime_duration = self.idletime_duration[machine_index]
+
+        if machine_state == "startup":
+            setattr(eval('self.' + machine), 'state', 'startup')
+            setattr(eval('self.' + machine), 'speed', 0)
+            machine_counter += 1
+            # [AJ]: Shall I add this or not?
+            # setattr(eval('self.' + machine), 'idle_counter', machine_counter)
+            if machine_counter == machine_idletime_duration:
+                setattr(eval('self.' + machine), 'state', 'active')
+                machine_counter = 0
+            else:
+                pass
+        setattr(eval('self.' + machine), 'idle_counter', machine_counter)
+            
+    
     def downtime_estimator(self):
 
         max_downDuration = General.downtime_event_duration_mean + General.downtime_event_duration_dev
@@ -425,14 +455,13 @@ class DES(General):
         # print(self.max_downtime_offset)
     
     def update_line(self):
-        # now moved to step
-        # # using brain actions
-        # self.update_machines_speed()
-        # # using brain actions
-        # self.update_conveyors_speed()
 
         self.get_conveyor_level()
         self.plc_control_machine_speed()
+        index = 0
+        for machine in General.machines:
+            self.idletime_generator(machine, index)
+            index += 1        
         self.actual_machine_speeds()
         self.store_bin_levels()
         self.accumulate_conveyor_bins()
@@ -676,31 +705,76 @@ class DES(General):
 
     def plc_control_machine_speed(self):
         '''
-        rule1: machine should stop, i.e. speed = 0, if its discharge prox is full
-        rule2: machine should stop, i.e. speed = 0, if its infeed prox is empty
+        rule1: machine should stop, i.e. speed = 0, if discharge prox exceeds a threshold
+        rule2: machine should stop, i.e. speed = 0, if infeed prox falls below a threshold
         '''
         for machine in adj.keys():
             adj_conveyors = adj[machine]
             infeed = adj_conveyors[0] # [AJ]: conveyor before the machine
             discharge = adj_conveyors[1] # [AJ]: conveyor after the machine
-            if 'source' not in infeed: # [AJ]: if the machine is not the first machine in the line
-                level = getattr(getattr(self, infeed), "bin" +
-                                str(self.num_conveyor_bins-self.infeedProx_index1)) # [AJ]: get the level of last bin for infeed        
-                if level < self.infeed_prox_lower_limit: # [AJ]: Added by Amir
-                    print(
-                        f'stopping machine {machine} as infeed prox is empty, i.e the whole conveyor is empty')
-                    setattr(eval('self.' + machine), "speed", 0)
-                    print(eval('self.' + machine))
 
-            if 'sink' not in discharge: # [AJ]: if the machine is not the last machine in the line
-                level = getattr(getattr(self, discharge), "bin" + str(self.dischargeProx_index1)) # [AJ}: get the level of first bin for discharge
-                capacity = getattr(getattr(self, discharge), "bins_capacity")
+            machine_state = getattr(eval('self.' + machine), 'state')
 
-                if level >= self.discharge_prox_lower_limit: # [AJ]: Added by Amir
-                    print(
-                        f'stopping machine {machine} as discharge prox is full, i.e. the whole conveyor is full')
-                    setattr(eval('self.' + machine), "speed", 0)
-                    print(eval('self.' + machine))
+            if machine_state == "down" or machine_state == "startup":
+                continue
+
+            if 'source' not in infeed and 'sink' not in discharge: # [AJ]: if not the first machine and not the last machine in the line
+                
+                # [AJ]: get the level of last bin for infeed - conveyor before the machine
+                level_infeed = getattr(getattr(self, infeed), "bin" +
+                    str(self.num_conveyor_bins-self.infeedProx_index1))  
+                # [AJ}: get the level of first bin for discharge - conveyor after the machine
+                level_discharge = getattr(getattr(self, discharge), "bin" + str(self.dischargeProx_index1)) 
+                
+                if machine_state == "active" and level_infeed > self.infeed_prox_lower_limit and level_discharge < self.discharge_prox_lower_limit:
+                   pass
+                elif machine_state == "active" and (level_infeed <= self.infeed_prox_lower_limit or level_discharge >= self.discharge_prox_lower_limit):
+                    setattr(eval('self.' + machine), "state", "idle")
+                    setattr(eval('self.' + machine), "speed", 0)           
+                elif machine_state == "idle" and (level_infeed <= self.infeed_prox_lower_limit or level_discharge >= self.discharge_prox_lower_limit):
+                    setattr(eval('self.' + machine), "state", "idle")
+                    setattr(eval('self.' + machine), "speed", 0)                   
+                elif machine_state == "idle" and level_infeed > self.infeed_prox_lower_limit and level_discharge < self.discharge_prox_lower_limit:
+                    # set the machine state to startup and its speed to 0
+                    setattr(eval('self.' + machine), "state", "startup")
+                    setattr(eval('self.' + machine), "speed", 0) 
+
+            elif 'source' in infeed: # [AJ]: if the first machine in the line
+
+                # [AJ}: get the level of first bin for discharge - conveyor after the machine
+                level_discharge = getattr(getattr(self, discharge), "bin" + str(self.dischargeProx_index1))
+                
+                if machine_state == "active" and level_discharge < self.discharge_prox_lower_limit:
+                   pass
+                elif machine_state == "active" and level_discharge >= self.discharge_prox_lower_limit:
+                    setattr(eval('self.' + machine), "state", "idle")
+                    setattr(eval('self.' + machine), "speed", 0)                
+                elif machine_state == "idle" and level_discharge >= self.discharge_prox_lower_limit:
+                    setattr(eval('self.' + machine), "state", "idle")
+                    setattr(eval('self.' + machine), "speed", 0)                                     
+                elif machine_state == "idle" and level_discharge < self.discharge_prox_lower_limit:
+                    # set the machine state to startup and its speed to 0
+                    setattr(eval('self.' + machine), "state", "startup")
+                    setattr(eval('self.' + machine), "speed", 0) 
+
+            elif 'sink' in discharge: # [AJ]: if the last machine in the line
+                
+                # [AJ]: get the level of last bin for infeed - conveyor before the machine
+                level_infeed = getattr(getattr(self, infeed), "bin" +
+                    str(self.num_conveyor_bins-self.infeedProx_index1))  
+                
+                if machine_state == "active" and level_infeed > self.infeed_prox_lower_limit:
+                   pass
+                elif machine_state == "active" and level_infeed <= self.infeed_prox_lower_limit:
+                    setattr(eval('self.' + machine), "state", "idle")
+                    setattr(eval('self.' + machine), "speed", 0)                  
+                elif machine_state == "idle" and level_infeed <= self.infeed_prox_lower_limit:
+                    setattr(eval('self.' + machine), "state", "idle")
+                    setattr(eval('self.' + machine), "speed", 0)                                   
+                elif machine_state == "idle" and level_infeed > self.infeed_prox_lower_limit:
+                    # set the machine state to startup and its speed to 0
+                    setattr(eval('self.' + machine), "state", "startup")
+                    setattr(eval('self.' + machine), "speed", 0) 
     
     def actual_machine_speeds(self):
         index = 0
@@ -750,35 +824,6 @@ class DES(General):
 
         return illegal_machine_actions
 
-    # def calculate_downtime_remaining_time(self):
-    #     # first calculated the delta time elapsed since previous event
-    #     delta_t = self.calculate_inter_event_delta_time()
-
-    #     # update the machine and conveyor downtime tracker using the delta t
-    #     for machine in General.machines:
-    #         self.downtime_tracker_machines[machine] = max(
-    #             self.downtime_tracker_machines[machine]-delta_t, 0)
-
-    #     for conveyor in General.conveyors:
-    #         self.downtime_tracker_conveyors[conveyor] = max(
-    #             self.downtime_tracker_machines[machine]-delta_t, 0)
-
-    #     # add/update the latest downtime event to the tracker
-    #     # currently only machines downtime is considered.
-    #     try:
-    #         self.downtime_tracker_machines[self.random_down_machine] = self.random_downtime_duration
-    #     except:
-    #         print(
-    #             'Could not update downtime_tracker_machines dict. Ok for iteration zero!')
-
-    #     remaining_downtime_machines = []
-
-    #     for machine in General.machines:
-    #         remaining_downtime_machines.append(
-    #             self.downtime_tracker_machines[machine])
-
-    #     return remaining_downtime_machines, delta_t
-
     def reset(self, config):
         # self.episode_end = False
         # overwrite some parameters with that of config:
@@ -798,6 +843,8 @@ class DES(General):
             config["downtime_event_duration_dev"]
         General.number_parallel_downtime_events = \
             config["number_parallel_downtime_events"]
+        General.idletime_duration = \
+            config["idletime_duration"]
         General.layout_configuration = \
             config["layout_configuration"]
         General.down_machine_index = \
@@ -810,7 +857,6 @@ class DES(General):
             config["num_conveyor_bins"]           
         General.conveyor_capacity = \
             config["conveyor_capacity"]
-        
         General.machine0_min_speed = \
             config["machine0_min_speed"]
         General.machine1_min_speed = \
@@ -825,7 +871,6 @@ class DES(General):
             config["machine5_min_speed"]
         General.machine_min_speed = [General.machine0_min_speed, General.machine1_min_speed, General.machine2_min_speed, 
         General.machine3_min_speed, General.machine4_min_speed, General.machine5_min_speed]
-
         General.machine0_max_speed = \
             config["machine0_max_speed"]
         General.machine1_max_speed = \
@@ -839,8 +884,7 @@ class DES(General):
         General.machine5_max_speed = \
             config["machine5_max_speed"]  
         General.machine_max_speed = [General.machine0_max_speed, General.machine1_max_speed, General.machine2_max_speed, 
-        General.machine3_max_speed, General.machine4_max_speed, General.machine5_max_speed]      
-        
+        General.machine3_max_speed, General.machine4_max_speed, General.machine5_max_speed]              
         General.machine0_initial_speed = \
             config["machine0_initial_speed"] 
         General.machine1_initial_speed = \
@@ -853,8 +897,8 @@ class DES(General):
             config["machine4_initial_speed"] 
         General.machine5_initial_speed = \
             config["machine5_initial_speed"] 
-
-
+        General.machine_initial_speed = [General.machine0_initial_speed, General.machine1_initial_speed, General.machine2_initial_speed,
+        General.machine3_initial_speed, General.machine4_initial_speed, General.machine5_initial_speed]
         General.infeed_prox_upper_limit = \
             config["infeed_prox_upper_limit"]
         General.infeed_prox_lower_limit = \
@@ -880,14 +924,6 @@ class DES(General):
         General.num_cans_at_infeed_index2 = \
             config["num_cans_at_infeed_index2"]
 
-        self.machine_min_speed_dic = {}
-        self.machine_min_speed_dic['m0'] = General.machine_min_speed[0]
-        self.machine_min_speed_dic['m1'] = General.machine_min_speed[1]
-        self.machine_min_speed_dic['m2'] = General.machine_min_speed[2]
-        self.machine_min_speed_dic['m3'] = General.machine_min_speed[3]
-        self.machine_min_speed_dic['m4'] = General.machine_min_speed[4]
-        self.machine_min_speed_dic['m5'] = General.machine_min_speed[5]
-
         self._initialize_machines()
         self._initialize_sink()
         self._initialize_conveyor_buffers()
@@ -901,14 +937,13 @@ class DES(General):
         self.accumulate_conveyor_bins()
         self.store_bin_levels()
 
-
     def step(self, brain_actions):
 
         self.iteration += 1
         
         # update the speed dictionary for those comming from the brain
         self.brain_speed = []
-        for key in list(brain_actions.keys()):
+        for key in list(sorted(brain_actions.keys())):
             self.components_speed[key] = brain_actions[key]
             self.brain_speed.append(brain_actions[key])
         
@@ -968,6 +1003,8 @@ class DES(General):
             # Assigning integer values to the states
             if state == 'active':
                 machines_state.append(1)
+            elif state == 'startup':
+                machines_state.append(2)
             elif state == 'idle':
                 machines_state.append(0)
             elif state == 'down':
@@ -1016,25 +1053,40 @@ class DES(General):
 
             # [AJ]: The following is added by Amir
             # The infeed sensor next to machine
-            conveyor_infeed_m1_prox_empty.append(int(getattr(
-                getattr(self, conveyor), "bin" + str(self.num_conveyor_bins-self.infeedProx_index1))) <= self.infeed_prox_lower_limit)
+            current_infeed_m1_level = getattr(
+                getattr(self, conveyor), "bin" + str(self.num_conveyor_bins-self.infeedProx_index1))
+            if current_infeed_m1_level <= self.infeed_prox_lower_limit:
+                conveyor_infeed_m1_prox_empty.append(1)
+            else:
+                conveyor_infeed_m1_prox_empty.append(0)
+
             # The second infeed sensor next to machine
-            conveyor_infeed_m2_prox_empty.append(int(getattr(
-                getattr(self, conveyor), "bin" + str(self.num_conveyor_bins-self.infeedProx_index2))) < self.infeed_prox_upper_limit)
+            current_infeed_m2_level = getattr(
+                getattr(self, conveyor), "bin" + str(self.num_conveyor_bins-self.infeedProx_index2))
+            if current_infeed_m2_level <= self.infeed_prox_upper_limit:
+                conveyor_infeed_m2_prox_empty.append(1)
+            else:
+                conveyor_infeed_m2_prox_empty.append(0)
+
+            # [AJ]: The following is added by Amir
+            current_discharge_p1_level = getattr(getattr(self, conveyor), "bin" + str(self.dischargeProx_index1))
+            # The discharge sensor next to machine
+            if current_discharge_p1_level >= self.discharge_prox_lower_limit:
+                conveyor_discharge_p1_prox_full.append(1)
+            else:
+                conveyor_discharge_p1_prox_full.append(0)
+
+            # The second discharge sensor next to machine 
+            current_discharge_p2_level = getattr(getattr(self, conveyor), "bin" + str(self.dischargeProx_index2))
+            if current_discharge_p2_level >= self.discharge_prox_upper_limit:
+                conveyor_discharge_p2_prox_full.append(1)
+            else:
+                conveyor_discharge_p2_prox_full.append(0)
 
             conveyor_previous_infeed_m1_prox_empty.append(int(getattr(
                 getattr(self, conveyor), "previous_bin_level" + str(self.num_conveyor_bins-self.infeedProx_index1))) <= self.infeed_prox_lower_limit)
-            # The second infeed sensor next to machine
             conveyor_previous_infeed_m2_prox_empty.append(int(getattr(
-                getattr(self, conveyor), "previous_bin_level" + str(self.num_conveyor_bins-self.infeedProx_index2))) < self.infeed_prox_upper_limit)                
-
-            # [AJ]: The following is added by Amir
-            # The discharge sensor next to machine
-            conveyor_discharge_p1_prox_full.append(
-                int(getattr(getattr(self, conveyor), "bin" + str(self.dischargeProx_index1))) >= self.discharge_prox_lower_limit)
-            # The second discharge sensor next to machine
-            conveyor_discharge_p2_prox_full.append(
-                int(getattr(getattr(self, conveyor), "bin" + str(self.dischargeProx_index2))) >= self.discharge_prox_upper_limit)    
+                getattr(self, conveyor), "previous_bin_level" + str(self.num_conveyor_bins-self.infeedProx_index2))) <= self.infeed_prox_upper_limit)                
 
 
             conveyor_previous_discharge_p1_prox_full.append(
@@ -1051,7 +1103,7 @@ class DES(General):
             conveyors_level = conveyor_buffers_array.sum(axis=1).tolist()
 
             conveyor_previous_buffers_array = np.array(conveyor_buffers_previous)
-            conveyors_previous_level = conveyor_previous_buffers_array.sum(axis=1).tolist()            
+            conveyors_previous_level = conveyor_previous_buffers_array.sum(axis=1).tolist()           
 
 
         # throughput rate: 5
@@ -1088,15 +1140,8 @@ class DES(General):
         # [AJ]: Comment following since there is no illegal conveyor actions
         illegal_machine_actions = self.check_illegal_actions()
 
-        # downtime remaining time: 8
-        # remaining_downtime_machines, downtime_event_delta_t = self.calculate_downtime_remaining_time()
-
-        ## actual speeds: 9
-        # actual_speeds = self.actual_machine_speeds()
-
         control_delta_t = self.calculate_control_frequency_delta_time()
        
-
         states = {'machines_actual_speed': machines_speed, # actual speed used by the machine
                   'machines_state': machines_state,
                   'brain_speed': self.brain_speed, # brain choice of speed that can be over-written by the sim
@@ -1122,7 +1167,6 @@ class DES(General):
                   'conveyor_previous_discharge_p1_prox_full': [int(val) for val in conveyor_previous_discharge_p1_prox_full],
                   'conveyor_previous_discharge_p2_prox_full': [int(val) for val in conveyor_previous_discharge_p2_prox_full],
                   'illegal_machine_actions': illegal_machine_actions,
-                #   'remaining_downtime_machines': remaining_downtime_machines,
                   'control_delta_t': control_delta_t,
                   'env_time': self.env.now,
                   'all_conveyor_levels': self.all_conveyor_levels,
@@ -1214,6 +1258,8 @@ if __name__ == "__main__":
         "interval_downtime_event_dev": 20,
         "downtime_event_duration_mean": 4,
         "downtime_event_duration_dev": 2,
+        "idletime_duration_mean": 6,
+        "idletime_duration_dev": 4,
         "number_parallel_downtime_events": 1,
         "layout_configuration": 1,
         "down_machine_index": 2, 

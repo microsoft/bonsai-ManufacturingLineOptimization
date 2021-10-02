@@ -14,7 +14,7 @@ Usage:
 import simpy
 from sim.line_config import adj, adj_conv
 from sim import manufacturing_env as MLS
-from policies import random_policy, brain_policy, max_policy, down_policy, heuristic_policy
+from policies import random_policy, brain_policy, down_policy, heuristic_policy, max_bottleneck_policy, max_policy_various
 import datetime
 import json
 import os
@@ -53,47 +53,48 @@ default_config = {
     "simulation_time_step": 1,
     "control_type": 0,
     "control_frequency": 1,
-    "interval_downtime_event_mean": 100,
-    "interval_downtime_event_dev": 20,
-    "downtime_event_duration_mean": 15,
-    "downtime_event_duration_dev": 5,
-    "number_parallel_downtime_events": 1,
+    "interval_downtime_event_mean": 15,
+    "interval_downtime_event_dev": 10,
+    "downtime_event_duration_mean": 4,
+    "downtime_event_duration_dev": 3,
+    "idletime_duration": random.sample(range(2, 10), 6),
+    "number_parallel_downtime_events": 3,
     "layout_configuration": 1,
     "down_machine_index": -1, 
     "initial_bin_level": 40,
     "bin_maximum_capacity": 100,
     "num_conveyor_bins": 10,
     "conveyor_capacity": 1000,
-    "machine0_min_speed": 1,        
-    "machine1_min_speed": 2,
-    "machine2_min_speed": 3,
-    "machine3_min_speed": 4,
-    "machine4_min_speed": 5,
-    "machine5_min_speed": 6,
-    "machine0_max_speed": 10,
-    "machine1_max_speed": 20,
-    "machine2_max_speed": 30,
-    "machine3_max_speed": 40,
-    "machine4_max_speed": 50,
-    "machine5_max_speed": 60,
-    "machine0_initial_speed": 1,
-    "machine1_initial_speed": 2,
-    "machine2_initial_speed": 3,
-    "machine3_initial_speed": 4,
-    "machine4_initial_speed": 5,
-    "machine5_initial_speed": 6,
-    "infeed_prox_upper_limit": 100,
-    "infeed_prox_lower_limit": 5,
-    "discharge_prox_upper_limit": 100,
-    "discharge_prox_lower_limit": 5,
+    "machine0_min_speed": 100,        
+    "machine1_min_speed": 25,
+    "machine2_min_speed": 50,
+    "machine3_min_speed": 40,
+    "machine4_min_speed": 70,
+    "machine5_min_speed": 70,
+    "machine0_max_speed": 150,
+    "machine1_max_speed": 170,
+    "machine2_max_speed": 160,
+    "machine3_max_speed": 160,
+    "machine4_max_speed": 160,
+    "machine5_max_speed": 250,
+    "machine0_initial_speed": 110,
+    "machine1_initial_speed": 50,
+    "machine2_initial_speed": 70,
+    "machine3_initial_speed": 60,
+    "machine4_initial_speed": 100,
+    "machine5_initial_speed": 120,
+    "infeed_prox_upper_limit": 50,
+    "infeed_prox_lower_limit": 50,
+    "discharge_prox_upper_limit": 50,
+    "discharge_prox_lower_limit": 50,
     "infeedProx_index1": 1,
-    "infeedProx_index2": 3, 
+    "infeedProx_index2": 4, 
     "dischargeProx_index1": 0, 
-    "dischargeProx_index2": 2,
-    "num_cans_at_discharge_index1": 910,
-    "num_cans_at_discharge_index2": 710,
-    "num_cans_at_infeed_index1": 10,
-    "num_cans_at_infeed_index2": 210
+    "dischargeProx_index2": 3,
+    "num_cans_at_discharge_index1": 950,
+    "num_cans_at_discharge_index2": 650,
+    "num_cans_at_infeed_index1": 50,
+    "num_cans_at_infeed_index2": 350
 }
 
 def ensure_log_dir(log_full_path):
@@ -207,6 +208,11 @@ class TemplateSimulatorSession:
         # Reset the simulator to create new processes
         self.simulator.reset(config)
         self.config = config
+        self.config_flattened = config
+        index = 0
+        for val in self.config_flattened["idletime_duration"]:
+            self.config_flattened["idletime_duration" + str(index)] = val
+            index += 1
 
         if self.render:
             self.simulator.render()
@@ -249,7 +255,7 @@ class TemplateSimulatorSession:
         log_state = add_prefixes(log_state, "state")
         log_action = add_prefixes(log_action, "action")
 
-        config = add_prefixes(self.config, "config")
+        config = add_prefixes(self.config_flattened, "config")
         data = {**log_state, **log_action, **config}
 
         data["episode"] = episode
@@ -275,13 +281,13 @@ class TemplateSimulatorSession:
         """
         
         # take speed arrays and assign them into sim_action dictionary
-        sim_action = {}
-        index = 0
-        print(MACHINES)
+        # sim_action = {}
+        # print(MACHINES)
         # print(CONVEYORS)
-        for machine in MACHINES:
-            sim_action[machine] = action[machine]
-            index += 1
+        # for machine in MACHINES:
+        #     sim_action[machine] = action[machine]
+        
+        sim_action = action
         print('sim action is:\n', sim_action)
         self.simulator.step(brain_actions=sim_action)
 
@@ -340,9 +346,9 @@ def test_policy(
     num_episodes: int = 100,
     num_iterations: int = 100,
     log_iterations: bool = False,
-    policy=max_policy,
+    policy=max_policy_various,
     policy_name: str = "test_policy",
-    scenario_file: str = "assess_config-no-down.json",
+    scenario_file: str = "assess_config.json",
     exported_brain_url: str = "http://5200:5000"
 ):
     """Test a policy using random actions over a fixed number of episodes
@@ -369,8 +375,8 @@ def test_policy(
     for episode in range(0, num_episodes):
         iteration = 1
         terminal = False
-        sim_state = sim.episode_start(config=default_config)
-        # sim_state = sim.episode_start(config=scenario_configs[episode-1])
+        # sim_state = sim.episode_start(config=default_config)
+        sim_state = sim.episode_start(config=scenario_configs[episode-1])
         sim_state = sim.get_state()
         if log_iterations:
             action = policy(sim_state)
@@ -667,7 +673,7 @@ if __name__ == "__main__":
 
     if args.test_random:
         test_policy(
-            render=args.render, log_iterations=args.log_iterations, policy=max_policy
+            render=args.render, log_iterations=args.log_iterations, policy=max_policy_various
         )
     elif args.test_exported:
         port = args.test_exported

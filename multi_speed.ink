@@ -43,12 +43,8 @@ const max_bin_level = 100
 const bin_maximum_capacity = 100
 const num_conveyor_bins = 10
 const conveyor_capacity = num_conveyor_bins * bin_maximum_capacity
-const machine_min_speed = [100, 15, 40, 40, 70, 70]
-const machine_max_speed = [120, 200, 180, 180, 180, 250]
-const machine_sum_min_speed = machine_min_speed[0] + machine_min_speed[1] + machine_min_speed[2] + 
-machine_min_speed[3] + machine_min_speed[4]  + machine_min_speed[5] 
-const machine_sum_max_speed = machine_max_speed[0] + machine_max_speed[1] + machine_max_speed[2] + 
-machine_max_speed[3] + machine_max_speed[4]  + machine_max_speed[5] 
+const machine_min_speed = [100, 30, 60, 40, 80, 80]
+const machine_max_speed = [170, 190, 180, 180, 180, 300]
 
 const infeed_prox_upper_limit = 50
 const infeed_prox_lower_limit = 50
@@ -66,6 +62,9 @@ const num_cans_at_discharge_index2 = (num_conveyor_bins - dischargeProx_index2 -
 const num_cans_at_infeed_index1 = (infeedProx_index1 - 1) * bin_maximum_capacity + infeed_prox_lower_limit
 const num_cans_at_infeed_index2 = (infeedProx_index2 - 1) * bin_maximum_capacity + infeed_prox_upper_limit
 
+const desired_range = 99 # (100 - 1)
+const alpha = 0.3
+const conveyor_penalty = 1
 const idle_penalty = -1
 
 type SimState {
@@ -112,14 +111,14 @@ type SimAction {
 type SimConfig {
     simulation_time_step: simulation_time_step,
     control_type: control_type,
-    control_frequency: control_frequency, 
-    interval_downtime_event_mean: interval_downtime_event_mean,  
+    control_frequency: control_frequency,
+    interval_downtime_event_mean: interval_downtime_event_mean,
     interval_downtime_event_dev: interval_downtime_event_dev,
-    downtime_event_duration_mean: downtime_event_duration_mean,   
-    downtime_event_duration_dev: downtime_event_duration_dev,  
+    downtime_event_duration_mean: downtime_event_duration_mean,
+    downtime_event_duration_dev: downtime_event_duration_dev,
     idletime_duration: number[6],
     number_parallel_downtime_events: number_parallel_downtime_events,
-    layout_configuration: layout_configuration, 
+    layout_configuration: layout_configuration,
     down_machine_index: down_machine_index,
     initial_bin_level: number,
     bin_maximum_capacity: bin_maximum_capacity,
@@ -148,93 +147,218 @@ type SimConfig {
     discharge_prox_upper_limit: discharge_prox_upper_limit,
     discharge_prox_lower_limit: discharge_prox_lower_limit,
     infeedProx_index1: infeedProx_index1,
-    infeedProx_index2: infeedProx_index2, 
-    dischargeProx_index1: dischargeProx_index1, 
+    infeedProx_index2: infeedProx_index2,
+    dischargeProx_index1: dischargeProx_index1,
     dischargeProx_index2: dischargeProx_index2,
     num_cans_at_discharge_index1: num_cans_at_discharge_index1,
     num_cans_at_discharge_index2: num_cans_at_discharge_index2,
     num_cans_at_infeed_index1: num_cans_at_infeed_index1,
-    num_cans_at_infeed_index2:num_cans_at_infeed_index2,
+    num_cans_at_infeed_index2: num_cans_at_infeed_index2,
 }
 
 # number of cans after machine 0
 # return 0 if down or idle
 function machine0_output(state: SimState) {
-    if state.machines_state[0] == 0 {
-        return idle_penalty
+    if state.machines_actual_speed[0] == 0 {
+        return 0
     }
-    var machine0_throughput_scaled = state.machines_actual_speed[0] / machine_max_speed[0] # normalized number of cans processed by the machine 0
-    var machine0_throughput = machine0_throughput_scaled ** 10
-    return machine0_throughput * ((machine_sum_max_speed - machine_max_speed[0]) / machine_sum_max_speed)
+    var machine0_throughput_scaled = (state.machines_actual_speed[0] - machine_min_speed[0]) / (machine_max_speed[0] - machine_min_speed[0]) 
+    var machine0_throughput_normalized = ((machine0_throughput_scaled * desired_range) + 1) / 100
+    var machine0_throughput = machine0_throughput_normalized ** 2
+    return machine0_throughput 
 }
 
 # number of cans after machine 1
 # return 0 if down or idle
 function machine1_output(state: SimState) {
-    if state.machines_state[1] == 0 {
-        return idle_penalty
+    if state.machines_actual_speed[1] == 0 {
+        return 0
     }
-    var machine1_throughput_scaled = state.machines_actual_speed[1] / machine_max_speed[1] # normalized number of cans processed by the machine 1
-    var machine1_throughput = machine1_throughput_scaled ** 10
-    return machine1_throughput * ((machine_sum_max_speed - machine_max_speed[1]) / machine_sum_max_speed)
+    var machine1_throughput_scaled = (state.machines_actual_speed[1] - machine_min_speed[1]) / (machine_max_speed[1] - machine_min_speed[1]) 
+    var machine1_throughput_normalized = ((machine1_throughput_scaled * desired_range) + 1) / 100
+    var machine1_throughput = machine1_throughput_normalized ** 2
+    return machine1_throughput 
 }
 
 # number of cans after machine 2
 # return 0 if down or idle
 function machine2_output(state: SimState) {
-    if state.machines_state[2] == 0 {
-        return idle_penalty
+    if state.machines_actual_speed[2] == 0 {
+        return 0
     }
-    var machine2_throughput_scaled = state.machines_actual_speed[2] / machine_max_speed[2] # normalized number of cans processed by the machine 2
-    var machine2_throughput = machine2_throughput_scaled ** 10
-    return machine2_throughput * ((machine_sum_max_speed - machine_max_speed[2]) / machine_sum_max_speed)
+    var machine2_throughput_scaled = (state.machines_actual_speed[2] - machine_min_speed[2]) / (machine_max_speed[2] - machine_min_speed[2]) 
+    var machine2_throughput_normalized = ((machine2_throughput_scaled * desired_range) + 1) / 100
+    var machine2_throughput = machine2_throughput_normalized ** 2
+    return machine2_throughput 
 }
 
 # number of cans after machine 3
 # return 0 if down or idle
 function machine3_output(state: SimState) {
-    if state.machines_state[3] == 0 {
-        return idle_penalty
+    if state.machines_actual_speed[3] == 0 {
+        return 0
     }
-    var machine3_throughput_scaled = state.machines_actual_speed[3] / machine_max_speed[3] # normalized number of cans processed by the machine 3
-    var machine3_throughput = machine3_throughput_scaled ** 10
-    return machine3_throughput * ((machine_sum_max_speed - machine_max_speed[3]) / machine_sum_max_speed)
+    var machine3_throughput_scaled = (state.machines_actual_speed[3] - machine_min_speed[3]) / (machine_max_speed[3] - machine_min_speed[3]) 
+    var machine3_throughput_normalized = ((machine3_throughput_scaled * desired_range) + 1) / 100
+    var machine3_throughput = machine3_throughput_normalized ** 2
+    return machine3_throughput 
 }
 
 # number of cans after machine 4
 # return 0 if down or idle
 function machine4_output(state: SimState) {
-    if state.machines_state[4] == 0 {
-        return idle_penalty
+    if state.machines_actual_speed[4] == 0 {
+        return 0
     }
-    var machine4_throughput_scaled = state.machines_actual_speed[4] / machine_max_speed[4] # normalized number of cans processed by the machine 4
-    var machine4_throughput = machine4_throughput_scaled ** 10
-    return machine4_throughput * ((machine_sum_max_speed - machine_max_speed[4]) / machine_sum_max_speed)
+    var machine4_throughput_scaled = (state.machines_actual_speed[4] - machine_min_speed[4]) / (machine_max_speed[4] - machine_min_speed[4]) 
+    var machine4_throughput_normalized = ((machine4_throughput_scaled * desired_range) + 1) / 100
+    var machine4_throughput = machine4_throughput_normalized ** 2
+    return machine4_throughput 
 }
 
 # number of cans after machine 5
 # return 0 if down or idle
 function machine5_output(state: SimState) {
-    if state.machines_state[5] == 0 {
-        return idle_penalty
+    if state.machines_actual_speed[5] == 0 {
+        return 0
     }
-    var machine5_throughput_scaled = state.machines_actual_speed[5] / machine_max_speed[5] # normalized number of cans processed by the machine 5
-    var machine5_throughput = machine5_throughput_scaled ** 10
-    return machine5_throughput * ((machine_sum_max_speed - machine_max_speed[5]) / machine_sum_max_speed)
+    var machine5_throughput_scaled = (state.machines_actual_speed[5] - machine_min_speed[5]) / (machine_max_speed[5] - machine_min_speed[5]) 
+    var machine5_throughput_normalized = ((machine5_throughput_scaled * desired_range) + 1) / 100
+    var machine5_throughput = machine5_throughput_normalized ** 2
+    return machine5_throughput 
 }
 
 
+function machine0_status(state: SimState) {
+    var machine0_throughput = machine0_output(state)
+    if state.conveyor_discharge_p1_prox_full[0] == 0 { # machine is running
+        if state.conveyor_discharge_p2_prox_full[0]  == 1 {
+            var machine0_reward = machine0_throughput - alpha * conveyor_penalty
+            return  machine0_reward
+        }
+        else {
+            return machine0_throughput
+        }
+    }
+    else if state.machines_state[0] == -1 { # machine is down
+        return 0
+    }
+    else { # machine is idle
+        return idle_penalty
+    }
+}
+
+function machine1_status(state: SimState) {
+    var machine1_throughput = machine1_output(state)
+    # machine is running
+    if state.conveyor_infeed_m1_prox_empty[0] == 0 and state.conveyor_discharge_p1_prox_full[1] == 0 {
+        if state.conveyor_infeed_m2_prox_empty[0] == 1 or state.conveyor_discharge_p2_prox_full[1]  == 1 {
+            var machine1_reward = machine1_throughput - alpha * conveyor_penalty
+            return  machine1_reward
+        }
+        else {
+            return machine1_throughput
+        }
+    }
+    else if state.machines_state[1] == -1 { # machine is down
+        return 0
+    }
+    else { # machine is idle
+        return idle_penalty
+    }
+}
+
+function machine2_status(state: SimState) {
+    var machine2_throughput = machine2_output(state)
+    if state.conveyor_infeed_m1_prox_empty[1] == 0 and state.conveyor_discharge_p1_prox_full[2] == 0 {
+        if state.conveyor_infeed_m2_prox_empty[1] == 1 or state.conveyor_discharge_p2_prox_full[2]  == 1 {
+            var machine2_reward = machine2_throughput - alpha * conveyor_penalty
+            return  machine2_reward
+        }
+        else {
+            return machine2_throughput
+        }
+    }
+    else if state.machines_state[2] == -1 {
+        return 0
+    }
+    else {
+        return idle_penalty
+    }
+}
+
+function machine3_status(state: SimState) {
+    var machine3_throughput = machine3_output(state)
+    if state.conveyor_infeed_m1_prox_empty[2] == 0 and state.conveyor_discharge_p1_prox_full[3] == 0 {
+        if state.conveyor_infeed_m2_prox_empty[2] == 1 or state.conveyor_discharge_p2_prox_full[3]  == 1 {
+            var machine3_reward = machine3_throughput - alpha * conveyor_penalty
+            return  machine3_reward
+        }
+        else {
+            return machine3_throughput
+        }
+    }
+    else if state.machines_state[3] == -1 {
+        return 0
+    }
+    else {
+        return idle_penalty
+    }
+}
+
+function machine4_status(state: SimState) {
+    var machine4_throughput = machine4_output(state)
+    if state.conveyor_infeed_m1_prox_empty[3] == 0 and state.conveyor_discharge_p1_prox_full[4] == 0 {
+        if state.conveyor_infeed_m2_prox_empty[3] == 1 or state.conveyor_discharge_p2_prox_full[4]  == 1 {
+            var machine4_reward = machine4_throughput - alpha * conveyor_penalty
+            return  machine4_reward
+        }
+        else {
+            return machine4_throughput
+        }
+    }
+    else if state.machines_state[4] == -1 {
+        return 0
+    }
+    else {
+        return idle_penalty
+    }
+}
+
+function machine5_status(state: SimState) {
+    var machine5_throughput = machine5_output(state)
+    if state.conveyor_infeed_m1_prox_empty[4] == 0 {    
+        if state.conveyor_infeed_m2_prox_empty[4]  == 1 {
+            var machine5_reward = machine5_throughput - alpha * conveyor_penalty
+            return  machine5_reward
+        }
+        else {
+            return machine5_throughput
+        }
+    }
+    else if state.machines_state[5] == -1 {
+        return 0
+    }
+    else {
+        return idle_penalty
+    }
+}
+
 function Reward(state: SimState) {
 
-    var reward_machine0 = machine0_output(state)
-    var reward_machine1 = machine1_output(state)
-    var reward_machine2 = machine2_output(state)
-    var reward_machine3 = machine3_output(state)
-    var reward_machine4 = machine4_output(state)
-    var reward_machine5 = machine5_output(state)
+    var reward_machine0 = machine0_status(state)
+    var reward_machine1 = machine1_status(state)
+    var reward_machine2 = machine2_status(state)
+    var reward_machine3 = machine3_status(state)
+    var reward_machine4 = machine4_status(state)
+    var reward_machine5 = machine5_status(state)
 
     var reward_total = reward_machine0 + reward_machine1 + reward_machine2 + reward_machine3 + reward_machine4 + reward_machine5
     return reward_total
+}
+
+function Terminal(state: SimState) {
+    return false
 }
 
 simulator Simulator(action: SimAction, config: SimConfig): SimState {
@@ -266,7 +390,7 @@ graph (input: ObservationState): SimAction {
                     interval_downtime_event_dev: interval_downtime_event_dev,
                     downtime_event_duration_mean: downtime_event_duration_mean,
                     downtime_event_duration_dev: downtime_event_duration_dev,
-                    idletime_duration: number<idletime_duration_min .. idletime_duration_max step 1> [6],
+                    idletime_duration: number<idletime_duration_min .. idletime_duration_max step 1>[6],
                     number_parallel_downtime_events: number_parallel_downtime_events,
                     layout_configuration: layout_configuration,
                     down_machine_index: down_machine_index,
@@ -281,14 +405,14 @@ graph (input: ObservationState): SimAction {
                     machine3_min_speed: number<machine_min_speed[3] .. machine_min_speed[3] step 1>,
                     machine4_min_speed: number<machine_min_speed[4] .. machine_min_speed[4] step 1>,
                     machine5_min_speed: number<machine_min_speed[5] .. machine_min_speed[5] step 1>,
-                    
+
                     machine0_max_speed: number<machine_max_speed[0] .. machine_max_speed[0] step 1>,
                     machine1_max_speed: number<machine_max_speed[1] .. machine_max_speed[1] step 1>,
                     machine2_max_speed: number<machine_max_speed[2] .. machine_max_speed[2] step 1>,
                     machine3_max_speed: number<machine_max_speed[3] .. machine_max_speed[3] step 1>,
                     machine4_max_speed: number<machine_max_speed[4] .. machine_max_speed[4] step 1>,
                     machine5_max_speed: number<machine_max_speed[5] .. machine_max_speed[5] step 1>,
-                    
+
                     machine0_initial_speed: number<machine_min_speed[0] .. machine_max_speed[0] step 1>,
                     machine1_initial_speed: number<machine_min_speed[1] .. machine_max_speed[1] step 1>,
                     machine2_initial_speed: number<machine_min_speed[2] .. machine_max_speed[2] step 1>,
@@ -307,7 +431,7 @@ graph (input: ObservationState): SimAction {
                     num_cans_at_discharge_index1: num_cans_at_discharge_index1,
                     num_cans_at_discharge_index2: num_cans_at_discharge_index2,
                     num_cans_at_infeed_index1: num_cans_at_infeed_index1,
-                    num_cans_at_infeed_index2:num_cans_at_infeed_index2,
+                    num_cans_at_infeed_index2: num_cans_at_infeed_index2,
                 }
             }
         }
