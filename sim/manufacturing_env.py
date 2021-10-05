@@ -161,7 +161,7 @@ class Machine(General):
             print('machine is idle, machine speed will be kept zero')
         elif self.state == "startup":
             self._speed = 0
-            print('machne is startup, machine speed will be kept zero')        
+            print('machne is startup, machine speed will be kept zero')     
         elif value > 0 and self.state != "down" and self.state != "idle" and self.state != "startup":
             self._speed = value
             self.state = "active"
@@ -402,6 +402,8 @@ class DES(General):
             yield self.env.timeout(random_downtime_duration) # [AJ]: it means machine should go down for this amount of time
             
             setattr(eval('self.' + down_machine), 'state', 'active') # [AJ]: put the machine in active mode so that it can receive the new speed from brain            
+            setattr(eval('self.' + down_machine), "speed", self.components_speed[down_machine])     
+
             print(
                 f'................ let machines run for a given period of time without any downtime event')
             self.is_control_downtime_event = 0
@@ -427,6 +429,7 @@ class DES(General):
             # setattr(eval('self.' + machine), 'idle_counter', machine_counter)
             if machine_counter == machine_idletime_duration:
                 setattr(eval('self.' + machine), 'state', 'active')
+                setattr(eval('self.' + machine), "speed", self.components_speed[machine])     
                 machine_counter = 0
             else:
                 pass
@@ -727,7 +730,7 @@ class DES(General):
                 level_discharge = getattr(getattr(self, discharge), "bin" + str(self.dischargeProx_index1)) 
                 
                 if machine_state == "active" and level_infeed > self.infeed_prox_lower_limit and level_discharge < self.discharge_prox_lower_limit:
-                   pass
+                   pass  
                 elif machine_state == "active" and (level_infeed <= self.infeed_prox_lower_limit or level_discharge >= self.discharge_prox_lower_limit):
                     setattr(eval('self.' + machine), "state", "idle")
                     setattr(eval('self.' + machine), "speed", 0)           
@@ -764,7 +767,7 @@ class DES(General):
                     str(self.num_conveyor_bins-self.infeedProx_index1))  
                 
                 if machine_state == "active" and level_infeed > self.infeed_prox_lower_limit:
-                   pass
+                   pass 
                 elif machine_state == "active" and level_infeed <= self.infeed_prox_lower_limit:
                     setattr(eval('self.' + machine), "state", "idle")
                     setattr(eval('self.' + machine), "speed", 0)                  
