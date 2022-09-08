@@ -1,7 +1,6 @@
 '''
 __author__: Hossein Khadivi Heris@microsoft, Amir Jafari@microsoft 
 '''
-
 from .line_config import adj, adj_conv  # [AJ]: For single line
 import json
 import os
