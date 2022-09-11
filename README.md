@@ -10,6 +10,24 @@ Manufacturing lines operate a series of machines to make specific product. Ocasi
 
 In a manufacturing line, the raw materials enter the line through the source that is located at the left end of the line, move from one machine to another machine through conveyors until they reach the rightmost end of the line where all the final products would be accumulated in the sink. There are proxes (sensors) located at certain points along the conveyor that assess the status of product accumulation on the conveyor. The prox that is located at the right end of conveyor (prior to next machine) is called the infeed prox and the prox that is located at the left end of conveyor (after the previous machine) is called the discharge prox. The infeed prox decides whether there are enough products on the conveyor that can be fed into the next machine to determine whether it is worth keeping the machine ON. If there are not enough products available to be fed into the next machine, then the infeed prox would decide to shut down the machine simply because the conveyor is under-loaded.
 In contrary, the discharge prox decides whether there are too many products on the conveyor such that the previous machine would not find enough space on the conveyor to output new products. Therefore, the discharge prox would decide to shut down the machine simply because the conveyor is over-loaded. It is important to mention that there is no knwoledge of exact number of products on the conveyors and status of proxes is the only available information to determine the relative fullness/emptiness of the conveyors.
+Train brain to control the speeds of the machine in a manufacturing line for maximum throughput.
+
+<img src="img\Manufactuing_line_layout.PNG" alt="drawing" width="900"/>
+
+## Background about manufacturing line
+
+The line consists of a fixed number of machines that are connected through conveyors. The products (i.e., cans) enter the line through the source that is located at the left most side of the line, move from one machine to another machine until they reach the sink at the right most end of the line where all the products would be accumulated. There are sensors (proxes) located at certain points along the conveyor that assess the status of products (i.e., cans) accumulation on the conveyor. Product accumulation on the conveyor happens from **right to left**.
+
+In general, there are two types of proxes. The proxes that are located towards the right end of conveyor (prior to next machine) is called the Infeed proxes and the proxes that are located towards the left end of conveyor (after the previous machine) are called the Discharge prox. The Infeed proxes decide whether there are enough products (i.e., cans) on the conveyor that can be fed into the next machine to determine whether it is worth keeping the machine ON. If there are not enough products (i.e., cans) available that can be fed into the next machine, then the Infeed proxes would decide to shut down the machine simply because the conveyor is under-loaded. In contrary, the Discharge proxes decide whether there are too many products (i.e., cans) on the conveyor such that the previous machine would not find enough space on the conveyor to process new products (i.e., cans). Therefore, the Discharge proxes would decide to shut down the machine simply because the conveyor is over-loaded.
+
+Specifically, on each conveyor, there are two proxes on the Infeed side and there are two proxes on the Discharge side. The two at the Discharge are called “Discharge Low” and “Discharge Backup”. The prox that is right adjacent to the previous machine is the “Discharge Backup” prox and the other one is called the “Discharge Low”. If the cans are accumulating, the cans first activate the “Discharge Low” prox and then as more cans are accumulated, they activate the “Discharge Backup” prox. The previous machine will be shut down when it activates the “Discharge Backup” prox. In other words, when the “Discharge Low” prox is activated, it is indicating that there are too many cans on the conveyor and if you keep running the machines at the current speeds, you will start overloading the conveyor which will be causing a lot of problems. That is why we always want to keep the Discharge proxes empty. The “Discharge Low” prox warns that cans are starting to accumulate in order to start slowing down/speeding up the previous/next machine at a local level.
+For restarting the machine, the number of cans accumulated on the conveyor must fall below a certain threshold and therefore, both “Discharge Backup” prox and “Discharge Low” prox must be deactivated.
+
+Similarly, the two at the Infeed are called “Infeed Prime” and “Infeed Low”. The prox that is adjacent to the machine is the “Infeed Prime” prox and the other one is called the “Infeed Low”. When the conveyor is being depleted, at first the “Infeed Low” prox is activated and then as more cans are processed and the conveyor is further depleted, the “Infeed Prime” prox is activated. The machine is shut down when it activates the “Infeed Prime” prox. In other words, when the “Infeed Low” prox is activated, it is indicating that there are not enough cans on the conveyor and if you keep depleting the conveyor (or running the machines at current speeds), you will start underloading the conveyor. Eventually, the “Infeed Prime” will be activated and the next machine will be shut down. That is why we always want to keep the Infeed proxes full. The “Infeed Low” prox warns the machine that conveyor is being depleted and so the previous/next machines need to start speeding up/slowding down at a local level. For restarting the machine, the number of cans accumulated on the conveyor must exceed a certain threshold and therefore, both “Infeed Prime” prox and “Infeed Low” prox must be deactivated.
+
+Note that we don't have access to the exact number of products (i.e., cans) on the conveyor and the proxes are used to estimate the approximate number of products (i.e., cans) that exist on the conveyor.
+
+## Accumulation of products on the conveyor
 
 ## Conveyor model
 
@@ -35,12 +53,41 @@ Maximize the production in a manufacturing line.
 
 ## Challenges with current solutions
 
+<img src="img\Line_Proxes.png" alt="drawing" width="600"/>
+
 Current solutions suffer from the fact that they are too local which means that in case of a down incident they only try to control the immediately neighboring machines and they lack a global view of the entire manufacturing line. As a result, they would lead to more overloading / underloading of conveyors which in turn results in more machines going idle which eventually increases the chances of machines going down.
 
 ## Brain experimental card 
 
 We assume there are six (or twelve for a more challenging sceanrio) machines that are located periodically along a manufacturing line that perform various types of operations (packaging, labeling, cleaning, filling, washing, etc.) on the products that being manufactured.
 
+## Objectives
+
+Maximize production in a manufacturing line.  
+
+|                        | Definition                                                   | Notes |
+| ---------------------- | ------------------------------------------------------------ | ----- |
+| Objective              | maximize product production     |   Example: For a can manufacturing line, the goal is to maximize can production                        |
+| Constraints            |   NA |
+| Observations           | machines speed, machines_state, brain_speed, machines_state_sum, conveyors_speed, conveyor_buffers, sink_machines_rate_sum, sink_throughput_delta_sum, sink_throughput_absolute_sum, conveyor_infeed_m1_prox_empty, conveyor_infeed_m2_prox_empty, conveyor_discharge_p1_prox_full, conveyor_discharge_p2_prox_full, illegal_machine_actions, remaining_downtime_machines, control_delta_t, env_time | Machines speed is the actual speed that was used by the simulator to run the machine, whereas brain speed is the speed that was decided by the brain. Proxes are sensors that yield a binary value. When product accumulates on the conveyor and covers the location of the prox sensor, its value becomes 1, otherwise it's value is zero. Illegal actions happen when machines are in down or idle mode but brain sends a nonzero action, which will be ignored by the simulator but will return a flag to inform brain. remaining_downtime informs brain about remaining downtime for each machine, and active or idle machines yield zero for the their remaining downtime. sink_throughput_delta_sum is the amount of productions(throughput) between control actions, machine state -1 means down, 0 means idle, 1 means active |
+| Actions                | machines_speed | speeds are processed in cans/second units|
+| Control Frequency      | fixed, event driven, or mix of both fixed and event driven control  | User can specify control frequency from inkling using |
+| Episode configurations | control_type (fixed, event driven, or mix of both), control_frequency (for fixed and mix), inter_downtime_event_mean (average time between downtime events), inter_downtime_event_dev, downtime_event_duration_mean, downtime_event_duration_dev, number_parallel_downtime_events, layout_configuration, down_machine_index, initial_bin_level, bin_maximum_capacity, num_conveyor_bins, conveyor_capacity, machine_min_speed, machine_max_speed, machine_initial_speed, infeed_prox_upper_limit, infeed_prox_lower_limit, discharge_prox_upper_limit, discharge_prox_lower_limit, infeedProx_index1, infeedProx_index2, dischargeProx_index1, dischargeProx_index2 | Note: currently only one default layout is supported. |
+
+Noet that the Bonsai brain has full control of machines speed until the “Discharge Backup” is activated. When the “Discharge Backup” prox is activated, the traditional control system (and not the Bonsai brain) will shut down the machine and put it in idle mode. However, the brain needs to know that when a machine is shut down as a non-ideal condition. Note that since the machine is shut down, the brain is not able to send speed commands to the machine anymore.
+
+
+## Solution approach
+4 solutions approaches are being tested. 
+approach 1: fixed time control frequency with illegal actions. 
+approach 2: event driven with no illegal actions.
+approach 3: multi concept, equipment down concepts 
+approach 4: Action space reduction 
+
+### Detailed overview of the solution
+
+
+## Brain experimental card 
 
 |                        | Definition                                                   | Notes |
 | ---------------------- | ------------------------------------------------------------ | ----- |
@@ -76,6 +123,10 @@ function machine_output(state: SimState) {
 ```
 
 ## Brain training
+## Results of brain training
+
+### Create a new brain on bonsai platfrom  
+Use machine_teacher.ink that employs the following example configuration.
 
 
 ### Before you start 
@@ -125,6 +176,7 @@ Once pushed, you must add the simulator in the Web UI. After added, to scale wit
 
 ### Assessment
 
+
 To assess the trained brain:
 
 (1) Create a custom assessment session from the Web UI. (2) Query the assessment results and compare it with heuristics based benchmarks. Note that you can use custom assessment found in `assessments` folder for various down events scenarios.
@@ -134,6 +186,7 @@ To assess the trained brain:
 In this section, we will use a heuristic as benchmark where each machine runs at its own maximum operating speed in order to maximize the line production. Since the current euristic solutions aim to run the machines at max speed, it would cause the machines to go into idle mode (speed of 0) more frequently due to underloading/overloading of the conveyors. Note that more idle instances would also lead to more startup instances because any disruption in line operation propagates from one machine to another machine and hence would reduce the overal throughput of the line.
 
 <img src="img\mlo-1.png" alt="drawing" width="350"/>
+### Comparison with Benchmark 
 
 <img src="img\mlo-2.png" alt="drawing" width="350"/>
 
@@ -144,3 +197,7 @@ On the other hand, brain learns to react to machine down events (i.e., jamming) 
 
 <img src="img\histogram_speed.png" alt="drawing" width="350"/>
 
+```sh
+docker run -d -p 5000:5000 <acr_name>.azurecr.io/<workspace_id>/<brain_name>:<version>
+python bonsai_integration.py --render --test
+```
