@@ -39,7 +39,7 @@ Current solutions suffer from the fact that they are too local which means that 
 
 ## Brain experimental card 
 
-We assume there are six	machines that are located periodically along a manufacturing line that perform various types of operations (packaging, labeling, cleaning, filling, washing, etc.) on the products that being manufactured.
+We assume there are six (or twelve for a more challenging sceanrio) machines that are located periodically along a manufacturing line that perform various types of operations (packaging, labeling, cleaning, filling, washing, etc.) on the products that being manufactured.
 
 
 |                        | Definition                                                   | Notes |
@@ -57,43 +57,22 @@ To maximize the total production at the sink, we aim to maximize the number of p
 ```
 # Machine receives higher reward when operates at higher speed
 
+
+# number of products after each machine
+# return 0 if down or idle
 function machine_output(state: SimState) {
-    # if the machine is down or idle
-    if state.machines_actual_speed == 0 {
-        return 0
-    }
-    # otheriwse
     var machine_throughput_scaled = (state.machines_actual_speed - machine_min_speed) / (machine_max_speed - machine_min_speed) 
-    var machine_throughput = machine_throughput_scaled ** 2
-    return machine_throughput 
-}
-```
-
-```
-# Penalize the machine when goes into idle mode
-
-function machine_status(state: SimState) {
-    var machine_throughput = machine_output(state)
-    # neither of primary infeed and promary discharge are activated
-    if state.conveyor_infeed_m1_prox_empty == 0 and state.conveyor_discharge_p1_prox_full == 0 {
-        # either of secondary infeed or secondary discharge is activated
-        if state.conveyor_infeed_m2_prox_empty == 1 or state.conveyor_discharge_p2_prox_full == 1 {
-            var machine_reward = machine_throughput - alpha * conveyor_penalty
-            return  machine_reward
-        }
-        else {
-            return machine2_throughput
-        }
-    }
-    # if machine is down
-    else if state.machines_state == -1 {
+    var machine_throughput = Math.E ** (machine_throughput_scaled)
+    if state.machines_actual_speed[8] == 0 {
         return 0
     }
-    # if machine is idle
-    else {
-        return idle_penalty
+    if state.conveyor_infeed_m2_prox_empty == 1 or state.conveyor_discharge_p2_prox_full == 1 {
+        var machine_reward = machine_throughput - alpha * conveyor_penalty
+        return  machine_reward
     }
+    return machine8_throughput 
 }
+
 ```
 
 ## Brain training
@@ -106,7 +85,7 @@ function machine_status(state: SimState) {
 conda env update -f environment.yml 
 ```
 The sim folder contains two main simulator scripts. 
-- The line_config.py script that is used to set up the configiration of the manufacturing line. The parameter K determines the number of machines on the line and you could change it to setup a line with your desirable number of machines.
+- The line_config.py script that is used to set up the configiration of the manufacturing line. The parameter K determines the number of machines on the line and you could change it to setup a line with your desirable number of machines (i.e., 6 or 12).
 - The manufacturing_env.py script that calls the line_config.py and then adds the specificities of manufacturing lines.
 
 ### Dockerize Simulator for Scaling and add the sim package
@@ -148,7 +127,7 @@ Once pushed, you must add the simulator in the Web UI. After added, to scale wit
 
 To assess the trained brain:
 
-(1) Create a custom assessment session from the Web UI. (2) Query the assessment results and compare it with heuristics based benchmarks. Note that you can use custom assessment found in `assess_config_speed.json`. For details about query assessment, refer to the "assessment and benchmark comparison.ipynb" notebook located in bonsai-log-tools folder.
+(1) Create a custom assessment session from the Web UI. (2) Query the assessment results and compare it with heuristics based benchmarks. Note that you can use custom assessment found in `assessments` folder for various down events scenarios.
 
 #### Comparison with Benchmark 
 

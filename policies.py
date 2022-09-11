@@ -16,7 +16,7 @@ def machine_speed_heuristic(dschrg_p1, dschrg_p2, infeed_m1, infeed_m2, machine_
 
     if machine_state != -1 and dschrg_p1 == 0 and infeed_m1 == 0: # machine is running - neither of primary proxes are active
         if dschrg_p2  == 1 or infeed_m2 == 1: # either of secondary proxes are active
-            machine_new_speed = machine_max_speed[machine_index] * 0.9 # run the machine at 80% of max speed
+            machine_new_speed = machine_max_speed[machine_index] * 0.8 # run the machine at 80% of max speed
             return  machine_new_speed        
         elif dschrg_p2 == 0 and infeed_m2 == 0: # neither of secondary proxes are active
             machine_new_speed = machine_max_speed[machine_index] # run the machine at max speed

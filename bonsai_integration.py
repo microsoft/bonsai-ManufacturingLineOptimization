@@ -3,7 +3,7 @@
 
 """
 MSFT Bonsai SDK3 Template for Simulator Integration using Python
-Copyright 2020 Microsoft
+Copyright 2022 Microsoft
 
 Usage:
   For registering simulator with the Bonsai service for training:
@@ -38,8 +38,6 @@ from functools import partial
 import threading
 import pdb
 
-# import manufacturing line sim (MLS)
-# import adj dict to match actions
 MACHINES, CONVEYORS, _, _ = MLS.get_machines_conveyors_sources_sets(adj, adj_conv)
 ENV = simpy.Environment()
 no_machines = len(MACHINES)
@@ -52,13 +50,14 @@ LOG_PATH = "logs"
 default_config = {
     "simulation_time_step": 1,
     "control_type": 0,
-    "control_frequency": 1,
-    "interval_downtime_event_mean": 15,
-    "interval_downtime_event_dev": 10,
-    "number_parallel_downtime_events": 6,
+    "control_frequency": 3,
+    "interval_first_down_event": 50,
+    "interval_downtime_event_mean": 20,
+    "interval_downtime_event_dev": 5,
+    "number_parallel_downtime_events": 4,
     "layout_configuration": 1,
     "down_machine_index": -1, 
-    "initial_bin_level": 40,
+    "initial_bin_level": 50,
     "bin_maximum_capacity": 100,
     "num_conveyor_bins": 10,
     "conveyor_capacity": 1000,
@@ -142,14 +141,14 @@ class TemplateSimulatorSession:
         """
         sim_states = self.simulator.get_states()
 
-        print('Summary Status of Simulator States is')
+        print('---Summary Status of Simulator States---')
         print('machine states are', sim_states['machines_state'])
-        print('levels of conveyors are', sim_states['conveyors_level']) 
         print('actual machine speeds are', sim_states['machines_actual_speed']) 
         print('brain speeds are', sim_states['brain_speed'])
+        # print('levels of conveyors are', sim_states['conveyors_level']) 
         for i in range(no_conveyors):
             conveyor_level = sim_states['conveyor_buffers'][i]
-            print(f'conveyor {i} is {conveyor_level}')
+            print(f'level of conveyor {i} is {conveyor_level}')
 
         if self.render:
             pass
@@ -167,7 +166,9 @@ class TemplateSimulatorSession:
         return False
 
     def episode_start(self, config: Dict = None) -> None:
-        """Initialize simulator environment using scenario paramters from inkling. Note, `simulator.reset()` initializes the simulator parameters for initial positions and velocities of the cart and pole using a random sampler. See the source for details.
+        """Initialize simulator environment using scenario paramters from inkling.
+        Note, `simulator.reset()` initializes the simulator parameters for initial positions and velocities of the cart and pole using a random sampler.
+        See the source for details.
 
         Parameters
         ----------
@@ -177,7 +178,7 @@ class TemplateSimulatorSession:
         if config is None:
             config = default_config
 
-        print('-----------------------------------resetting new episode-------------------------------')
+        print('------------------------resetting new episode------------------------')
         print(config)
         # re-intializing the simulator to make sure all the processes are killed
         ENV = simpy.Environment()
@@ -289,12 +290,12 @@ def env_setup(env_file: str = ".env"):
 # Manual test policy loop
 def test_policy(
     render=False,
-    num_episodes: int = 100,
-    num_iterations: int = 100,
+    num_episodes: int = 30,
+    num_iterations: int = 300,
     log_iterations: bool = False,
     policy = heuristic_policy,
     policy_name: str = "test_policy",
-    scenario_file: str = "assess_config_speed_12.json",
+    scenario_file: str = "machine_10_down.json",
     exported_brain_url: str = "http://5200:5000"
 ):
     """Test a policy using random actions over a fixed number of episodes
@@ -327,6 +328,7 @@ def test_policy(
             for key, value in action.items():
                 action[key] = None
             sim.log_iterations(sim_state, action, episode, iteration)
+        print('------------------------------------------------------')
         print(f"Running iteration #{iteration} for episode #{episode}")
         iteration += 1
         while not terminal:
@@ -621,7 +623,7 @@ if __name__ == "__main__":
         port = args.test_exported
         url = f"http://localhost:{port}"
         print(f"Connecting to exported brain running at {url}...")
-        scenario_file = 'assess_config_speed_12.json'
+        scenario_file = 'machine_10_down.json'
         if args.custom_assess:
             scenario_file = args.custom_assess
         trained_brain_policy = partial(brain_policy, exported_brain_url=url)
