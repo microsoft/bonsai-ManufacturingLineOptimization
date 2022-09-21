@@ -94,19 +94,19 @@ class General:
     num_conveyor_bins = 10 # number of bins per conveyor
     bin_maximum_capacity = 100 # maximum capacity (in products) of each bin
     conveyor_capacity = bin_maximum_capacity * num_conveyor_bins  # in products
-    machine_min_speed = [100, 30, 60,40, 80, 80, 100, 30, 60, 40, 80, 80]
+    machine_min_speed = [100, 30, 60, 40, 80, 80, 100, 30, 60, 40, 80, 80]
     machine_max_speed = [170, 190, 180, 180, 180, 300, 170, 190, 180, 180, 180, 300]
     # initial speed of the machines
     machine0_initial_speed = 110
     machine1_initial_speed = 50
     machine2_initial_speed = 70
-    machine3_initial_speed = 60
+    machine3_initial_speed = 70
     machine4_initial_speed = 100
     machine5_initial_speed = 120
     machine6_initial_speed = 110
     machine7_initial_speed = 50
     machine8_initial_speed = 70
-    machine9_initial_speed = 60
+    machine9_initial_speed = 70
     machine10_initial_speed = 100
     machine11_initial_speed = 120
     machine_initial_speed = [machine0_initial_speed, machine1_initial_speed, machine2_initial_speed, machine3_initial_speed,
