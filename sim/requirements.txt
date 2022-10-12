@@ -1,5 +1,4 @@
-numpy==1.19.2
-matplotlib==3.3.4
+matplotlib==3.0.3
 pandas==0.25.3
 microsoft-bonsai-api==0.1.4
 scipy==1.4.1
