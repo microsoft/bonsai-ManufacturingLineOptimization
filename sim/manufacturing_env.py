@@ -1273,7 +1273,7 @@ if __name__ == "__main__":
         "dischargeProx_index2": 3,
         "num_products_at_discharge_index1": 950 , 
         "num_products_at_discharge_index2": 650 ,
-        "num_products_at_infeed_index2": 350 ,  
+        "num_products_at_infeed_index1": 350 ,  
         "num_products_at_infeed_index2": 50 ,  
     }
     my_env.reset(default_config)
