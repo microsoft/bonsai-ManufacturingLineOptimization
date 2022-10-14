@@ -1,0 +1,15 @@
+numpy==1.15.2
+matplotlib==3.0.3
+<<<<<<< HEAD
+pandas==0.25.3
+=======
+pandas==0.24.2
+>>>>>>> 6aa7bce (Updated sim, logs & integration)
+microsoft-bonsai-api==0.1.1
+scipy==1.3.0
+bonsai-cli>=1.0.0
+ortools
+sklearn
+simpy
+networkx
+python-dotenv
