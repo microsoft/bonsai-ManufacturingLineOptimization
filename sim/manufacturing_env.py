@@ -955,8 +955,8 @@ class DES(General):
         # update the speed dictionary for those comming from the brain
         self.brain_speed = []
         for key in General.machine_list:
-            self.components_speed[key] = brain_actions[key]
-            self.brain_speed.append(brain_actions[key])
+            self.components_speed[key] = brain_actions.get(key, 0)
+            self.brain_speed.append(brain_actions.get(key, 0))
         # using brain actions
         self.update_machines_speed()
         print('Simulation time at step:', self.env.now)
