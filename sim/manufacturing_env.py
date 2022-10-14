@@ -1290,6 +1290,6 @@ if __name__ == "__main__":
         iteration += 1
         if iteration == 100000:
             my_env = DES(env)
-            my_env.reset()
+            my_env.reset(default_config)
             time.sleep(5)
             iteration = 0
