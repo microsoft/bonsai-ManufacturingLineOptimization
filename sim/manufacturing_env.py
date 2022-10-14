@@ -10,7 +10,11 @@ __email__ = "amjafari@microsoft.com"
 __status__ = "Development"
 
 from textwrap import indent
+<<<<<<< HEAD
 from line_config import adj, adj_conv
+=======
+from .line_config import adj, adj_conv
+>>>>>>> 6aa7bce (Updated sim, logs & integration)
 import json
 import os
 import time
@@ -94,19 +98,31 @@ class General:
     num_conveyor_bins = 10 # number of bins per conveyor
     bin_maximum_capacity = 100 # maximum capacity (in products) of each bin
     conveyor_capacity = bin_maximum_capacity * num_conveyor_bins  # in products
+<<<<<<< HEAD
     machine_min_speed = [100, 30, 60, 40, 80, 80, 100, 30, 60, 40, 80, 80]
+=======
+    machine_min_speed = [100, 30, 60,40, 80, 80, 100, 30, 60, 40, 80, 80]
+>>>>>>> 6aa7bce (Updated sim, logs & integration)
     machine_max_speed = [170, 190, 180, 180, 180, 300, 170, 190, 180, 180, 180, 300]
     # initial speed of the machines
     machine0_initial_speed = 110
     machine1_initial_speed = 50
     machine2_initial_speed = 70
+<<<<<<< HEAD
     machine3_initial_speed = 70
+=======
+    machine3_initial_speed = 60
+>>>>>>> 6aa7bce (Updated sim, logs & integration)
     machine4_initial_speed = 100
     machine5_initial_speed = 120
     machine6_initial_speed = 110
     machine7_initial_speed = 50
     machine8_initial_speed = 70
+<<<<<<< HEAD
     machine9_initial_speed = 70
+=======
+    machine9_initial_speed = 60
+>>>>>>> 6aa7bce (Updated sim, logs & integration)
     machine10_initial_speed = 100
     machine11_initial_speed = 120
     machine_initial_speed = [machine0_initial_speed, machine1_initial_speed, machine2_initial_speed, machine3_initial_speed,
@@ -955,8 +971,13 @@ class DES(General):
         # update the speed dictionary for those comming from the brain
         self.brain_speed = []
         for key in General.machine_list:
+<<<<<<< HEAD
             self.components_speed[key] = brain_actions.get(key, 0)
             self.brain_speed.append(brain_actions.get(key, 0))
+=======
+            self.components_speed[key] = brain_actions[key]
+            self.brain_speed.append(brain_actions[key])
+>>>>>>> 6aa7bce (Updated sim, logs & integration)
         # using brain actions
         self.update_machines_speed()
         print('Simulation time at step:', self.env.now)
@@ -1273,7 +1294,11 @@ if __name__ == "__main__":
         "dischargeProx_index2": 3,
         "num_products_at_discharge_index1": 950 , 
         "num_products_at_discharge_index2": 650 ,
+<<<<<<< HEAD
         "num_products_at_infeed_index1": 350 ,  
+=======
+        "num_products_at_infeed_index2": 350 ,  
+>>>>>>> 6aa7bce (Updated sim, logs & integration)
         "num_products_at_infeed_index2": 50 ,  
     }
     my_env.reset(default_config)

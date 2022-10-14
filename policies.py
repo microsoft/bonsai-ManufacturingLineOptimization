@@ -73,7 +73,11 @@ def max_bottleneck_policy(state):
 
 def brain_policy(
     state: Dict[str, float],
+<<<<<<< HEAD
     exported_brain_url: str = "http://localhost:5005"
+=======
+    exported_brain_url: str = "http://localhost:5000"
+>>>>>>> 6aa7bce (Updated sim, logs & integration)
 ):
 
     prediction_endpoint = f"{exported_brain_url}/v1/prediction"
