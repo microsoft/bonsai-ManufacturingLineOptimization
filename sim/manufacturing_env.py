@@ -10,7 +10,7 @@ __email__ = "amjafari@microsoft.com"
 __status__ = "Development"
 
 from textwrap import indent
-from line_config import adj, adj_conv
+from .line_config import adj, adj_conv
 import json
 import os
 import time
