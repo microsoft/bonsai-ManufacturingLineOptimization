@@ -13,7 +13,7 @@ Usage:
 
 import simpy
 from sim.line_config import adj, adj_conv
-from sim import manufacturing_env as MLS
+from sim import modular_machines as MLS
 from policies import brain_policy, random_policy, max_policy, max_bottleneck_policy, heuristic_policy
 import datetime
 import json
@@ -295,11 +295,7 @@ def test_policy(
     log_iterations: bool = False,
     policy = heuristic_policy,
     policy_name: str = "test_policy",
-<<<<<<< HEAD
-    scenario_file: str = "machine_10_down.json",
-=======
     scenario_file: str = "assessments/machine_10_down.json",
->>>>>>> 6aa7bce (Updated sim, logs & integration)
     exported_brain_url: str = "http://5200:5000"
 ):
     """Test a policy using random actions over a fixed number of episodes
@@ -594,9 +590,7 @@ if __name__ == "__main__":
     )
 
     group.add_argument(
-<<<<<<< HEAD
-=======
-        "--test-heuristic", action="store_true",
+       "--test-heuristic", action="store_true",
     )
 
     group.add_argument(
@@ -608,7 +602,6 @@ if __name__ == "__main__":
     )
 
     group.add_argument(
->>>>>>> 6aa7bce (Updated sim, logs & integration)
         "--test-exported",
         type=int,
         const=5200,  # if arg is passed with no PORT, use this
@@ -636,10 +629,6 @@ if __name__ == "__main__":
 
     if args.test_random:
         test_policy(
-<<<<<<< HEAD
-            render=args.render, log_iterations=args.log_iterations, policy=heuristic_policy
-        )
-=======
             render=args.render, log_iterations=args.log_iterations, policy=random_policy
         )
     if args.test_heuristic:
@@ -654,27 +643,18 @@ if __name__ == "__main__":
         test_policy(
             render=args.render, log_iterations=args.log_iterations, policy=max_bottleneck_policy
         )
->>>>>>> 6aa7bce (Updated sim, logs & integration)
     elif args.test_exported:
         port = args.test_exported
         url = f"http://localhost:{port}"
         print(f"Connecting to exported brain running at {url}...")
-<<<<<<< HEAD
-        scenario_file = 'machine_10_down.json'
-=======
         scenario_file = 'assessments/machine_10_down.json'
->>>>>>> 6aa7bce (Updated sim, logs & integration)
         if args.custom_assess:
             scenario_file = args.custom_assess
         trained_brain_policy = partial(brain_policy, exported_brain_url=url)
         test_policy(
             render=args.render,
             log_iterations=args.log_iterations,
-<<<<<<< HEAD
             policy=trained_brain_policy,
-=======
-            policy=brain_policy,
->>>>>>> 6aa7bce (Updated sim, logs & integration)
             policy_name="exported",
             num_iterations=args.iteration_limit,
             scenario_file=scenario_file
