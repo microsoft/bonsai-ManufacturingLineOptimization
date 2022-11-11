@@ -76,3 +76,5 @@ rollout_worker_cpu: "2000m",
 rollout_worker_memory: "33Gi",
 }
 ```
+
+* Before scaling cluster node, turn off AI Manager use in Alpha features within Bonsai as they are not yet integrated with scaling capabilities. 
