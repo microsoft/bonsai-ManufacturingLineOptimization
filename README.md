@@ -1,5 +1,7 @@
 # Train brain for an optimal control of a manufacturing line 
 
+* Note: This is a forked repo of the Manufactoring Line Optimization repository and the Capstone project for Jazmia Henry. If you are interested in the official MLO repo, find it here: https://github.com/microsoft/bonsai-ManufacturingLineOptimization
+
 ## Bussiness problem
 
 Manufacturing lines operate a series of machines to make specific product. Ocasiaonally, one or multiple machines go down (caused by jamming, hardware issues, etc.) which will not only slow down the production but also will impact the operation of the other machines throughout the line. The aim is to train a brain that learns how to orchestrate the machines in order to maximize the production in face of such down incidents.
