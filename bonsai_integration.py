@@ -38,7 +38,8 @@ from functools import partial
 import threading
 import pdb
 
-MACHINES, CONVEYORS, _, _ = MLS.get_machines_conveyors_sources_sets(adj, adj_conv)
+MACHINES, CONVEYORS, _, _ = MLS.get_machines_conveyors_sources_sets(
+    adj, adj_conv)
 ENV = simpy.Environment()
 no_machines = len(MACHINES)
 no_conveyors = len(CONVEYORS)
@@ -56,7 +57,7 @@ default_config = {
     "interval_downtime_event_dev": 5,
     "number_parallel_downtime_events": 4,
     "layout_configuration": 1,
-    "down_machine_index": -1, 
+    "down_machine_index": -1,
     "initial_bin_level": 50,
     "bin_maximum_capacity": 100,
     "num_conveyor_bins": 10,
@@ -66,8 +67,8 @@ default_config = {
     "discharge_prox_upper_limit": 50,
     "discharge_prox_lower_limit": 50,
     "infeedProx_index1": 1,
-    "infeedProx_index2": 4, 
-    "dischargeProx_index1": 0, 
+    "infeedProx_index2": 4,
+    "dischargeProx_index1": 0,
     "dischargeProx_index2": 3,
     "num_products_at_discharge_index1": 950,
     "num_products_at_discharge_index2": 650,
@@ -75,13 +76,14 @@ default_config = {
     "num_products_at_infeed_index2": 350
 }
 for i in range(no_machines):
-    default_config["machine" + str(i) + "_initial_speed"] = random.randint(machines_min_speed[i], machines_max_speed[i])
+    default_config["machine" + str(i) + "_initial_speed"] = random.randint(
+        machines_min_speed[i], machines_max_speed[i])
 
 
 def ensure_log_dir(log_full_path):
     """
     Ensure the directory for logs exists — create if needed.
-    
+
     """
     print(f"logfile: {log_full_path}")
     logs_directory = pathlib.Path(log_full_path).parent.absolute()
@@ -143,9 +145,9 @@ class TemplateSimulatorSession:
 
         print('---Summary Status of Simulator States---')
         print('machine states are', sim_states['machines_state'])
-        print('actual machine speeds are', sim_states['machines_actual_speed']) 
+        print('actual machine speeds are', sim_states['machines_actual_speed'])
         print('brain speeds are', sim_states['brain_speed'])
-        # print('levels of conveyors are', sim_states['conveyors_level']) 
+        # print('levels of conveyors are', sim_states['conveyors_level'])
         for i in range(no_conveyors):
             conveyor_level = sim_states['conveyor_buffers'][i]
             print(f'level of conveyor {i} is {conveyor_level}')
@@ -251,7 +253,7 @@ class TemplateSimulatorSession:
         action : Dict
             An action to take to modulate environment.
         """
-        
+
         sim_action = action
         print('sim action is:\n', sim_action)
         self.simulator.step(brain_actions=sim_action)
@@ -288,12 +290,14 @@ def env_setup(env_file: str = ".env"):
     return workspace, access_key
 
 # Manual test policy loop
+
+
 def test_policy(
     render=False,
     num_episodes: int = 30,
     num_iterations: int = 300,
     log_iterations: bool = False,
-    policy = heuristic_policy,
+    policy=heuristic_policy,
     policy_name: str = "test_policy",
     scenario_file: str = "machine_10_down.json",
     exported_brain_url: str = "http://5200:5000"
@@ -613,7 +617,7 @@ if __name__ == "__main__":
         help="Custom assess config json filename",
     )
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     if args.test_random:
         test_policy(
